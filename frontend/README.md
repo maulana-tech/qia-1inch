@@ -6,7 +6,7 @@ Aplikasi React untuk **Iqia**. Vite + wagmi/viem + Tailwind.
 
 | Rute | Halaman | Fungsi |
 |---|---|---|
-| `/` | `Hub` | Beranda, ikhtisar |
+| `/app` | `Hub` | Daftar market yang tersedia, dibaca dari rantai |
 | `/deposit` | `DepositPage` | Deposit ke kolam terlindung, dan withdraw lewat bukti ZK |
 | `/swap` | `SwapPage` | Swap instan, dan penempatan order tersembunyi |
 | `/pay` | `PayPage` | Bayar ke pengguna lain di dalam kolam |
