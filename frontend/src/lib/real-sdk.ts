@@ -14,42 +14,9 @@ const transferProcessorAbi = parseAbi([
   'function transfer(bytes calldata proof, bytes32[6] calldata publicInputs) external',
 ])
 
-// Alamat pool SimpleAMM, diisi lewat env saat deploy.
-//
-// SimpleAMM dijadwalkan diganti Aqua + SwapVM — lihat docs/migrasi.md. Tabel
-// ini kosong sampai pool-nya dideploy di jaringan target; sebelum itu
-// getAMMPool mengembalikan undefined dan jalur swap gagal dengan pesan jelas
-// alih-alih menembak alamat chain lama yang sudah tidak ada.
-const AMM_POOLS: Record<string, string> = Object.fromEntries(
-  (import.meta.env?.VITE_AMM_POOLS ?? '')
-    .split(',')
-    .map((entry: string) => entry.trim())
-    .filter(Boolean)
-    .map((entry: string) => entry.split('=') as [string, string]),
-)
 
-// SimpleAMM ABI
-const simpleAMMAbi = parseAbi([
-  'function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut) external payable returns (uint256 amountOut)',
-  'function getAmountOut(address tokenIn, uint256 amountIn) external view returns (uint256)',
-  'function getReserves() external view returns (uint256, uint256)',
-  'function tokenA() external view returns (address)',
-  'function tokenB() external view returns (address)',
-])
 
-// Get AMM pool address for a token pair
-function getAMMPool(tokenIn: string, tokenOut: string): string | undefined {
-  const key1 = `${tokenIn}/${tokenOut}`
-  const key2 = `${tokenOut}/${tokenIn}`
-  return AMM_POOLS[key1] || AMM_POOLS[key2]
-}
 
-// Alamat token untuk AMM (token native = address(0))
-function getAMMTokenAddress(code: string): string {
-  if (assetMeta(code).native) return '0x0000000000000000000000000000000000000000'
-  const meta = assetMeta(code)
-  return meta.sac || '0x0000000000000000000000000000000000000000'
-}
 import type {
   DepositParams,
   OpenOrder,
@@ -359,128 +326,25 @@ export class RealIqiaSdk implements IqiaSdk {
     return { hash: '0x' + orderId }
   }
 
-  async swapShielded(params: SwapShieldedParams): Promise<TxResult> {
-    const from = await this.requireAddress()
-    const inMeta = assetMeta(params.assetIn)
-    const outMeta = assetMeta(params.assetOut)
-    const amountInBase = toBaseUnits(params.amountIn, inMeta.decimals)
-    
-    // Get AMM pool address
-    const poolAddress = getAMMPool(params.assetIn, params.assetOut)
-    if (!poolAddress) {
-      throw new Error(`No AMM pool for ${params.assetIn}/${params.assetOut}`)
-    }
-    
-    const tokenInAddress = getAMMTokenAddress(params.assetIn)
-    const tokenOutAddress = getAMMTokenAddress(params.assetOut)
-    
-    let swapHash: string
-    let expectedOut: bigint
-    
-    try {
-      // Get expected output from AMM
-      expectedOut = await readContract(wagmiConfig, {
-        address: poolAddress as `0x${string}`,
-        abi: simpleAMMAbi,
-        functionName: 'getAmountOut',
-        args: [tokenInAddress as `0x${string}`, amountInBase],
-      })
-      
-      // Approve AMM to spend input token (skip for the native token)
-      if (!assetMeta(params.assetIn).native) {
-        const approveHash = await writeContract(wagmiConfig, {
-          address: tokenInAddress as `0x${string}`,
-          abi: erc20Abi,
-          functionName: 'approve',
-          args: [poolAddress as `0x${string}`, amountInBase],
-          chain: null,
-          account: from as `0x${string}`,
-        })
-        await waitForTransactionReceipt(wagmiConfig as any, { hash: approveHash })
-      }
-      
-      // Execute swap on AMM
-      const minAmountOut = expectedOut * 95n / 100n // 5% slippage tolerance
-      
-      if (assetMeta(params.assetIn).native) {
-        // Native -> Token
-        swapHash = await writeContract(wagmiConfig, {
-          address: poolAddress as `0x${string}`,
-          abi: simpleAMMAbi,
-          functionName: 'swap',
-          args: [tokenInAddress as `0x${string}`, amountInBase, minAmountOut],
-          value: amountInBase,
-          chain: null,
-          account: from as `0x${string}`,
-        })
-      } else {
-        // Token -> Token, atau Token -> native
-        swapHash = await writeContract(wagmiConfig, {
-          address: poolAddress as `0x${string}`,
-          abi: simpleAMMAbi,
-          functionName: 'swap',
-          args: [tokenInAddress as `0x${string}`, amountInBase, minAmountOut],
-          chain: null,
-          account: from as `0x${string}`,
-        })
-      }
-      
-      await waitForTransactionReceipt(wagmiConfig as any, { hash: swapHash })
-      
-    } catch (error) {
-      // Fallback: simulated swap
-      swapHash = '0x' + Math.random().toString(16).slice(2, 66)
-      const priceRatio = inMeta.priceUsd / outMeta.priceUsd
-      // Convert to human units first, then apply price, then convert to output base units
-      const amountInHuman = baseUnitsToNumber(amountInBase, inMeta.decimals)
-      const amountOutHuman = amountInHuman * priceRatio
-      expectedOut = toBaseUnits(amountOutHuman.toFixed(outMeta.decimals), outMeta.decimals)
-    }
-    
-    // Update shielded notes
-    const notes = loadNotes()
-    const inputNote = notes.find(n => n.assetCode === params.assetIn && !n.spent)
-    if (inputNote) {
-      markSpent(inputNote.commitment)
-    }
-    
-    const outputNote = createNote({
-      assetId: assetIdFor({ native: outMeta.native, sac: outMeta.sac }),
-      amount: expectedOut,
-      spendingKey: getSpendingKey(),
-    })
-    addNote(outputNote, { 
-      assetCode: params.assetOut, 
-      source: 'change',
-      decimals: outMeta.decimals,
-      txHash: swapHash
-    })
-    
-    const inputAmount = BigInt(inputNote?.amount ?? '0')
-    if (inputAmount > amountInBase) {
-      const changeNote = createNote({
-        assetId: BigInt(inputNote?.assetId ?? '0'),
-        amount: inputAmount - amountInBase,
-        spendingKey: getSpendingKey(),
-      })
-      addNote(changeNote, { 
-        assetCode: params.assetIn, 
-        source: 'change',
-        decimals: inMeta.decimals 
-      })
-    }
-    
-    addHistoryItem({
-      id: 'swap_' + Date.now(),
-      type: 'Swap',
-      pairOrAsset: `${params.assetIn}/${params.assetOut}`,
-      amountIn: `${params.amountIn} ${params.assetIn}`,
-      amountOut: `${baseUnitsToNumber(expectedOut, outMeta.decimals)} ${params.assetOut}`,
-      txHash: swapHash,
-      createdAt: Date.now(),
-    })
-    
-    return { hash: swapHash }
+  /**
+   * Swap instan.
+   *
+   * TIDAK TERSEDIA. Jalur lama mengeksekusi swap dari dompet pengguna ke sebuah
+   * AMM biasa, lalu memperbarui catatan note HANYA di localStorage — tanpa bukti
+   * dan tanpa nullifier on-chain. Kalau swap-nya gagal, ada fallback yang
+   * mengarang tx hash dan tetap mencatat note seolah berhasil. Dua-duanya sudah
+   * dibuang bersama AMM-nya.
+   *
+   * Penggantinya meja Aqua: `IqiaAquaTaker` -> `IqiaSwapVMRouter` -> Aqua.
+   * Kontraknya sudah jalan dan terbukti memindahkan token on-chain, lihat
+   * contracts/script/DemoIqiaDesk.s.sol. Yang belum ada di sisi TypeScript:
+   * perakit program SwapVM dan pengkode MakerTraits/TakerTraits. SDK Aqua resmi
+   * hanya membungkus kontrak Aqua, tidak menyediakan keduanya.
+   */
+  async swapShielded(_params: SwapShieldedParams): Promise<TxResult> {
+    throw new Error(
+      'Swap belum tersambung: jalur AMM lama sudah dibuang, perakit program SwapVM di sisi TypeScript belum ada.',
+    )
   }
 
   async getShieldedBalances(): Promise<ShieldedBalance[]> {

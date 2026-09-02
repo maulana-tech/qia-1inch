@@ -54,8 +54,10 @@ export const TRANSFER_PROCESSOR_ADDRESS = env('VITE_TRANSFER_PROCESSOR', ZERO)
 // ---------------------------------------------------------------------------
 // Aqua / SwapVM
 //
-// Belum terisi. Diisi setelah router SwapVM custom dideploy — lihat
-// docs/migrasi.md. Sampai saat itu jalur swap masih memakai SimpleAMM.
+// Diisi setelah router dideploy — lihat DEPLOYMENTS.md. Kontraknya sudah jalan
+// dan terbukti memindahkan token on-chain lewat
+// contracts/script/DemoIqiaDesk.s.sol; yang belum ada adalah perakit program
+// SwapVM di sisi TypeScript.
 // ---------------------------------------------------------------------------
 
 /** Registry saldo virtual Aqua. */

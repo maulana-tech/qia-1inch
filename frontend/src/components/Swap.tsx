@@ -347,8 +347,8 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                   }
                 }}
                 options={[
-                  { value: 'market', label: 'Instant (AMM)' },
-                  { value: 'limit', label: 'Limit (Dark Pool)' },
+                  { value: 'market', label: 'Instant (Aqua desk)' },
+                  { value: 'limit', label: 'Limit order' },
                 ]}
               />
 
@@ -655,7 +655,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
 
       <ProofProgress
         flow={proof}
-        title={mode === 'market' ? "Executing Shielded AMM Swap" : "Placing sealed order"}
+        title={mode === 'market' ? "Routing through the Aqua desk" : "Placing order"}
         subject={parseAmount(amount) > 0 ? `${amount} ${base}` : undefined}
         onClose={closeOverlay}
       />

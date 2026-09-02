@@ -81,6 +81,8 @@ router. Satu kontrak memenuhi dua syarat.
 | ✅ Dua opcode custom | `ShieldedGate` dan `SolvencyGuard`, di slot cadangan 22 dan 23 |
 | ✅ Router + perantara taker | `IqiaSwapVMRouter` sekaligus Aqua app, `IqiaAquaTaker` menjembatani kolam |
 | ✅ Kolam tersambung ke meja | Jalur enclave mati dibuang, kontrol akses ditambahkan, `rebalance()` lewat Aqua |
+| ✅ Demo transfer on-chain | 14 transaksi di anvil, 7 event Transfer, diverifikasi lewat `cast` |
+| ✅ `SimpleAMM` dihapus | Bersama jalur swap palsunya |
 
 Ketiganya terverifikasi: SDK 41 test lolos, matcher 25 test lolos, frontend
 typecheck bersih, sirkuit Noir 5 test lolos.
@@ -103,7 +105,7 @@ typecheck bersih, sirkuit Noir 5 test lolos.
 | Tahap | Selesai kalau |
 |---|---|
 | ⬜ Sirkuit swap terlindung | **Belum ada.** Lihat catatan di bawah |
-| ⬜ Hapus `SimpleAMM`, arahkan frontend | Mode swap jalan di UI |
+| ⬜ Perakit program SwapVM di TypeScript | Swap bisa dipicu dari UI |
 | ⬜ Suite invariant | 7 invariant lolos |
 | ⬜ Deploy + demo transfer onchain | Syarat kualifikasi terpenuhi |
 
@@ -160,10 +162,10 @@ DeFi position"* atau sekadar jadi AMM biasa di atas Aqua.
 
 ## Catatan yang masih berlaku
 
-**`SimpleAMM` tidak memungut fee sama sekali.**
+**`SimpleAMM` tidak pernah memungut fee.** (Sudah dihapus.)
 `amountOut = (reserveOut * amountIn) / (reserveIn + amountIn)` — tidak ada
-potongan. Penyedia likuiditasnya tidak mendapat apa-apa. Pindah ke SwapVM
-langsung memperbaiki ini lewat `FeeFlatIn`.
+potongan sama sekali, jadi penyedia likuiditasnya tidak pernah mendapat apa-apa.
+SwapVM menyediakan `Fee._flatFeeAmountInXD` untuk itu.
 
 **Merkle tree-nya belum selesai.**
 `IqiaPool._insert()` memakai `bytes32(0)` sebagai pengganti zero-hash yang

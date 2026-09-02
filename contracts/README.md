@@ -12,19 +12,17 @@ privat, dan token mock untuk faucet.
 | `src/HonkVerifier.sol` | Verifier UltraHonk, hasil generate Noir |
 | `src/TransferVerifier.sol` | Verifier transfer, hasil generate Noir |
 | `src/MockERC20.sol` | Token uji dengan mint permissionless |
-| `src/SimpleAMM.sol` | AMM sementara — **akan diganti Aqua + SwapVM** |
 | `script/Deploy.s.sol` | Deploy kolam, verifier, dan token mock |
-| `script/DeployAMM.s.sol` | Deploy pool SimpleAMM sementara |
+| `script/DemoIqiaDesk.s.sol` | Demo transfer on-chain lewat Aqua + SwapVM |
 
 ## Migrasi yang sedang berjalan
 
-Likuiditas berpindah dari `SimpleAMM` ke **1inch Aqua + SwapVM**. Rencana dan
-peta komponennya ada di [`../docs/migrasi.md`](../docs/migrasi.md); rujukan
-teknis Aqua/SwapVM di [`../docs/RESOURCES.md`](../docs/RESOURCES.md).
+Likuiditas sudah berpindah ke **1inch Aqua + SwapVM**. `SimpleAMM` yang lama
+menahan reserve di dalam kontrak; Aqua tidak menahan apa pun — token tetap di
+dompet market maker dan hanya ditarik saat swap benar-benar terjadi.
 
-Ringkasnya: `SimpleAMM` menahan reserve di dalam kontrak, sementara Aqua tidak
-menahan apa pun — token tetap di dompet market maker dan hanya ditarik saat swap
-benar-benar terjadi.
+Peta komponennya di [`../docs/migrasi.md`](../docs/migrasi.md), rujukan teknis
+Aqua/SwapVM di [`../docs/RESOURCES.md`](../docs/RESOURCES.md).
 
 ## Desimal
 
@@ -42,7 +40,6 @@ export PRIVATE_KEY=0x<kunci-deployer>
 export RPC_URL=https://<rpc-endpoint>
 
 forge script script/Deploy.s.sol --rpc-url "$RPC_URL" --broadcast
-forge script script/DeployAMM.s.sol --rpc-url "$RPC_URL" --broadcast
 ```
 
 ## Catatan
@@ -50,5 +47,5 @@ forge script script/DeployAMM.s.sol --rpc-url "$RPC_URL" --broadcast
 `IqiaPool.settle()` tidak aktif. Jalur itu dulu menerima hasil pencocokan dari
 enclave tepercaya milik chain lama. Penggantinya SwapVM — lihat `docs/migrasi.md`.
 
-Belum ada test Solidity di repo ini. Harness Foundry menyusul bersama integrasi
-Aqua/SwapVM.
+29 test Solidity, mencakup kedua opcode custom, perantara taker, dan
+penyeimbangan kolam.

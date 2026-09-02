@@ -42,10 +42,12 @@ VITE_USE_MOCK=true pnpm --filter frontend dev
 
 Lapisan likuiditas sedang dipindahkan ke **1inch Aqua + SwapVM**.
 
-- Deposit, withdraw, transfer privat, portofolio — **jalan**
-- Swap instan — masih lewat `SimpleAMM`, akan pindah ke Aqua
-- Penempatan order — **menunggu router SwapVM**, `sdk.placeOrder()` melempar
-  error yang menjelaskan hal itu
+- Deposit, withdraw, transfer, portofolio — **jalan**
+- Swap dan penempatan order — **belum tersambung dari UI**. Kontraknya sudah
+  jalan dan terbukti memindahkan token on-chain lewat
+  `contracts/script/DemoIqiaDesk.s.sol`; yang belum ada adalah perakit program
+  SwapVM dan pengkode MakerTraits/TakerTraits di sisi TypeScript. SDK Aqua resmi
+  hanya membungkus kontrak Aqua, tidak menyediakan keduanya.
 
 Lihat [`../docs/migrasi.md`](../docs/migrasi.md).
 

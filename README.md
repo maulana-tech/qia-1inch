@@ -31,8 +31,10 @@ dan likuiditasnya sedang dipindahkan ke **1inch Aqua + SwapVM**.
 | Sirkuit Noir | ✅ Jalan |
 | Transfer privat | ✅ Jalan |
 | Mesin pencocokan off-chain | ✅ Jalan |
-| Likuiditas lewat Aqua/SwapVM | 🚧 Sedang dikerjakan |
-| Penempatan order | 🚧 Menunggu router SwapVM |
+| Likuiditas lewat Aqua/SwapVM | ✅ Jalan, terbukti on-chain |
+| Dua opcode SwapVM custom | ✅ 29 test |
+| Swap dari UI | 🚧 Perakit program SwapVM di TypeScript belum ada |
+| Penempatan order | 🚧 Sama |
 
 Peta migrasinya di [`docs/migrasi.md`](docs/migrasi.md).
 Rujukan teknis Aqua/SwapVM di [`docs/RESOURCES.md`](docs/RESOURCES.md).
@@ -95,9 +97,11 @@ Jadi router custom kita **sekaligus** menjadi Aqua app-nya — satu kontrak.
 
 ```
 contracts/          Kontrak Solidity (Foundry)
-  src/IqiaPool.sol         Kolam terlindung
-  src/TransferProcessor    Transfer privat berbasis ZK
-  src/SimpleAMM.sol        AMM sementara — akan diganti Aqua + SwapVM
+  src/IqiaPool.sol              Kolam, deposit/withdraw, rebalance via Aqua
+  src/TransferProcessor.sol     Transfer berbasis ZK
+  src/iqia/IqiaSwapVMRouter     Router SwapVM custom, sekaligus Aqua app
+  src/iqia/IqiaAquaTaker        Perantara kolam menuju SwapVM
+  src/iqia/instructions/        Dua opcode custom
 protocol/
   circuits/noir/           5 sirkuit ZK + library bersama
   sdk/                     SDK TypeScript
