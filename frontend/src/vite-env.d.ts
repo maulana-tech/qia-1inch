@@ -27,6 +27,18 @@ interface ImportMetaEnv {
   readonly VITE_AQUA?: string
   /** Iqia's custom SwapVM router, which doubles as the Aqua app (0x…). */
   readonly VITE_SWAP_VM_ROUTER?: string
+  /** Market maker backing the desk (0x…). */
+  readonly VITE_DESK_MAKER?: string
+  /** Strategy salt. Must match what the maker used at ship() time. */
+  readonly VITE_DESK_SALT?: string
+  /** Flat input fee, 1e9 basis. */
+  readonly VITE_DESK_FEE_BPS?: string
+  /** SolvencyGuard max surcharge, 1e9 basis. */
+  readonly VITE_DESK_SURCHARGE_BPS?: string
+  /** If set, only this address may fill the desk's order (0x…). */
+  readonly VITE_DESK_EXCLUSIVE_TAKER?: string
+  /** Comma-separated PAIR=ADDRESS list, legacy AMM pools. */
+  readonly VITE_AMM_POOLS?: string
 
   // --- Faucet tokens (7 decimals, see contracts/README.md) ---
   readonly VITE_USDC_ADDRESS?: string

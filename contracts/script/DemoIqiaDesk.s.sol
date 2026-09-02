@@ -158,6 +158,55 @@ contract DemoIqiaDeskScript is Script, IqiaOpcodes {
 
         console.log("");
         console.log("Selesai. Token berpindah hanya saat swap, tidak saat buka atau tutup posisi.");
+
+        // Posisi di atas sudah di-dock, jadi tidak bisa dipakai frontend. Kirim
+        // satu posisi baru yang tetap terbuka, lalu cetak env-nya.
+        _shipLivePositionForFrontend(aqua, router, adapter, weth, usdc, maker);
+    }
+
+    /// @dev Mengirim posisi kedua yang dibiarkan terbuka, supaya frontend punya
+    ///   sesuatu untuk diajak berdagang. Salt-nya berbeda agar strategyHash unik.
+    function _shipLivePositionForFrontend(
+        Aqua aqua,
+        IqiaSwapVMRouter router,
+        IqiaAquaTaker adapter,
+        MockERC20 weth,
+        MockERC20 usdc,
+        address maker
+    ) internal {
+        uint256 liveSalt = 2;
+
+        Program memory p = ProgramBuilder.init(_opcodes());
+        bytes memory program = bytes.concat(
+            p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(MAX_SURCHARGE_BPS)),
+            p.build(XYCSwap._xycSwapXD),
+            p.build(Controls._salt, abi.encodePacked(uint64(liveSalt)))
+        );
+        ISwapVM.Order memory order = _buildOrder(maker, program);
+
+        vm.startBroadcast(MAKER_KEY);
+        weth.mint(maker, MAKER_WETH);
+        usdc.mint(maker, MAKER_USDC);
+        aqua.ship(
+            address(router),
+            abi.encode(order),
+            dynamic([address(weth), address(usdc)]),
+            dynamic([MAKER_WETH, MAKER_USDC])
+        );
+        vm.stopBroadcast();
+
+        console.log("");
+        console.log("=== Salin ke frontend/.env.local ===");
+        console.log(string.concat("VITE_CHAIN_ID=31337"));
+        console.log(string.concat("VITE_CHAIN_NAME=Anvil"));
+        console.log(string.concat("VITE_SWAP_VM_ROUTER=", vm.toString(address(router))));
+        console.log(string.concat("VITE_AQUA=", vm.toString(address(aqua))));
+        console.log(string.concat("VITE_DESK_MAKER=", vm.toString(maker)));
+        console.log(string.concat("VITE_DESK_SALT=", vm.toString(liveSalt)));
+        console.log(string.concat("VITE_DESK_SURCHARGE_BPS=", vm.toString(uint256(MAX_SURCHARGE_BPS))));
+        console.log(string.concat("VITE_WETH_ADDRESS=", vm.toString(address(weth))));
+        console.log(string.concat("VITE_USDC_ADDRESS=", vm.toString(address(usdc))));
+        console.log(string.concat("# adapter (kolam): ", vm.toString(address(adapter))));
     }
 
     function _buildProgram(address exclusiveTaker) internal view returns (bytes memory) {

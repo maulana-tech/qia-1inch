@@ -4,6 +4,7 @@ import { sendTransaction, waitForTransactionReceipt, getAccount, writeContract, 
 import { Iqia, type EvmOperation, type ProofData, type BalanceNote, createNote, fieldToHex, hash2, hash4 } from '@iqia/sdk'
 // @ts-nocheck
 import { wagmiConfig } from './wagmi'
+import * as desk from './desk'
 // @ts-nocheck
 import { POOL_CONTRACT_ID, TRANSFER_PROCESSOR_ADDRESS } from './config'
 // @ts-nocheck
@@ -327,20 +328,51 @@ export class RealIqiaSdk implements IqiaSdk {
   }
 
   /**
-   * Swap instan.
+   * Swap instan lewat meja Aqua.
    *
-   * TIDAK TERSEDIA. Jalur lama mengeksekusi swap dari dompet pengguna ke sebuah
-   * AMM biasa, lalu memperbarui catatan note HANYA di localStorage — tanpa bukti
-   * dan tanpa nullifier on-chain. Kalau swap-nya gagal, ada fallback yang
-   * mengarang tx hash dan tetap mencatat note seolah berhasil. Dua-duanya sudah
-   * dibuang bersama AMM-nya.
+   * Dompet pengguna berdagang langsung ke router SwapVM; likuiditasnya diambil
+   * dari dompet market maker saat transaksi berjalan, dan tidak pernah terkunci
+   * di kontrak mana pun.
    *
-   * Penggantinya meja Aqua: `IqiaAquaTaker` -> `IqiaSwapVMRouter` -> Aqua.
-   * Kontraknya sudah jalan dan terbukti memindahkan token on-chain, lihat
-   * contracts/script/DemoIqiaDesk.s.sol. Yang belum ada di sisi TypeScript:
-   * perakit program SwapVM dan pengkode MakerTraits/TakerTraits. SDK Aqua resmi
-   * hanya membungkus kontrak Aqua, tidak menyediakan keduanya.
+   * Tidak ada kontrak perantara di sisi pengguna. Flag
+   * `useTransferFromAndAquaPush` membuat SwapVM sendiri yang menarik tokenIn dan
+   * mendorongnya ke Aqua, jadi pengguna cukup memberi izin seperti di DEX biasa.
+   *
+   * Ambang slippage ditegakkan SwapVM lewat threshold di taker data, sehingga
+   * transaksi batal kalau harganya bergeser — bukan diperiksa setelah dana
+   * berpindah.
    */
+  async swapShielded(params: SwapShieldedParams): Promise<TxResult> {
+    const account = (await this.requireAddress()) as `0x${string}`
+    const inMeta = assetMeta(params.assetIn)
+    const outMeta = assetMeta(params.assetOut)
+
+    const tokenIn = inMeta.sac
+    const tokenOut = outMeta.sac
+    if (!tokenIn || !tokenOut) {
+      throw new Error('Meja Aqua hanya melayani token ERC20; token native belum didukung.')
+    }
+
+    const amountInBase = toBaseUnits(params.amountIn, inMeta.decimals)
+    const minOutBase = params.amountOutMin
+      ? toBaseUnits(params.amountOutMin, outMeta.decimals)
+      : 0n
+
+    const { hash, amountOut } = await desk.swap(account, tokenIn, tokenOut, amountInBase, minOutBase)
+
+    addHistoryItem({
+      id: 'swap_' + Date.now(),
+      type: 'Swap',
+      pairOrAsset: `${params.assetIn} → ${params.assetOut}`,
+      amountIn: `${formatAmount(baseUnitsToNumber(amountInBase, inMeta.decimals))} ${params.assetIn}`,
+      amountOut: `${formatAmount(baseUnitsToNumber(amountOut, outMeta.decimals))} ${params.assetOut}`,
+      txHash: hash,
+      createdAt: Date.now(),
+    })
+
+    return { hash }
+  }
+
   async swapShielded(_params: SwapShieldedParams): Promise<TxResult> {
     throw new Error(
       'Swap belum tersambung: jalur AMM lama sudah dibuang, perakit program SwapVM di sisi TypeScript belum ada.',

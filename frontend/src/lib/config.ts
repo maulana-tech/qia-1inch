@@ -66,6 +66,27 @@ export const AQUA_ADDRESS = env('VITE_AQUA', ZERO)
 /** Router SwapVM custom milik Iqia. Sekaligus berperan sebagai Aqua app. */
 export const SWAP_VM_ROUTER_ADDRESS = env('VITE_SWAP_VM_ROUTER', ZERO)
 
+// --- Posisi meja ---
+//
+// Parameter ini harus sama persis dengan yang dipakai maker saat ship(),
+// karena strategyHash dihitung dari byte order-nya. Meleset satu bit berarti
+// Aqua tidak menemukan saldonya.
+
+/** Market maker yang menopang meja. */
+export const DESK_MAKER = env('VITE_DESK_MAKER', '')
+
+/** Pembeda strategi. Harus sama dengan yang dipakai saat ship(). */
+export const DESK_SALT = BigInt(env('VITE_DESK_SALT', '1'))
+
+/** Fee tetap sisi masukan, dalam basis 1e9. 0 berarti tanpa fee. */
+export const DESK_FEE_BPS = BigInt(env('VITE_DESK_FEE_BPS', '0'))
+
+/** Biaya tambahan maksimum SolvencyGuard, basis 1e9. 0 mematikan opcode-nya. */
+export const DESK_SURCHARGE_BPS = BigInt(env('VITE_DESK_SURCHARGE_BPS', '0'))
+
+/** Kalau diisi, hanya alamat ini yang boleh mengisi order meja. */
+export const DESK_EXCLUSIVE_TAKER = env('VITE_DESK_EXCLUSIVE_TAKER', '')
+
 /** True kalau lapisan Aqua/SwapVM sudah dikonfigurasi. */
 export const AQUA_CONFIGURED =
   AQUA_ADDRESS.toLowerCase() !== ZERO && SWAP_VM_ROUTER_ADDRESS.toLowerCase() !== ZERO

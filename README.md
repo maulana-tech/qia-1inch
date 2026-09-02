@@ -33,8 +33,8 @@ dan likuiditasnya sedang dipindahkan ke **1inch Aqua + SwapVM**.
 | Mesin pencocokan off-chain | ✅ Jalan |
 | Likuiditas lewat Aqua/SwapVM | ✅ Jalan, terbukti on-chain |
 | Dua opcode SwapVM custom | ✅ 29 test |
-| Swap dari UI | 🚧 Perakit program SwapVM di TypeScript belum ada |
-| Penempatan order | 🚧 Sama |
+| Swap dari UI | ✅ Jalan, lewat `@iqia/swapvm` |
+| Penempatan order | 🚧 Butuh sirkuit yang belum ada |
 
 Peta migrasinya di [`docs/migrasi.md`](docs/migrasi.md).
 Rujukan teknis Aqua/SwapVM di [`docs/RESOURCES.md`](docs/RESOURCES.md).
@@ -105,6 +105,7 @@ contracts/          Kontrak Solidity (Foundry)
 protocol/
   circuits/noir/           5 sirkuit ZK + library bersama
   sdk/                     SDK TypeScript
+  swapvm/                  Perakit program SwapVM + pengkode traits
   matcher/                 Mesin pencocokan off-chain
 frontend/                  React + Vite + wagmi
 docs/                      Peta migrasi dan rujukan Aqua/SwapVM
@@ -155,6 +156,18 @@ Yang dibuktikan skrip itu, dengan `require` di setiap langkah:
 Contoh keluaran: 3.500 USDC masuk, 0,90909… WETH keluar. Sepanjang alur Aqua
 tidak pernah menahan satu token pun — likuiditasnya diambil langsung dari
 dompet market maker saat swap terjadi.
+
+Skripnya juga mengirim satu posisi yang dibiarkan terbuka dan mencetak env
+untuk frontend. Salin ke `frontend/.env.local`, lalu:
+
+```bash
+pnpm --filter @iqia/swapvm build
+pnpm --filter frontend dev
+```
+
+Swap dari UI berjalan langsung ke router: dompet memberi izin, lalu `swap()`.
+Tidak ada kontrak perantara di sisi pengguna — flag `useTransferFromAndAquaPush`
+membuat SwapVM sendiri yang menarik tokenIn dan mendorongnya ke Aqua.
 
 ---
 
