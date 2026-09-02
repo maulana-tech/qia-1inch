@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { TxResult } from '../lib/larel-sdk'
+import type { TxResult } from '../lib/iqia-sdk'
 
 export type SubmitStatus = 'idle' | 'pending' | 'done' | 'error'
 

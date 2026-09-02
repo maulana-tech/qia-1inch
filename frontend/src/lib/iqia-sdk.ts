@@ -1,14 +1,14 @@
-// MOCK — replace with @larel/sdk
+// MOCK — replace with @iqia/sdk
 //
-// This module is the SINGLE seam between the Larel UI and the protocol SDK.
-// Every component talks ONLY to the `LarelSdk` interface below, so swapping in
-// the real `@larel/sdk` (which exposes the same method names — deposit, withdraw,
+// This module is the SINGLE seam between the Iqia UI and the protocol SDK.
+// Every component talks ONLY to the `IqiaSdk` interface below, so swapping in
+// the real `@iqia/sdk` (which exposes the same method names — deposit, withdraw,
 // transfer, placeOrder, cancelOrder, getShieldedBalances, getOpenOrders) is a
-// one-file change: make `createLarelSdk()` return the real client instead of
-// `MockLarelSdk`. No UI code imports anything else from the SDK layer.
+// one-file change: make `createIqiaSdk()` return the real client instead of
+// `MockIqiaSdk`. No UI code imports anything else from the SDK layer.
 
 import { formatAmount, parseAmount } from './format'
-import { RealLarelSdk } from './real-sdk'
+import { RealIqiaSdk } from './real-sdk'
 
 /**
  * A shielded asset's display code. The protocol is asset-agnostic — any ERC20
@@ -67,7 +67,7 @@ export interface WithdrawParams {
 }
 
 export interface TransferParams {
-  /** Recipient's Larel owner key, shared out-of-band. */
+  /** Recipient's Iqia owner key, shared out-of-band. */
   recipientKey: string
   asset: AssetCode
   amount: string
@@ -105,10 +105,10 @@ export interface HistoryItem {
 }
 
 /**
- * The Larel client surface. The real `@larel/sdk` exposes these exact method
+ * The Iqia client surface. The real `@iqia/sdk` exposes these exact method
  * names; the UI is written against this interface only.
  */
-export interface LarelSdk {
+export interface IqiaSdk {
   deposit(params: DepositParams): Promise<TxResult>
   withdraw(params: WithdrawParams): Promise<TxResult>
   transfer(params: TransferParams): Promise<TxResult>
@@ -148,7 +148,7 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-class MockLarelSdk implements LarelSdk {
+class MockIqiaSdk implements IqiaSdk {
   private balances: Record<AssetCode, number> = { FLR: 1240.5, USDC: 3500, bETH: 0, bUSDC: 0 }
 
   private orders: OpenOrder[] = [
@@ -280,20 +280,20 @@ class MockLarelSdk implements LarelSdk {
   }
 }
 
-let singleton: LarelSdk | null = null
+let singleton: IqiaSdk | null = null
 
 /**
- * Returns the app-wide Larel client.
+ * Returns the app-wide Iqia client.
  *
- * By default this is the LIVE `RealLarelSdk`, wired to the deployed LarelPool on
+ * By default this is the LIVE `RealIqiaSdk`, wired to the deployed IqiaPool on
  * Flare Coston2 (real deposit + portfolio; experimental withdraw). Set
- * `VITE_USE_MOCK=true` to fall back to the offline `MockLarelSdk` for UI dev with no
+ * `VITE_USE_MOCK=true` to fall back to the offline `MockIqiaSdk` for UI dev with no
  * wallet / network. Nothing else in the UI changes between the two.
  */
-export function createLarelSdk(): LarelSdk {
+export function createIqiaSdk(): IqiaSdk {
   if (!singleton) {
     const useMock = import.meta.env.VITE_USE_MOCK === 'true'
-    singleton = useMock ? new MockLarelSdk() : new RealLarelSdk()
+    singleton = useMock ? new MockIqiaSdk() : new RealIqiaSdk()
   }
   return singleton
 }

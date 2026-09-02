@@ -1,4 +1,4 @@
-//! LaxStell `transfer` circuit (SPEC sec 8.2).
+//! Iqia `transfer` circuit (SPEC sec 8.2).
 //!
 //! Proves a private payment: consumes up to two input notes and creates two
 //! output notes (recipient + change), conserving value, all of the same asset.
@@ -9,7 +9,7 @@
 //!   merkle_root, nullifier_0, nullifier_1,
 //!   out_commitment_0, out_commitment_1, ext_data_hash
 
-use dep::larel_lib as w;
+use dep::iqia_lib as w;
 
 fn main(
     // ---- public inputs (order is load-bearing: SHARED sec 7) ----

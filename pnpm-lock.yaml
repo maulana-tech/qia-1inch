@@ -18,7 +18,7 @@ importers:
 
   frontend:
     dependencies:
-      '@larel/sdk':
+      '@iqia/sdk':
         specifier: workspace:*
         version: link:../protocol/sdk
       '@noble/ciphers':
@@ -124,9 +124,9 @@ importers:
 
   protocol/fce-matcher/typescript:
     dependencies:
-      '@larel/matcher':
-        specifier: file:./larel_matcher_local
-        version: file:protocol/fce-matcher/typescript/larel_matcher_local
+      '@iqia/matcher':
+        specifier: file:./iqia_matcher_local
+        version: file:protocol/fce-matcher/typescript/iqia_matcher_local
       '@noble/hashes':
         specifier: ^1.7.0
         version: 1.8.0
@@ -149,7 +149,7 @@ importers:
 
   protocol/matcher:
     dependencies:
-      '@larel/sdk':
+      '@iqia/sdk':
         specifier: workspace:*
         version: link:../sdk
     devDependencies:
@@ -872,8 +872,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@larel/matcher@file:protocol/fce-matcher/typescript/larel_matcher_local':
-    resolution: {directory: protocol/fce-matcher/typescript/larel_matcher_local, type: directory}
+  '@iqia/matcher@file:protocol/fce-matcher/typescript/iqia_matcher_local':
+    resolution: {directory: protocol/fce-matcher/typescript/iqia_matcher_local, type: directory}
 
   '@lit-labs/ssr-dom-shim@1.6.0':
     resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
@@ -4968,9 +4968,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@larel/matcher@file:protocol/fce-matcher/typescript/larel_matcher_local':
+  '@iqia/matcher@file:protocol/fce-matcher/typescript/iqia_matcher_local':
     dependencies:
-      '@larel/sdk': link:protocol/sdk
+      '@iqia/sdk': link:protocol/sdk
 
   '@lit-labs/ssr-dom-shim@1.6.0': {}
 

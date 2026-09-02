@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useProofFlow } from '../hooks/useProofFlow'
 import { TOKEN_OPTIONS } from '../lib/tokens'
 import { isPositiveAmount } from '../lib/format'
-import type { AssetCode } from '../lib/larel-sdk'
+import type { AssetCode } from '../lib/iqia-sdk'
 import { Button, Card, Field, PageIntro, SectionHeading, Select, ShieldIcon, TextInput } from './ui'
 import { ProofProgress } from './ProofProgress'
 
 export function Pay({ embedded }: { embedded?: boolean } = {}) {
-  const { sdk, refreshBalances } = useLarel()
+  const { sdk, refreshBalances } = useIqia()
   const proof = useProofFlow()
 
   const [recipientKey, setRecipientKey] = useState('')
@@ -44,7 +44,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
         <div className="mt-5 space-y-4">
           <Field
             label="Recipient code"
-            hint="The recipient's Larel receive code (wr1…) from their Receive screen — the payment is encrypted to it."
+            hint="The recipient's Iqia receive code (wr1…) from their Receive screen — the payment is encrypted to it."
           >
             <TextInput
               mono

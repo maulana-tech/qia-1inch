@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CopyIcon } from './ui'
-import larelLogo from '../assets/larel-logo.png'
+import iqiaLogo from '../assets/iqia-logo.png'
 
 /** The receive cipher: a shareable code senders encrypt to, revealing nothing
  *  about balance or history. Extracted from the former single-scroll wallet. */
@@ -19,7 +19,7 @@ export function Receive({ receiveCode }: { receiveCode: string | null }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-center rounded-none border border-ink-700 bg-ink-900/40 p-8">
-        <img src={larelLogo} alt="Larel" className="h-20 w-auto" />
+        <img src={iqiaLogo} alt="Iqia" className="h-20 w-auto" />
       </div>
       {receiveCode ? (
         <>

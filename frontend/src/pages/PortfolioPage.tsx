@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useReveal } from '../hooks/useReveal'
 import { loadNotes, type StoredNote } from '../lib/note-store'
 import { assetMeta } from '../lib/tokens'
@@ -8,7 +8,7 @@ import { formatAmount, formatUsd } from '../lib/format'
 import { cx } from '../lib/cx'
 import { AssetAvatar, ChevronDownIcon, EyeGlyph } from '../components/ui'
 import { ScrambleNumber } from '../components/ScrambleNumber'
-import type { AssetCode } from '../lib/larel-sdk'
+import type { AssetCode } from '../lib/iqia-sdk'
 import { useSettings, formatMoney } from '../lib/settings'
 
 const MASK = '••••••'
@@ -39,7 +39,7 @@ function groupUnspentNotes(): Map<AssetCode, StoredNote[]> {
 }
 
 export function PortfolioPage() {
-  const { balances, loadingBalances } = useLarel()
+  const { balances, loadingBalances } = useIqia()
   const { revealed, toggle } = useReveal()
   const { currency, locale } = useSettings()
   const [open, setOpen] = useState<AssetCode | null>(null)

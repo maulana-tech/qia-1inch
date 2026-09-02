@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const KEY = 'lax-stell.theme'
+const KEY = 'iqia.theme'
 export type Theme = 'light' | 'dark'
 
 /** The theme the pre-paint script (index.html) already resolved onto <html>. */

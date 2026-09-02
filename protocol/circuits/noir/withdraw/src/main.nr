@@ -1,4 +1,4 @@
-//! LaxStell `withdraw` circuit (SPEC sec 8.1).
+//! Iqia `withdraw` circuit (SPEC sec 8.1).
 //!
 //! Proves ownership of a shielded balance note and authorises a withdrawal of
 //! its full amount to a classic Stellar address.
@@ -6,7 +6,7 @@
 //! Public inputs (SHARED sec 7, IN THIS ORDER):
 //!   merkle_root, nullifier, recipient_hash, amount, asset_id
 
-use dep::larel_lib as w;
+use dep::iqia_lib as w;
 
 fn main(
     // ---- public inputs (order is load-bearing: SHARED sec 7) ----

@@ -16,7 +16,7 @@
     "outDir": "dist",
     "types": ["node"],
     "paths": {
-      "@larel/sdk": ["../sdk/src/index.ts"]
+      "@iqia/sdk": ["../sdk/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],

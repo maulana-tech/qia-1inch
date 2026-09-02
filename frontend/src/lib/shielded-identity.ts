@@ -1,10 +1,10 @@
-import { toField, type Field } from '@larel/sdk'
+import { toField, type Field } from '@iqia/sdk'
 import { signMessage } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { peekCachedSpendingKey, randomSpendingKey, setActiveAddress, setSpendingKey } from './note-store'
 
 const DERIVATION_MESSAGE = [
-  'Larel Shielded Wallet',
+  'Iqia Shielded Wallet',
   '',
   'Sign to unlock your private spending key on this device.',
   'This signature stays in your browser and reveals nothing on-chain.',

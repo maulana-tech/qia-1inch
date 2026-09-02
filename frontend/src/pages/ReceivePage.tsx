@@ -1,9 +1,9 @@
 import { Act } from '../components/Act'
 import { Receive } from '../components/Receive'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 
 export function ReceivePage() {
-  const { receiveCode } = useLarel()
+  const { receiveCode } = useIqia()
   return (
     <Act
       no="Act 04"

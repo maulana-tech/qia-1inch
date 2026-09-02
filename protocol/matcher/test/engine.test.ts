@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRICE_SCALE } from "@larel/sdk";
+import { PRICE_SCALE } from "@iqia/sdk";
 import {
   MatchingEngine,
   OrderValidationError,

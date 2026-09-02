@@ -8,7 +8,7 @@ import {
   fieldToHex,
   toField,
   type Field,
-} from "@larel/sdk";
+} from "@iqia/sdk";
 import { computeMatch } from "../src/engine.js";
 import {
   MATCH_PUBLIC_INPUT_LABELS,

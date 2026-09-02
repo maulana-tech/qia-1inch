@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useReveal } from '../hooks/useReveal'
 
 import { clearAllNotes } from '../lib/note-store'
@@ -7,7 +7,7 @@ import { cx } from '../lib/cx'
 import { BrandCanvas } from './BrandCanvas'
 import { ConnectWallet } from './ConnectWallet'
 import { EyeGlyph, SettingsIcon, FaucetIcon } from './ui'
-import larelLogo from '../assets/larel-logo.png'
+import iqiaLogo from '../assets/iqia-logo.png'
 import { ScrambleNumber } from './ScrambleNumber'
 import { ThemeToggle } from './ThemeToggle'
 import { useT, useSettings, formatMoney } from '../lib/settings'
@@ -21,7 +21,7 @@ const NAV = [
 ] as const
 
 function ShieldedChip() {
-  const { balances, loadingBalances } = useLarel()
+  const { balances, loadingBalances } = useIqia()
   const { revealed, toggle } = useReveal()
   const { currency, locale } = useSettings()
   if (loadingBalances || balances.length === 0) return null
@@ -48,9 +48,9 @@ function AppNav() {
     <header className="sticky top-0 z-40 px-4 pt-4">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-none bg-ink-900/75 px-5 py-2.5 shadow-[0_12px_34px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl">
         <NavLink to="/app" className="flex items-center gap-2.5">
-          <img src={larelLogo} alt="Larel" className="h-12 w-auto object-contain" />
+          <img src={iqiaLogo} alt="Iqia" className="h-12 w-auto object-contain" />
           <span className="font-display text-base font-semibold tracking-tight text-spectral-soft">
-            larel
+            iqia
           </span>
         </NavLink>
         <nav className="hidden items-center gap-5 font-mono text-[12px] font-semibold uppercase tracking-[0.12em] md:flex">
@@ -112,7 +112,7 @@ function AppNav() {
 }
 
 function AppFooter() {
-  const { refreshBalances } = useLarel()
+  const { refreshBalances } = useIqia()
 
   async function clearLocalData() {
     const ok = window.confirm(
@@ -137,9 +137,9 @@ function AppFooter() {
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-5 px-8 py-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <NavLink to="/" className="transition hover:opacity-75 flex items-center gap-3">
-            <img src={larelLogo} alt="Larel" className="h-[150px] w-auto object-contain" style={{ opacity: 0.85 }} />
+            <img src={iqiaLogo} alt="Iqia" className="h-[150px] w-auto object-contain" style={{ opacity: 0.85 }} />
             <span className="font-display text-xl font-semibold tracking-tight text-zinc-950/80 dark:text-zinc-100">
-              larel
+              iqia
             </span>
           </NavLink>
           <p className="max-w-[18rem] text-[12.5px] font-normal leading-relaxed text-[#1f1f1f]/70 dark:text-zinc-400">
@@ -153,7 +153,7 @@ function AppFooter() {
           <button type="button" onClick={() => void clearLocalData()} className="uppercase transition hover:text-[#1f1f1f] dark:hover:text-zinc-200">
             Clear data
           </button>
-            <span className="text-[#1f1f1f]/40 dark:text-zinc-600">© Larel 2026</span>
+            <span className="text-[#1f1f1f]/40 dark:text-zinc-600">© Iqia 2026</span>
         </div>
       </div>
     </footer>

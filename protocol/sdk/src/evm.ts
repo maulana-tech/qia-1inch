@@ -12,11 +12,11 @@ import { bytesToField, fieldToBytes, hash2, toField, type Field } from './poseid
 import type { ProofData } from './types.js';
 
 // We import the generated ABIs. Note: you need to ensure they are available in the build.
-import LarelPoolAbiJson from './abi/LarelPool.json' with { type: "json" };
-import LarelInstructionSenderAbiJson from './abi/LarelInstructionSender.json' with { type: "json" };
+import IqiaPoolAbiJson from './abi/IqiaPool.json' with { type: "json" };
+import IqiaInstructionSenderAbiJson from './abi/IqiaInstructionSender.json' with { type: "json" };
 
-export const larelPoolAbi = LarelPoolAbiJson;
-export const larelInstructionSenderAbi = LarelInstructionSenderAbiJson;
+export const iqiaPoolAbi = IqiaPoolAbiJson;
+export const iqiaInstructionSenderAbi = IqiaInstructionSenderAbiJson;
 
 /** Public-input field order per circuit. SHARED sec 7 (authoritative). */
 export const PUBLIC_INPUT_ORDER = {
@@ -83,9 +83,9 @@ export function decodePublicInputs(bytes: Uint8Array): Field[] {
 }
 
 /**
- * Builds EVM transactions/calldata for the deployed LarelPool contract via viem.
+ * Builds EVM transactions/calldata for the deployed IqiaPool contract via viem.
  */
-export class LarelContract {
+export class IqiaContract {
   readonly address: Address;
 
   constructor(address: string) {
@@ -98,7 +98,7 @@ export class LarelContract {
     const assetAddr = isNative ? '0x0000000000000000000000000000000000000000' : args.asset;
     
     return encodeFunctionData({
-      abi: larelPoolAbi,
+      abi: iqiaPoolAbi,
       functionName: 'deposit',
       args: [bytesToHex(fieldToBytes(args.commitment)), assetAddr, args.amount],
     });
@@ -118,7 +118,7 @@ export class LarelContract {
     const assetAddr = isNative ? '0x0000000000000000000000000000000000000000' : args.asset;
 
     return encodeFunctionData({
-      abi: larelPoolAbi,
+      abi: iqiaPoolAbi,
       functionName: 'withdraw',
       args: [
         bytesToHex(args.proof),
@@ -139,7 +139,7 @@ export class LarelContract {
     this.assertProofLen(args.proof);
     const pubInputs = args.publicInputs.map((f) => bytesToHex(fieldToBytes(f)));
     return encodeFunctionData({
-      abi: larelInstructionSenderAbi,
+      abi: iqiaInstructionSenderAbi,
       functionName: 'placeOrder',
       args: [
         bytesToHex(args.proof),

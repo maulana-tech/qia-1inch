@@ -1,5 +1,5 @@
 /**
- * Larel SDK constants.
+ * Iqia SDK constants.
  *
  * All values here are cross-component invariants (SHARED.md). Do not change them
  * without changing the Noir circuits and the Soroban contract in lockstep.

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useProofFlow } from '../hooks/useProofFlow'
 import { usePriceQuote } from '../hooks/usePriceQuote'
 import { formatAmount, formatPrice, parseAmount } from '../lib/format'
-import type { OpenOrder, OrderSide } from '../lib/larel-sdk'
+import type { OpenOrder, OrderSide } from '../lib/iqia-sdk'
 import { TOKEN_OPTIONS, assetMeta } from '../lib/tokens'
 import { cx } from '../lib/cx'
 import {
@@ -130,7 +130,7 @@ function OrderTableSkeleton() {
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function Swap({ embedded }: { embedded?: boolean } = {}) {
-  const { sdk, orders, loadingOrders, refreshOrders, refreshBalances, history, loadingHistory, refreshHistory } = useLarel()
+  const { sdk, orders, loadingOrders, refreshOrders, refreshBalances, history, loadingHistory, refreshHistory } = useIqia()
   const proof = useProofFlow()
 
   const [mode, setMode] = useState<'market' | 'limit'>('market')

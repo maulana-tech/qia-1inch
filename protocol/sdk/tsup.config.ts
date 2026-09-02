@@ -8,6 +8,6 @@ export default defineConfig({
   clean: true,
   target: "es2022",
   // Heavy runtime-only deps are kept external; they are loaded lazily by prover.ts
-  // and stellar.ts so importing @larel/sdk stays cheap.
+  // and stellar.ts so importing @iqia/sdk stays cheap.
   external: ["@aztec/bb.js", "@noir-lang/noir_js", "@stellar/stellar-sdk"],
 });

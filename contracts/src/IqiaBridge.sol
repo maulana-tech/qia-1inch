@@ -9,12 +9,12 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-/// @title LarelBridge
-/// @notice Minimal lock/unlock escrow for the Larel trust-minimized cross-chain
+/// @title IqiaBridge
+/// @notice Minimal lock/unlock escrow for the Iqia trust-minimized cross-chain
 ///         bridge (Ethereum Sepolia -> Stellar/Soroban). See BRIDGE_SPEC §4, §12.
 ///
-///         `lock` escrows native ETH or an ERC20 against a Larel note `commitment`.
-///         The Soroban `EthLightClient` + `LarelBridge` prove the resulting storage
+///         `lock` escrows native ETH or an ERC20 against a Iqia note `commitment`.
+///         The Soroban `EthLightClient` + `IqiaBridge` prove the resulting storage
 ///         word via an EIP-1186 MPT inclusion proof against a trusted execution
 ///         `state_root`, then mint a shielded note. `unlock` releases the escrow
 ///         after a verified L2 `bridge_out` (governor-gated for the hackathon).
@@ -25,7 +25,7 @@ interface IERC20 {
 ///             slot = keccak256(abi.encode(commitment, uint256(0)))
 ///         and decodes the single 32-byte word as the packed `LockRecord`.
 ///         See bridge/l1/README.md for the exact byte packing + a worked example.
-contract LarelBridge {
+contract IqiaBridge {
     // -------------------------------------------------------------------------
     // Types
     // -------------------------------------------------------------------------
@@ -97,8 +97,8 @@ contract LarelBridge {
     // -------------------------------------------------------------------------
 
     /// @notice Escrow `amount` of `token` (or native ETH if `token == address(0)`)
-    ///         against a unique LaxStell note `commitment`.
-    /// @param commitment LaxStell note commitment = hash4(asset_id, amount, owner, blinding).
+    ///         against a unique Iqia note `commitment`.
+    /// @param commitment Iqia note commitment = hash4(asset_id, amount, owner, blinding).
     /// @param token      ERC20 address, or `address(0)` for native ETH.
     /// @param amount     amount to lock; must be non-zero and fit in uint96.
     function lock(bytes32 commitment, address token, uint256 amount) external payable {

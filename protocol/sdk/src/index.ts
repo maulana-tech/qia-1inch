@@ -1,5 +1,5 @@
 /**
- * @larel/sdk — TypeScript client for the Larel privacy platform on Flare (EVM).
+ * @iqia/sdk — TypeScript client for the Iqia privacy platform on Flare (EVM).
  */
 import { TREE_DEPTH, ZEROS } from "./constants.js";
 import { MerkleTree } from "./merkle.js";
@@ -15,7 +15,7 @@ import {
   type CircuitInputMap,
   type TransferInputNote,
 } from "./prover.js";
-import { LarelContract, encodePublicInputs, recipientHash, type CircuitName, assetIdFromAddress } from "./evm.js";
+import { IqiaContract, encodePublicInputs, recipientHash, type CircuitName, assetIdFromAddress } from "./evm.js";
 import type { Asset, BalanceNote, KeyPair, Order, OrderParams, ProofData } from "./types.js";
 import { Wallet } from "./wallet.js";
 
@@ -53,7 +53,7 @@ export interface ProvenResult {
   outputNotes: BalanceNote[];
 }
 
-export interface LarelSdk {
+export interface IqiaSdk {
   deposit(params: { asset: Asset; amount: bigint; from: string }): DepositResult;
   withdraw(params: { note: BalanceNote; recipient: string }): Promise<ProvenResult>;
   placeOrder(params: { note: BalanceNote; order: OrderParams }): Promise<ProvenResult & { order: Order }>;
@@ -61,7 +61,7 @@ export interface LarelSdk {
   getOpenOrders(): Order[];
 }
 
-export interface LarelConfig {
+export interface IqiaConfig {
   contractAddress: string;
   spendingKey?: Field;
   provers?: Partial<Record<CircuitName, NoirProver>>;
@@ -69,18 +69,18 @@ export interface LarelConfig {
   wallet?: Wallet;
 }
 
-export class Larel implements LarelSdk {
+export class Iqia implements IqiaSdk {
   readonly keys: KeyPair;
   readonly wallet: Wallet;
   readonly tree: MerkleTree;
-  readonly contract: LarelContract;
+  readonly contract: IqiaContract;
   private readonly provers: Partial<Record<CircuitName, NoirProver>>;
 
-  constructor(config: LarelConfig) {
+  constructor(config: IqiaConfig) {
     this.keys = deriveKeys(config.spendingKey ?? randomField());
     this.wallet = config.wallet ?? new Wallet();
     this.tree = config.tree ?? new MerkleTree(TREE_DEPTH);
-    this.contract = new LarelContract(config.contractAddress);
+    this.contract = new IqiaContract(config.contractAddress);
     this.provers = config.provers ?? {};
   }
 
@@ -230,4 +230,4 @@ export class Larel implements LarelSdk {
   }
 }
 
-export default Larel;
+export default Iqia;

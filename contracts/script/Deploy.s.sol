@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/LarelPool.sol";
+import "../src/IqiaPool.sol";
 import "../src/HonkVerifier.sol";
 import "../src/MockERC20.sol";
 
@@ -25,9 +25,9 @@ contract DeployScript is Script {
         WithdrawVerifier verifier = new WithdrawVerifier();
         console.log("WithdrawVerifier deployed at:", address(verifier));
 
-        // 3. Deploy LarelPool
-        LarelPool pool = new LarelPool(address(poseidon), address(verifier));
-        console.log("LarelPool deployed at:", address(pool));
+        // 3. Deploy IqiaPool
+        IqiaPool pool = new IqiaPool(address(poseidon), address(verifier));
+        console.log("IqiaPool deployed at:", address(pool));
 
         // 4. Deploy mock ERC20 tokens for the faucet
         MockERC20 usdc = new MockERC20("Test USD Coin", "USDC", 7);

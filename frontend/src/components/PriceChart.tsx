@@ -11,7 +11,7 @@ import {
 } from 'lightweight-charts'
 
 // Adapted from Lotusfi/Lotus_main's AssetChart (lightweight-charts v5), recoloured
-// to the Larel sepia/spectral DA. The shape is deterministic per market so the
+// to the Iqia sepia/spectral DA. The shape is deterministic per market so the
 // preview is stable; when a live reference price is known the whole series is
 // rescaled so its last close sits on that price — the dark-pool testnet has no
 // historical feed of its own.

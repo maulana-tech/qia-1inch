@@ -22,7 +22,7 @@ import {
   type Field,
   type NotePayload,
   type OrderPayload,
-} from "@larel/sdk";
+} from "@iqia/sdk";
 import type { AssembledMatch } from "./prover.js";
 import type { Match, SubmittedOrder } from "./types.js";
 

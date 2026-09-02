@@ -1,14 +1,14 @@
-# Larel — Frontend
+# Iqia — Frontend
 
-The React app for **Larel**, a privacy platform on Stellar. Four modules —
+The React app for **Iqia**, a privacy platform on Stellar. Four modules —
 **Bridge**, **Portfolio**, **Pay**, and **Swap** — over a shared shielded layer.
 
-> **This app is wired to the LIVE LarelPool on Stellar Testnet.** By default
-> `createLarelSdk()` returns the real `RealLarelSdk` (in `src/lib/real-sdk.ts`),
-> backed by `@larel/sdk` (Poseidon2 commitments, notes, Merkle tree, Soroban op
+> **This app is wired to the LIVE IqiaPool on Stellar Testnet.** By default
+> `createIqiaSdk()` returns the real `RealIqiaSdk` (in `src/lib/real-sdk.ts`),
+> backed by `@iqia/sdk` (Poseidon2 commitments, notes, Merkle tree, Soroban op
 > building), `@stellar/stellar-sdk` (RPC submit) and the **Stellar Wallets Kit**
 > (multi-wallet address + signing). Set `VITE_USE_MOCK=true` to fall back to the
-> offline `MockLarelSdk` for UI dev with no wallet / network.
+> offline `MockIqiaSdk` for UI dev with no wallet / network.
 
 > **Multi-wallet connect.** Wallet connection and signing go through
 > [`@creit.tech/stellar-wallets-kit`](https://github.com/Creit-Tech/Stellar-Wallets-Kit)
@@ -30,8 +30,8 @@ The React app for **Larel**, a privacy platform on Stellar. Four modules —
 
 | Flow | Status | What actually happens |
 |------|--------|-----------------------|
-| **Bridge in** (Bridge) | **LIVE-capable / mock** | Creates a Larel note with a *bridged* `asset_id` (BRIDGE_SPEC §3), writes `LarelBridgeL1.lock(commitment, token, amount)` on Sepolia via wagmi/viem (MetaMask — native ETH `value=amount`, ERC20 `approve`+`lock`), then drives a cross-chain progress tracker: **L1 locked → header finalized (light client) → inclusion proven (relayer) → minted on Stellar**, polling the `EthLightClient` head and `LarelBridge.is_bridged`. On mint the shielded balance appears in Portfolio. Goes live by filling `VITE_L1_BRIDGE_ADDRESS` / `VITE_ETH_LIGHT_CLIENT` / `VITE_LAREL_BRIDGE` + a funded Sepolia wallet + a running relayer. `VITE_USE_MOCK_BRIDGE=true` runs a fake walkthrough with no wallets. |
-| **Bridge out** (Bridge) | **MOCK (UX) / live not wired** | Select a bridged note + an Ethereum recipient → animated **prove → bridge_out (burn) → unlock authorized → released on Sepolia** pipeline (mock). The *live* path (real in-browser withdraw proof + `LarelBridge.bridge_out` + `LarelBridgeL1.unlock`) needs the deployed bridge contract and the withdraw prover (`VITE_ENABLE_WITHDRAW`); it surfaces a clear "not wired" error outside mock. |
+| **Bridge in** (Bridge) | **LIVE-capable / mock** | Creates a Iqia note with a *bridged* `asset_id` (BRIDGE_SPEC §3), writes `IqiaBridgeL1.lock(commitment, token, amount)` on Sepolia via wagmi/viem (MetaMask — native ETH `value=amount`, ERC20 `approve`+`lock`), then drives a cross-chain progress tracker: **L1 locked → header finalized (light client) → inclusion proven (relayer) → minted on Stellar**, polling the `EthLightClient` head and `IqiaBridge.is_bridged`. On mint the shielded balance appears in Portfolio. Goes live by filling `VITE_L1_BRIDGE_ADDRESS` / `VITE_ETH_LIGHT_CLIENT` / `VITE_IQIA_BRIDGE` + a funded Sepolia wallet + a running relayer. `VITE_USE_MOCK_BRIDGE=true` runs a fake walkthrough with no wallets. |
+| **Bridge out** (Bridge) | **MOCK (UX) / live not wired** | Select a bridged note + an Ethereum recipient → animated **prove → bridge_out (burn) → unlock authorized → released on Sepolia** pipeline (mock). The *live* path (real in-browser withdraw proof + `IqiaBridge.bridge_out` + `IqiaBridgeL1.unlock`) needs the deployed bridge contract and the withdraw prover (`VITE_ENABLE_WITHDRAW`); it surfaces a clear "not wired" error outside mock. |
 | **Light-client chip** | **LIVE-capable** | Reads the `EthLightClient` trusted Ethereum head block over Soroban RPC ("verified via Ethereum sync committee on Stellar"). Shows a clearly-labelled **simulated** head until `VITE_ETH_LIGHT_CLIENT` is set. |
 | **Portfolio** | **LIVE** | Real per-asset balances derived from your locally-stored unspent notes (now incl. bridged `bETH`/`bUSDC`). Starts empty; populates after a confirmed deposit or bridge-in. |
 | **Open orders** | **LIVE (empty)** | Read from local storage; empty until order placement ships. |
@@ -41,11 +41,11 @@ The React app for **Larel**, a privacy platform on Stellar. Four modules —
 
 ### How a deposit works end-to-end
 
-1. `RealLarelSdk.deposit({ asset: 'XLM', amount })` parses the amount to stroops
+1. `RealIqiaSdk.deposit({ asset: 'XLM', amount })` parses the amount to stroops
    (7 dp) and draws/loads the wallet's single `spending_key`.
 2. `createNote({ assetId: 0, amount, spendingKey })` →
    `commitment = hash4(asset_id, amount, owner_key, blinding)` (SHARED §4).
-3. `LarelContract.depositOp` builds the Soroban invoke; `prepareTransaction`
+3. `IqiaContract.depositOp` builds the Soroban invoke; `prepareTransaction`
    simulates it (footprint + the source-account auth that covers the SAC transfer).
 4. The connected wallet signs the prepared XDR (via the Stellar Wallets Kit); the tx
    is submitted via `rpc.Server` and polled to `SUCCESS`. The pool returns the new
@@ -76,15 +76,15 @@ and the existing Stellar Wallets Kit. The EVM stack lives entirely in `src/lib/w
 
 ### Bridge in (Sepolia → Stellar)
 
-1. Pick a token (ETH or test-USDC) + amount. The app creates a Larel note with a
+1. Pick a token (ETH or test-USDC) + amount. The app creates a Iqia note with a
    **bridged `asset_id`** (`asset_id = hash2(hash2(chainId, tokenAddr), BRIDGE_DOMAIN)`,
    BRIDGE_SPEC §3) — so the minted note interoperates with the pool's transfer/swap but
    redeems only back to Ethereum.
-2. **Lock on Sepolia** — `LarelBridgeL1.lock(commitment, token, amount)` via MetaMask
+2. **Lock on Sepolia** — `IqiaBridgeL1.lock(commitment, token, amount)` via MetaMask
    (native ETH locks `value=amount`; an ERC20 does `approve` then `lock`).
 3. A **cross-chain progress tracker** drives: `L1 locked` → `header finalized (light
    client)` → `inclusion proven (relayer)` → `minted on Stellar`. It polls the
-   `EthLightClient` head (does it cover the lock block?) and `LarelBridge.is_bridged`
+   `EthLightClient` head (does it cover the lock block?) and `IqiaBridge.is_bridged`
    (has the relayer's `bridge_in` minted yet?), and optionally POSTs a nudge to
    `VITE_RELAYER_URL`. The relayer (untrusted transport) fetches `eth_getProof` and
    submits the MPT inclusion proof; every value is re-verified on-chain.
@@ -94,7 +94,7 @@ and the existing Stellar Wallets Kit. The EVM stack lives entirely in `src/lib/w
 
 Select a bridged note + an Ethereum recipient → **prove → bridge_out (burn) → unlock
 authorized → released on Sepolia**. The live path reuses the in-browser withdraw prover
-(`VITE_ENABLE_WITHDRAW`) + `LarelBridge.bridge_out` + `LarelBridgeL1.unlock`; it is
+(`VITE_ENABLE_WITHDRAW`) + `IqiaBridge.bridge_out` + `IqiaBridgeL1.unlock`; it is
 **mock-only today** (clear "not wired" error outside mock) until the bridge contracts are
 deployed.
 
@@ -110,7 +110,7 @@ shows a clearly-labelled **simulated** head.
   self-contained walkthrough with no wallets — for demos / UI dev. Balances update so the
   Portfolio reflects the bridge.
 - **Live**: needs the deployed contracts (`VITE_L1_BRIDGE_ADDRESS`, `VITE_ETH_LIGHT_CLIENT`,
-  `VITE_LAREL_BRIDGE`), a funded Sepolia wallet, a connected Stellar wallet, and a running
+  `VITE_IQIA_BRIDGE`), a funded Sepolia wallet, a connected Stellar wallet, and a running
   relayer feeding headers + inclusion proofs. Bridge-in is fully wired against those;
   bridge-out's live ZK path is structured but not wired (needs the deployed bridge +
   prover). The light-client chip and mint detection go live as soon as the Soroban
@@ -144,7 +144,7 @@ pnpm --filter frontend lint     # ESLint
 
 | Area | File(s) | Notes |
 |------|---------|-------|
-| App shell / nav | `src/components/Layout.tsx`, `src/App.tsx` | Top bar (Larel wordmark + Connect Wallet), tab nav, footer. |
+| App shell / nav | `src/components/Layout.tsx`, `src/App.tsx` | Top bar (Iqia wordmark + Connect Wallet), tab nav, footer. |
 | **Bridge** | `src/components/Bridge.tsx` | Cross-chain Bridge in / out, dual-wallet connections (MetaMask + Stellar), cross-chain progress tracker, light-client status chip. |
 | Bridge client | `src/lib/bridge.ts`, `src/lib/wagmi.ts`, `src/hooks/useEvmWallet.ts` | Typed L1-lock (wagmi/viem) + Stellar reads (light-client head, mint detection) + relayer nudge; wagmi config (Sepolia + injected); EVM wallet hook. |
 | **Portfolio** | `src/components/Portfolio.tsx` | Per-asset shielded balance cards, total estimate, loading + empty states. |
@@ -152,11 +152,11 @@ pnpm --filter frontend lint     # ESLint
 | **Swap** | `src/components/Swap.tsx` | Pair selector, Buy/Sell toggle, price + amount, Place Order; Open Orders list with Cancel. |
 | Wallet | `src/hooks/useWallet.ts`, `src/lib/wallet-kit.ts` | Multi-wallet connect via the Stellar Wallets Kit modal, active public key, Testnet indicator, persisted wallet choice, graceful "no wallet" handling. |
 | Proof UX | `src/hooks/useProofFlow.ts`, `src/components/ProofProgress.tsx` | Reusable overlay cycling *Generating witness → Computing proof → Submitting transaction → Confirmed*. Wired into Pay and Swap. |
-| **SDK seam** | `src/lib/larel-sdk.ts` | `LarelSdk` interface, `MockLarelSdk`, and `createLarelSdk()` (live vs mock switch). **The only place protocol calls live.** |
-| **Live client** | `src/lib/real-sdk.ts` | `RealLarelSdk` — deposit/withdraw/portfolio against the deployed pool. |
+| **SDK seam** | `src/lib/iqia-sdk.ts` | `IqiaSdk` interface, `MockIqiaSdk`, and `createIqiaSdk()` (live vs mock switch). **The only place protocol calls live.** |
+| **Live client** | `src/lib/real-sdk.ts` | `RealIqiaSdk` — deposit/withdraw/portfolio against the deployed pool. |
 | Deployment config | `src/lib/config.ts` | Pool id, native SAC, RPC URL, network passphrase (from `deployments.json`), with `VITE_*` overrides. |
 | Local wallet | `src/lib/note-store.ts` | `localStorage` persistence for the spending key + shielded notes. |
-| SDK context | `src/hooks/useLarel.tsx` | Provides the SDK client + cached balances/orders, shared across tabs. |
+| SDK context | `src/hooks/useIqia.tsx` | Provides the SDK client + cached balances/orders, shared across tabs. |
 | UI kit | `src/components/ui.tsx` | Typed Button, Card, Field, Select, Badge, icons, etc. |
 
 ## Configuration (env)
@@ -165,10 +165,10 @@ All optional; defaults target the live testnet deployment in `deployments.json`.
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `VITE_USE_MOCK` | `false` | Use the offline `MockLarelSdk` (no wallet/network). |
+| `VITE_USE_MOCK` | `false` | Use the offline `MockIqiaSdk` (no wallet/network). |
 | `VITE_ENABLE_WITHDRAW` | `false` | Enable the experimental in-browser withdraw prover. |
 | `VITE_SOROBAN_RPC_URL` | `https://soroban-testnet.stellar.org` | Soroban RPC endpoint. |
-| `VITE_LAREL_POOL` | `CA7G45QP…GXYSK` | LarelPool contract id. |
+| `VITE_IQIA_POOL` | `CA7G45QP…GXYSK` | IqiaPool contract id. |
 | `VITE_NATIVE_SAC` | `CDLZFC3S…GCYSC` | Native XLM SAC address. |
 | `VITE_NETWORK_PASSPHRASE` | `Test SDF Network ; September 2015` | Stellar network passphrase. |
 | `VITE_USDC_SAC` | _(unset)_ | Optional USDC SAC, if a multi-asset pool is deployed. |
@@ -182,19 +182,19 @@ All optional; without them the Bridge tab still builds and runs (mock / simulate
 | `VITE_USE_MOCK_BRIDGE` | `false` (or `VITE_USE_MOCK`) | Run the Bridge tab as a self-contained mock walkthrough — no wallets, fake progress. |
 | `VITE_L1_CHAIN_ID` | `11155111` | Ethereum chain id (Sepolia). |
 | `VITE_SEPOLIA_RPC_URL` | `https://ethereum-sepolia-rpc.publicnode.com` | Sepolia execution RPC for viem reads. |
-| `VITE_L1_BRIDGE_ADDRESS` | `0x000…000` (placeholder) | Deployed `LarelBridgeL1` escrow on Sepolia. **Required for live bridge-in.** |
+| `VITE_L1_BRIDGE_ADDRESS` | `0x000…000` (placeholder) | Deployed `IqiaBridgeL1` escrow on Sepolia. **Required for live bridge-in.** |
 | `VITE_ETH_LIGHT_CLIENT` | _(unset)_ | Soroban `EthLightClient` contract id (trusted head + finalization). |
-| `VITE_LAREL_BRIDGE` | _(unset)_ | Soroban `LarelBridge` contract id (`bridge_in` mint detection / `bridge_out`). |
+| `VITE_IQIA_BRIDGE` | _(unset)_ | Soroban `IqiaBridge` contract id (`bridge_in` mint detection / `bridge_out`). |
 | `VITE_RELAYER_URL` | _(unset)_ | Optional relayer base URL; if set, bridge-in POSTs a nudge. The relayer also watches L1 `Locked` events on its own. |
 | `VITE_BRIDGE_USDC_L1` | Circle Sepolia USDC | test-USDC ERC20 address to bridge. |
 | `VITE_BRIDGE_DOMAIN` | `0x627269646765` ("bridge") | Bridge-asset `asset_id` domain separator (BRIDGE_SPEC §3). |
 
 ## The SDK seam
 
-All protocol access is behind one interface in `src/lib/larel-sdk.ts`:
+All protocol access is behind one interface in `src/lib/iqia-sdk.ts`:
 
 ```ts
-export interface LarelSdk {
+export interface IqiaSdk {
   deposit(params: DepositParams): Promise<TxResult>
   withdraw(params: WithdrawParams): Promise<TxResult>
   transfer(params: TransferParams): Promise<TxResult>
@@ -205,7 +205,7 @@ export interface LarelSdk {
 }
 ```
 
-`createLarelSdk()` returns `RealLarelSdk` by default (live) or `MockLarelSdk`
+`createIqiaSdk()` returns `RealIqiaSdk` by default (live) or `MockIqiaSdk`
 when `VITE_USE_MOCK=true`. The UI is written against the interface only, so no
 component or hook changes are needed to switch.
 
@@ -221,7 +221,7 @@ component or hook changes are needed to switch.
   flows go live, drive the overlay from real prover progress.
 - **USDC / multi-asset**: the testnet pool is single-asset (native XLM); set
   `VITE_USDC_SAC` once a multi-asset pool is deployed.
-- **Bridge go-live**: deploy `LarelBridgeL1` (Sepolia) + the Soroban `EthLightClient` /
-  `LarelBridge`, set the `VITE_*` bridge addresses, and run the relayer. Bridge-in is
+- **Bridge go-live**: deploy `IqiaBridgeL1` (Sepolia) + the Soroban `EthLightClient` /
+  `IqiaBridge`, set the `VITE_*` bridge addresses, and run the relayer. Bridge-in is
   wired end-to-end against those; **bridge-out's live ZK path** (in-browser withdraw proof
   → `bridge_out` → L1 `unlock`) is structured but still mock-only.

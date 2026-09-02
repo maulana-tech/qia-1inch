@@ -1,6 +1,6 @@
-# Larel Deployments
+# Iqia Deployments
 
-This document tracks the deployed smart contract addresses for the Larel protocol on various networks.
+This document tracks the deployed smart contract addresses for the Iqia protocol on various networks.
 
 ## Flare Coston2 (Testnet)
 **Chain ID:** 114
@@ -8,7 +8,7 @@ This document tracks the deployed smart contract addresses for the Larel protoco
 ### Core Contracts
 | Contract | Address | Description |
 |---|---|---|
-| **LarelPool** | `0x72a86479837B87cc2aA73daBd7B54CB4DBf0AB84` | Core L1 pool handling deposits, withdrawals, and state transitions. |
+| **IqiaPool** | `0x72a86479837B87cc2aA73daBd7B54CB4DBf0AB84` | Core L1 pool handling deposits, withdrawals, and state transitions. |
 | **WithdrawVerifier** | `0xA0c9791e4FE34734D06fDD2ded0C0e0cd5b7F0f6` | ZK SNARK Verifier (Noir UltraHonk) for private withdrawals. |
 | **MockPoseidon** | `0x3152B6f625F25B6a2Aa0Adb57017eB74acA65ecB` | Mock BN254 Poseidon2 hasher (to be replaced with real precompile/contract). |
 

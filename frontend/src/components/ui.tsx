@@ -6,13 +6,13 @@ import type {
   SVGProps,
 } from 'react'
 import { cx } from '../lib/cx'
-import type { AssetCode } from '../lib/larel-sdk'
+import type { AssetCode } from '../lib/iqia-sdk'
 import { truncateKey } from '../lib/format'
-import { CoinBadge, LarelSpinnerMark } from './BrandIcons'
+import { CoinBadge, IqiaSpinnerMark } from './BrandIcons'
 
-// The larel mark lives with the other brand glyphs; re-exported so `import
-// { LarelMark } from './ui'` call sites resolve here.
-export { LarelMark } from './BrandIcons'
+// The iqia mark lives with the other brand glyphs; re-exported so `import
+// { IqiaMark } from './ui'` call sites resolve here.
+export { IqiaMark } from './BrandIcons'
 
 // --- Icons (inherit currentColor) -------------------------------------------
 
@@ -137,8 +137,8 @@ export function ChartIcon(props: SVGProps<SVGSVGElement>) {
 
 export function Spinner({ className }: { className?: string }) {
   // Uses the compact original spark-mark (square viewBox) so the spin animation
-  // looks clean. The display LarelMark (wider viewBox + mask) is for branding.
-  return <LarelSpinnerMark className={cx('animate-spin', className)} />
+  // looks clean. The display IqiaMark (wider viewBox + mask) is for branding.
+  return <IqiaSpinnerMark className={cx('animate-spin', className)} />
 }
 
 // --- Primitives -------------------------------------------------------------

@@ -10,7 +10,7 @@
  * available on the active network) and resolves arbitrary custom tokens from a pasted
  * contract address.
  */
-import { NATIVE_ASSET_ID, toField, type Field } from '@larel/sdk'
+import { NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
 import {
   MOCK_USDC_ADDRESS,
   MOCK_ETH_ADDRESS,

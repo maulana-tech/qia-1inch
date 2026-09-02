@@ -1,4 +1,4 @@
-//! LaxStell shared circuit library.
+//! Iqia shared circuit library.
 //!
 //! Centralises every cryptographic invariant that MUST be byte-for-byte identical
 //! across the Noir circuits, the Soroban contract, and the TypeScript SDK.

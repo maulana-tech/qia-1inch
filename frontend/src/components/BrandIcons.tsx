@@ -1,6 +1,6 @@
 import type { FC, SVGProps } from 'react'
 import { cx } from '../lib/cx'
-import larelLogo from '../assets/larel-logo.png'
+import iqiaLogo from '../assets/iqia-logo.png'
 
 /**
  * Monochrome brand marks for chains and tokens.
@@ -8,7 +8,7 @@ import larelLogo from '../assets/larel-logo.png'
  * Rendered as single-color glyphs (they inherit `currentColor`) so they sit cleanly
  * in the black-and-white UI — no external image fetches, so nothing can 404. The
  * Flare and Ethereum paths are the canonical simple-icons marks; USDC and the
- * Lax-Stell mark are drawn to match the same weight.
+ * Iqia mark are drawn to match the same weight.
  */
 
 export function FlareGlyph(props: SVGProps<SVGSVGElement>) {
@@ -59,18 +59,18 @@ export function XrpGlyph(props: SVGProps<SVGSVGElement>) {
   )
 }
 
-export function LarelSpinnerMark(props: SVGProps<SVGSVGElement>) {
+export function IqiaSpinnerMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 200 200" aria-hidden {...props}>
-      <image href={larelLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
+      <image href={iqiaLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
     </svg>
   )
 }
 
-export function LarelMark(props: SVGProps<SVGSVGElement>) {
+export function IqiaMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 200 200" aria-hidden {...props}>
-      <image href={larelLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
+      <image href={iqiaLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
     </svg>
   )
 }
@@ -83,7 +83,7 @@ type GlyphComponent = FC<SVGProps<SVGSVGElement>>
 const GLYPHS: Record<string, GlyphComponent> = {
   flare: FlareGlyph,
   ethereum: EthereumGlyph,
-  'larel': LarelMark,
+  'iqia': IqiaMark,
   FLR: FlareGlyph,
   ETH: EthereumGlyph,
   bETH: EthereumGlyph,
@@ -101,7 +101,7 @@ const SIZES = {
 
 /**
  * A chain or token logo inside a round monochrome chip. `name` is a chain id
- * (`flare`/`ethereum`/`lax-stell`) or a token code (`FLR`, `ETH`, `bETH`, …).
+ * (`flare`/`ethereum`/`iqia`) or a token code (`FLR`, `ETH`, `bETH`, …).
  * Unknown names fall back to a short mono label so nothing renders empty.
  */
 export function CoinBadge({

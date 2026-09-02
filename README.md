@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="frontend/src/assets/larel-logo.png" alt="Larel" width="120" />
+  <img src="frontend/src/assets/iqia-logo.png" alt="Iqia" width="120" />
 </p>
 
-<h1 align="center">Larel</h1>
+<h1 align="center">Iqia</h1>
 
 <p align="center">
   A confidential trading layer on Flare — hold shielded balances behind zero-knowledge proofs, and trade on a dark pool whose matching engine runs inside a Trusted Execution Environment. Orders are encrypted end-to-end, matched without ever being seen, and settled on-chain against a TEE signature.
@@ -19,7 +19,7 @@
 <p align="center">
   <a href="#status">Status</a> ·
   <a href="#overview">Overview</a> ·
-  <a href="#why-larel">Why Larel</a> ·
+  <a href="#why-iqia">Why Iqia</a> ·
   <a href="#prior-work-vs-new-work">Prior vs New Work</a> ·
   <a href="#the-system-flows">System Flows</a> ·
   <a href="#architecture">Architecture</a> ·
@@ -31,7 +31,7 @@
 
 ## Overview
 
-Larel is a confidential trading layer on Flare. A user shields a balance — it becomes a
+Iqia is a confidential trading layer on Flare. A user shields a balance — it becomes a
 Poseidon2 note commitment in a Merkle tree, with amount and owner sealed inside the hash. From
 there they can transfer value privately, withdraw back to a public address, or place an order
 on a dark pool where **the matching engine itself runs inside a Trusted Execution Environment**.
@@ -54,7 +54,7 @@ proof generated client-side** (compiled from Noir circuits) and verified on-chai
 
 ---
 
-## Why Larel
+## Why Iqia
 
 A public blockchain publishes your intent before it executes. On any on-chain order book or AMM,
 the size, the direction, and the price you will accept are visible the moment the transaction is
@@ -73,7 +73,7 @@ The existing options fall short:
 **How do you match orders without anyone — including the operator — seeing the book, while still
 settling verifiably on-chain and never taking custody?**
 
-Larel's answer, built on Flare's enshrined protocols:
+Iqia's answer, built on Flare's enshrined protocols:
 
 1. **Client-side UltraHonk proving (Noir)** — proofs generated in the browser. Secret inputs
    (note keys, amounts, blinding factors) never leave the device. Poseidon2 over BN254, off-thread.
@@ -117,7 +117,7 @@ Sarah manages a small treasury and needs to rotate a meaningful position. On a p
 intent is visible the moment it hits the mempool: the size, the direction, the price she will
 accept. Bots front-run her, she eats the slippage, and her competitors learn her positioning
 from the chain afterwards. Splitting the order across days and wallets only trades one cost for
-another. With Larel she shields the balance, submits an order encrypted to the enclave, and it
+another. With Iqia she shields the balance, submits an order encrypted to the enclave, and it
 is matched at the midpoint against a counterparty who is equally invisible. Nothing about her
 intent is public — before, during, or after — yet the settlement is verified on-chain and she
 never hands custody to anyone.
@@ -134,7 +134,7 @@ what is new. This is that separation.
 ### Existed before (built on Stellar/Soroban)
 
 - The 5 Noir circuits (`withdraw`, `transfer`, `place_order`, `match_orders`, `cancel_order`)
-  and the shared `larel_lib`.
+  and the shared `iqia_lib`.
 - The TypeScript SDK: Poseidon2, Merkle tree, note/nullifier derivation, client-side proving.
 - The React frontend and its flows.
 - A working Soroban deployment on Stellar Testnet, with an end-to-end private round-trip
@@ -164,7 +164,7 @@ See [plan-migrate.md](./plan-migrate.md) for the phase breakdown and the risks.
 
 ## The System Flows
 
-Larel coordinates several flows against one shielded pool, changing only the circuit and public inputs.
+Iqia coordinates several flows against one shielded pool, changing only the circuit and public inputs.
 
 | Flow | **Onboard (FXRP)** | **Shield (Deposit)** | **Private Pay (Transfer)** | **Swap (Dark Pool)** | **Private Withdraw** |
 |---|---|---|---|---|---|
@@ -187,8 +187,8 @@ sequenceDiagram
     participant XRPL as XRP Ledger
     participant FDC as Flare Data Connector
     participant AM as AssetManager (FAssets)
-    participant SDK as Larel SDK
-    participant Pool as LarelPool.sol
+    participant SDK as Iqia SDK
+    participant Pool as IqiaPool.sol
     participant Verifier as HonkVerifier.sol
     participant TEE as Flare Compute Extension (TEE)
 
@@ -208,7 +208,7 @@ sequenceDiagram
         Pool->>Pool: Spend nullifiers, insert output commitments
     else Dark Pool Order (TEE)
         User->>SDK: ECIES-encrypt {side, size, price} to TEE public key
-        User->>Pool: LarelInstructionSender.placeOrder(ciphertext)
+        User->>Pool: IqiaInstructionSender.placeOrder(ciphertext)
         Pool->>TEE: TeeExtensionRegistry.sendInstructions()
         TEE->>TEE: decrypt, match at midpoint (FTSOv2 reference price)
         TEE-->>Pool: signed match result
@@ -220,9 +220,9 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    FXRP[FXRP via FAssets] --> POOL[LarelPool.sol]
+    FXRP[FXRP via FAssets] --> POOL[IqiaPool.sol]
     DEP[Deposit] --> POOL
-    PAY[Private Transfer] --> SDK[Larel SDK]
+    PAY[Private Transfer] --> SDK[Iqia SDK]
     SWAP[Dark Pool Orders] --> SDK
 
     SDK --> PROVE[Noir Client Prover<br/>UltraHonk over BN254 + Poseidon2]
@@ -268,8 +268,8 @@ graph TD
 
 ## License
 
-Larel application code is released under the **MIT License**.
+Iqia application code is released under the **MIT License**.
 
 ---
 
-<p align="center"><i>Your balances, transactions, and orders stay completely private. Larel.</i></p>
+<p align="center"><i>Your balances, transactions, and orders stay completely private. Iqia.</i></p>

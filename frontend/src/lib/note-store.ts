@@ -1,15 +1,15 @@
-import { fieldToHex, hexToField, type BalanceNote, type Field } from '@larel/sdk'
+import { fieldToHex, hexToField, type BalanceNote, type Field } from '@iqia/sdk'
 import { POOL_CONTRACT_ID } from './config'
-import type { AssetCode } from './larel-sdk'
+import type { AssetCode } from './iqia-sdk'
 
-const NOTES_PREFIX = 'lax-stell.notes.v1'
-const SPENDING_PREFIX = 'lax-stell.spendingKey.v1'
+const NOTES_PREFIX = 'iqia.notes.v1'
+const SPENDING_PREFIX = 'iqia.spendingKey.v1'
 
-const LEAVES_PREFIX = 'lax-stell.leaves.v1'
-const CURSOR_PREFIX = 'lax-stell.indexcursor.v1'
+const LEAVES_PREFIX = 'iqia.leaves.v1'
+const CURSOR_PREFIX = 'iqia.indexcursor.v1'
 
 // Placed dark-pool orders (per identity).
-const ORDERS_PREFIX = 'lax-stell.orders.v1'
+const ORDERS_PREFIX = 'iqia.orders.v1'
 
 
 let activeAddress: string | null = null
@@ -192,7 +192,7 @@ export function clearAllNotes(): void {
         k.startsWith(`${LEAVES_PREFIX}:`) ||
         k.startsWith(`${CURSOR_PREFIX}:`) ||
         k.startsWith(`${ORDERS_PREFIX}:`) ||
-        k.startsWith('lax-stell.scan.'))
+        k.startsWith('iqia.scan.'))
     ) {
       doomed.push(k)
     }
@@ -303,7 +303,7 @@ export function setLeafIndexForCommitment(commitmentHex: string, leafIndex: numb
 
 // --- Dark-pool orders (device-local; the order's secrets never leave this browser) --------
 
-const HISTORY_PREFIX = 'lax-stell.history.v1'
+const HISTORY_PREFIX = 'iqia.history.v1'
 
 function historyStorageKey(): string {
   return `${HISTORY_PREFIX}:${POOL_TAG}:${activeAddress ?? 'anon'}`

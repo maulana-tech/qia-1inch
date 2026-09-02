@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useReveal } from '../hooks/useReveal'
 import { cx } from '../lib/cx'
 import { ScrambleNumber } from '../components/ScrambleNumber'
@@ -20,7 +20,7 @@ type GridItem =
   | { type: 'asset'; src: string }
 
 const GRID_ITEMS: GridItem[] = [
-  { type: 'module', label: 'Bridge', to: '/deposit', title: 'Cross the Veil', desc: 'Bridge your assets seamlessly between the public Flare network and the Larel shielded pool. This process utilizes Zero-Knowledge proofs to ensure that your deposits and withdrawals remain completely untraceable, granting you absolute privacy.' },
+  { type: 'module', label: 'Bridge', to: '/deposit', title: 'Cross the Veil', desc: 'Bridge your assets seamlessly between the public Flare network and the Iqia shielded pool. This process utilizes Zero-Knowledge proofs to ensure that your deposits and withdrawals remain completely untraceable, granting you absolute privacy.' },
   { type: 'asset', src: asset1 },
   { type: 'asset', src: asset2 },
   { type: 'module', label: 'Transfer', to: '/pay', title: 'Send into the Dark', desc: 'Execute truly anonymous zero-knowledge payments to anyone on the network. Both the sender\'s identity and the exact transaction amount remain mathematically hidden from the public ledger, providing you with uncompromising financial confidentiality.' },
@@ -31,7 +31,7 @@ const GRID_ITEMS: GridItem[] = [
 ]
 
 export function Hub() {
-  const { balances, loadingBalances } = useLarel()
+  const { balances, loadingBalances } = useIqia()
   const { revealed, toggle } = useReveal()
   const { currency, locale } = useSettings()
   const total = balances.reduce((sum, b) => sum + b.usdEstimate, 0)

@@ -149,7 +149,7 @@ export function SettingsPage() {
 
           <div className="space-y-2">
             <label className="block text-xs font-mono uppercase tracking-wider text-spectral/50">
-              {t('settings.contract')} (Larel Pool)
+              {t('settings.contract')} (Iqia Pool)
             </label>
             <div className="flex items-center gap-2 rounded-none border border-spectral/8 bg-ink-950/30 px-3 py-2">
               <span className="font-mono text-xs text-spectral/75 select-all truncate flex-1">

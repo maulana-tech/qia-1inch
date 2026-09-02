@@ -1,6 +1,6 @@
-# @larel/sdk
+# @iqia/sdk
 
-TypeScript client library for **Larel**, the privacy platform on Stellar. It provides
+TypeScript client library for **Iqia**, the privacy platform on Stellar. It provides
 the cryptographic primitives (Poseidon2, note/order commitments, an incremental Merkle
 tree), UltraHonk proof generation wiring, and Soroban transaction building used by the
 frontend and matcher.
@@ -10,8 +10,8 @@ frontend and matcher.
   (Poseidon2 params, commitment field order, Merkle bit ordering, public-input encoding).
 
 ```bash
-pnpm --filter @larel/sdk build
-pnpm --filter @larel/sdk test
+pnpm --filter @iqia/sdk build
+pnpm --filter @iqia/sdk test
 ```
 
 ---
@@ -74,8 +74,8 @@ beta.9, hence the external dep.)
 | `src/order.ts` | `createOrder`, `computeOrderCommitment`, `orderLockedAmount` | Order commitments (`hash7`) + locked-balance math. |
 | `src/prover.ts` | `NoirProver`, `buildWithdrawInputs`/`buildPlaceOrderInputs`/`buildCancelOrderInputs`, `isValidProofLength` | UltraHonk proof gen via `@noir-lang/noir_js` + `@aztec/bb.js` with the **keccak** transcript. |
 | `src/wallet.ts` | `Wallet` | In-memory note store, per-asset balance aggregation, greedy note selection, open-order tracking. |
-| `src/stellar.ts` | `LarelContract`, `encodePublicInputs`/`decodePublicInputs`, `addressToField`, `assetIdFromAddress`, `recipientHash`, `nativeAsset`, `assetFromSac`, `buildTransaction`, `PUBLIC_INPUT_ORDER` | Soroban invoke-op building + public-input encoding (32-byte BE concat). |
-| `src/index.ts` | `Larel` (impl. of `LarelSdk`) + re-exports | High-level surface the frontend uses: `deposit`, `withdraw`, `transfer`, `placeOrder`, `cancelOrder`, `getShieldedBalances`, `getOpenOrders`. |
+| `src/stellar.ts` | `IqiaContract`, `encodePublicInputs`/`decodePublicInputs`, `addressToField`, `assetIdFromAddress`, `recipientHash`, `nativeAsset`, `assetFromSac`, `buildTransaction`, `PUBLIC_INPUT_ORDER` | Soroban invoke-op building + public-input encoding (32-byte BE concat). |
+| `src/index.ts` | `Iqia` (impl. of `IqiaSdk`) + re-exports | High-level surface the frontend uses: `deposit`, `withdraw`, `transfer`, `placeOrder`, `cancelOrder`, `getShieldedBalances`, `getOpenOrders`. |
 
 ---
 
@@ -91,7 +91,7 @@ const { proof, publicInputs } = await prover.prove(inputs);          // proof: U
 
 `{ keccak: true }` is bb.js's equivalent of `bb prove --oracle_hash keccak` (verified
 against `@aztec/bb.js@0.87.0` `UltraHonkBackendOptions`). `bb.js`/`noir_js` are imported
-lazily, so importing `@larel/sdk` does not spin up the Barretenberg WASM/threads.
+lazily, so importing `@iqia/sdk` does not spin up the Barretenberg WASM/threads.
 
 Public inputs are serialized in each circuit's declared `pub` order (`PUBLIC_INPUT_ORDER`,
 SHARED §7) as concatenated 32-byte big-endian field elements; the 16 pairing-point-object
@@ -122,7 +122,7 @@ elements live inside the proof, not in `public_inputs`.
 - Wallet: balances, greedy note selection, order tracking.
 - `public_inputs` encode/decode, address→field, SAC asset helpers, and Soroban invoke-op
   construction (deposit/withdraw/transfer/place_order/match_orders/cancel_order).
-- `Larel` orchestrator: `deposit` (no proof) end-to-end; local Merkle mirror sync;
+- `Iqia` orchestrator: `deposit` (no proof) end-to-end; local Merkle mirror sync;
   balance/order views; proof flows assemble notes/commitments/nullifiers/inputs and build
   the submittable op once a prover is supplied.
 
@@ -132,26 +132,26 @@ elements live inside the proof, not in `public_inputs`.
   (`target/<circuit>.json`) live on the `feat/circuits` branch and are not present here.
   `NoirProver` is implemented against the noir_js/bb.js interface; the full pipeline test
   is `it.skip`ped (it also needs the Barretenberg CRS). Wire by passing each compiled
-  circuit via `LarelConfig.provers`.
+  circuit via `IqiaConfig.provers`.
 - **`addressToField` convention.** The SDK maps a Stellar address to a field by decoding
   its StrKey to the raw 32 bytes and interpreting them big-endian (mod r). This must match
-  whatever the deployed `larel-pool` contract uses to derive `asset_id` / `recipient_hash`;
+  whatever the deployed `iqia-pool` contract uses to derive `asset_id` / `recipient_hash`;
   it is the one mapping not verifiable until the contract branch lands.
 - **Tx submission / RPC.** `buildTransaction` returns an unsigned tx; footprint prep
   (`rpc.Server.prepareTransaction`) and signing are left to the caller.
 - **Note discovery** is out-of-band (MVP, SPEC §6.3) — the wallet is a local cache that
   must be synced from on-chain Deposit/Transfer/settlement commitments in global order via
-  `Larel.observeCommitment` for Merkle proofs to be valid.
+  `Iqia.observeCommitment` for Merkle proofs to be valid.
 
 ---
 
 ## Usage sketch
 
 ```ts
-import { Larel, nativeAsset, NoirProver } from "@larel/sdk";
+import { Iqia, nativeAsset, NoirProver } from "@iqia/sdk";
 
-const sdk = new Larel({
-  contractId: "C...LAXSTELLPOOL",
+const sdk = new Iqia({
+  contractId: "C...IQIAPOOL",
   // provers: { withdraw: new NoirProver(withdrawJson), ... }  // once feat/circuits lands
 });
 

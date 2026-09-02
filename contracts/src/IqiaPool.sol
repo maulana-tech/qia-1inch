@@ -9,7 +9,7 @@ interface IWithdrawVerifier {
     function verify(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bool);
 }
 
-contract LarelPool {
+contract IqiaPool {
     uint32 public constant TREE_DEPTH = 20;
     uint32 public constant MAX_LEAVES = uint32(1 << TREE_DEPTH);
     uint32 public constant ROOT_HISTORY = 100;

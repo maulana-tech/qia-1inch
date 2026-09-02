@@ -1,4 +1,4 @@
-# Larel — dev task runner
+# Iqia — dev task runner
 
 set shell := ["bash", "-uc"]
 
@@ -12,7 +12,7 @@ install:
 
 # Build the TypeScript SDK
 sdk:
-    pnpm --filter @larel/sdk build
+    pnpm --filter @iqia/sdk build
 
 # First-run setup: install deps + build the SDK
 setup: install sdk

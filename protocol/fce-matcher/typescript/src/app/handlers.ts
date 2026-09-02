@@ -1,9 +1,9 @@
 import http from 'node:http';
 import { Framework } from '../base/types.js';
-import { OP_TYPE_LAREL, OP_COMMAND_PLACE_ORDER } from './config.js';
+import { OP_TYPE_IQIA, OP_COMMAND_PLACE_ORDER } from './config.js';
 import { hexToBytes, bytesToHex } from '../base/encoding.js';
-import { MatchingEngine, assembleMatchInputs } from '@larel/matcher';
-import type { SubmittedOrder } from '@larel/matcher';
+import { MatchingEngine, assembleMatchInputs } from '@iqia/matcher';
+import type { SubmittedOrder } from '@iqia/matcher';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
 
 let signPort = '9090';
@@ -16,7 +16,7 @@ export function setSignPort(port: string): void {
 const engine = new MatchingEngine();
 
 export function register(framework: Framework): void {
-  framework.handle(OP_TYPE_LAREL, OP_COMMAND_PLACE_ORDER, handlePlaceOrder);
+  framework.handle(OP_TYPE_IQIA, OP_COMMAND_PLACE_ORDER, handlePlaceOrder);
 }
 
 async function handlePlaceOrder(msg: string): Promise<[string | null, number, string | null]> {
@@ -64,7 +64,7 @@ async function handlePlaceOrder(msg: string): Promise<[string | null, number, st
     return [null, 1, null];
   }
 
-  // 5. ABI encode the first match result for LarelPool.settle
+  // 5. ABI encode the first match result for IqiaPool.settle
   const match = matches[0];
   
   // Format the commitments to strictly match the bytes32 ABI structure

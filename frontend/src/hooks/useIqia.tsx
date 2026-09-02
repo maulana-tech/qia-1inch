@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { deriveOwnerKey, deriveViewingKey } from '@larel/sdk'
-import { createLarelSdk } from '../lib/larel-sdk'
-import type { OpenOrder, ShieldedBalance, LarelSdk, HistoryItem } from '../lib/larel-sdk'
+import { deriveOwnerKey, deriveViewingKey } from '@iqia/sdk'
+import { createIqiaSdk } from '../lib/iqia-sdk'
+import type { OpenOrder, ShieldedBalance, IqiaSdk, HistoryItem } from '../lib/iqia-sdk'
 import { USE_MOCK } from '../lib/config'
 import {
   clearActiveIdentity,
@@ -16,8 +16,8 @@ import { resolveShieldedIdentity } from '../lib/shielded-identity'
 import { deriveEncKeypair, encodeReceiveCode } from '../lib/note-crypto'
 import { useWallet } from './useWallet'
 
-interface LarelContextValue {
-  sdk: LarelSdk
+interface IqiaContextValue {
+  sdk: IqiaSdk
   balances: ShieldedBalance[]
   orders: OpenOrder[]
   history: HistoryItem[]
@@ -33,16 +33,16 @@ interface LarelContextValue {
   refreshHistory: () => Promise<void>
 }
 
-const LarelContext = createContext<LarelContextValue | null>(null)
+const IqiaContext = createContext<IqiaContextValue | null>(null)
 
 /**
- * Provides the app-wide Larel SDK client plus cached shielded balances and open orders.
+ * Provides the app-wide Iqia SDK client plus cached shielded balances and open orders.
  * The shielded identity (spending + viewing keys) is derived from the connected Flare
  * wallet, and this is the only place that constructs the SDK, drives that derivation, and
  * runs the client indexer that rebuilds the Merkle tree and discovers incoming notes.
  */
-export function LarelProvider({ children }: { children: ReactNode }) {
-  const sdkRef = useRef<LarelSdk>(createLarelSdk())
+export function IqiaProvider({ children }: { children: ReactNode }) {
+  const sdkRef = useRef<IqiaSdk>(createIqiaSdk())
   const sdk = sdkRef.current
   const { address, status } = useWallet()
 
@@ -158,7 +158,7 @@ export function LarelProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id)
   }, [identityReady, address, refreshBalances, refreshOrders, refreshHistory])
  
-  const value = useMemo<LarelContextValue>(
+  const value = useMemo<IqiaContextValue>(
     () => ({
       sdk,
       balances,
@@ -189,11 +189,11 @@ export function LarelProvider({ children }: { children: ReactNode }) {
     ],
   )
 
-  return <LarelContext.Provider value={value}>{children}</LarelContext.Provider>
+  return <IqiaContext.Provider value={value}>{children}</IqiaContext.Provider>
 }
 
-export function useLarel(): LarelContextValue {
-  const ctx = useContext(LarelContext)
-  if (!ctx) throw new Error('useLarel must be used within a LarelProvider')
+export function useIqia(): IqiaContextValue {
+  const ctx = useContext(IqiaContext)
+  if (!ctx) throw new Error('useIqia must be used within a IqiaProvider')
   return ctx
 }

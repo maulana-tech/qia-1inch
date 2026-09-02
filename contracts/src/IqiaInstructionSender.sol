@@ -14,12 +14,12 @@ interface ITeeExtensionRegistry {
     function sendInstructions(address[] calldata _teeIds, TeeInstructionParams calldata _params) external payable returns (bytes32 instructionId);
 }
 
-contract LarelInstructionSender {
+contract IqiaInstructionSender {
     ITeeExtensionRegistry public immutable teeRegistry;
     uint256 public extensionId;
     
     // OP Identifiers that must exactly match the Go handler config
-    bytes32 public constant OP_TYPE_LAREL = bytes32("LAREL_POOL");
+    bytes32 public constant OP_TYPE_IQIA = bytes32("IQIA_POOL");
     bytes32 public constant OP_COMMAND_PLACE_ORDER = bytes32("PLACE_ORDER");
 
     event OrderPlaced(bytes32 indexed instructionId, address indexed sender);
@@ -40,7 +40,7 @@ contract LarelInstructionSender {
         address[] memory cosigners = new address[](0);
 
         TeeInstructionParams memory params = TeeInstructionParams({
-            opType: OP_TYPE_LAREL,
+            opType: OP_TYPE_IQIA,
             opCommand: OP_COMMAND_PLACE_ORDER,
             message: encryptedOrder,
             cosigners: cosigners,

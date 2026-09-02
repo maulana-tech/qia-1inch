@@ -1,13 +1,13 @@
 /**
- * Live deployment configuration for the Larel frontend.
+ * Live deployment configuration for the Iqia frontend.
  *
  * Source of truth: `deployments.json` at the repo root (testnet). The values are inlined
  * here (a typed config) so the app does not need filesystem access outside its own root,
  * and every value can be overridden at build time via `VITE_*` env vars for other
  * networks / private deployments.
  */
-import { hash2, NATIVE_ASSET_ID, toField, type Field } from '@larel/sdk'
-import type { AssetCode } from './larel-sdk'
+import { hash2, NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
+import type { AssetCode } from './iqia-sdk'
 
 // Tolerate a missing `import.meta.env` (Node/SSR/test contexts, where Vite hasn't injected it)
 // by falling back to the compiled defaults rather than throwing.
@@ -24,14 +24,14 @@ function flag(key: string): boolean {
 }
 
 /**
- * LarelPool contract id on the configured network.
+ * IqiaPool contract id on the configured network.
  *
- * Points at the Larel rebranded redeploy (2026-07-15): the pool + all 5 verifiers were rebuilt
- * from the lax-stell source (LarelPool/LarelError symbols) on a fresh tree, reusing the
+ * Points at the Iqia rebranded redeploy (2026-07-15): the pool + all 5 verifiers were rebuilt
+ * from the iqia source (IqiaPool/IqiaError symbols) on a fresh tree, reusing the
  * existing faucet SACs.
  */
 export const POOL_CONTRACT_ID = env(
-  'VITE_LAREL_POOL',
+  'VITE_IQIA_POOL',
   '0x72a86479837B87cc2aA73daBd7B54CB4DBf0AB84',
 )
 
@@ -74,12 +74,12 @@ export const POOL_DEPLOY_LEDGER = Number(env('VITE_POOL_DEPLOY_LEDGER', '3858200
 /** Flare network passphrase. */
 export const NETWORK_PASSPHRASE = env('VITE_NETWORK_PASSPHRASE', 'Test SDF Network ; September 2015')
 
-/** When true, the app uses the offline `MockLarelSdk` instead of the live client. */
+/** When true, the app uses the offline `MockIqiaSdk` instead of the live client. */
 export const USE_MOCK = flag('VITE_USE_MOCK')
 
-/** Soroban LarelSwapRouter contract id. */
+/** Soroban IqiaSwapRouter contract id. */
 export const SWAP_ROUTER_CONTRACT_ID = env(
-  'VITE_LAREL_SWAP_ROUTER',
+  'VITE_IQIA_SWAP_ROUTER',
   'CAKAQG6BY6PTTH75LY5IK4F2XHKU2MJ7EDXSQMZGLL2TNF3UCYUET4BB',
 )
 
@@ -103,7 +103,7 @@ export const L1_CHAIN_ID = Number(env('VITE_L1_CHAIN_ID', '11155111'))
 /** Sepolia execution RPC used by viem reads. */
 export const SEPOLIA_RPC_URL = env('VITE_SEPOLIA_RPC_URL', 'https://ethereum-sepolia-rpc.publicnode.com')
 
-/** `LarelBridgeL1` escrow address on Sepolia (locks/unlocks the backing). */
+/** `IqiaBridgeL1` escrow address on Sepolia (locks/unlocks the backing). */
 export const L1_BRIDGE_ADDRESS = env(
   'VITE_L1_BRIDGE_ADDRESS',
   '0x0000000000000000000000000000000000000000',
@@ -112,8 +112,8 @@ export const L1_BRIDGE_ADDRESS = env(
 /** Soroban `EthLightClient` contract id (trusted Ethereum head on Flare). */
 export const ETH_LIGHT_CLIENT_ID = env('VITE_ETH_LIGHT_CLIENT', '')
 
-/** Soroban `LarelBridge` contract id (bridge_in / bridge_out). */
-export const LAREL_BRIDGE_ID = env('VITE_LAREL_BRIDGE', '')
+/** Soroban `IqiaBridge` contract id (bridge_in / bridge_out). */
+export const IQIA_BRIDGE_ID = env('VITE_IQIA_BRIDGE', '')
 
 /** Relayer base URL. */
 export const RELAYER_URL = env('VITE_RELAYER_URL', '')
@@ -128,7 +128,7 @@ export const BRIDGE_DOMAIN: Field = toField(env('VITE_BRIDGE_DOMAIN', '0x6272696
 export const BRIDGE_CONFIGURED =
   L1_BRIDGE_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000' &&
   Boolean(ETH_LIGHT_CLIENT_ID) &&
-  Boolean(LAREL_BRIDGE_ID)
+  Boolean(IQIA_BRIDGE_ID)
 
 /**
  * Effective mock-bridge flag: true when USE_MOCK is on, VITE_USE_MOCK_BRIDGE is set,
@@ -137,7 +137,7 @@ export const BRIDGE_CONFIGURED =
  */
 export const EFFECTIVE_MOCK_BRIDGE = USE_MOCK_BRIDGE || !BRIDGE_CONFIGURED
 
-/** Map a 20-byte L1 token address (hex) to its bridged Larel `asset_id` field. */
+/** Map a 20-byte L1 token address (hex) to its bridged Iqia `asset_id` field. */
 export function deriveBridgedAssetId(tokenAddressHex: string): Field {
   const addrField = toField(BigInt(tokenAddressHex))
   return hash2(hash2(L1_CHAIN_ID, addrField), BRIDGE_DOMAIN)

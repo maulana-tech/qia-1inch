@@ -1,4 +1,4 @@
-//! LaxStell `match_orders` circuit (SPEC sec 8.4).
+//! Iqia `match_orders` circuit (SPEC sec 8.4).
 //!
 //! Proves two hidden orders are compatible and that the settlement notes,
 //! residual orders, and refund notes are correctly formed.
@@ -28,7 +28,7 @@
 //!   order_commitment_a, order_commitment_b, fill_note_buyer, fill_note_seller,
 //!   residual_order_a, residual_order_b, refund_note_a, refund_note_b
 
-use dep::larel_lib as w;
+use dep::iqia_lib as w;
 
 // Compute the (residual_commitment, refund_commitment) expected for ONE order.
 // `amount` and `price` must be range-checked to < 2^64 by the caller.

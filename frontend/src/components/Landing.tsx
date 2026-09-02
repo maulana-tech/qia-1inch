@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import ScrambleCycle from './ScrambleCycle'
 import { StoryShielded } from './StoryShielded'
 
-import larelLogo from '../assets/larel-logo.png'
+import iqiaLogo from '../assets/iqia-logo.png'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
 
@@ -123,9 +123,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       <header className="fixed inset-x-0 top-0 z-50">
         <div className="flex items-center justify-between px-8 py-5">
           <a href="/" className="flex items-center gap-3">
-            <img src={larelLogo} alt="Larel" className="h-12 w-auto" />
+            <img src={iqiaLogo} alt="Iqia" className="h-12 w-auto" />
             <span className={`font-display text-base font-semibold tracking-tight ${dark ? 'text-[#ffffff]' : 'text-[#191919]'}`}>
-              larel
+              iqia
             </span>
           </a>
           <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em]">
@@ -252,7 +252,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
         <div className="relative flex items-start justify-between">
           <a href="/" className="transition hover:opacity-75">
-            <img src={larelLogo} alt="Larel" className="h-10 w-auto opacity-85" />
+            <img src={iqiaLogo} alt="Iqia" className="h-10 w-auto opacity-85" />
           </a>
         </div>
 
@@ -270,7 +270,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
         <div className="relative overflow-hidden w-full whitespace-nowrap select-none">
           <div className="animate-lax-marquee" style={{ fontSize: 'clamp(2rem, 8.2vw, 6.5rem)', color: dark ? '#a6a6a6' : '#7a7a7a' }}>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>LAREL</a>
+            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FLARE</a>
             <span className="mx-8 opacity-45">·</span>
@@ -281,7 +281,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>SHIELDED</a>
             <span className="mx-8 opacity-45">·</span>
             {/* Duplicate for infinite loop */}
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>LAREL</a>
+            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FLARE</a>
             <span className="mx-8 opacity-45">·</span>
@@ -298,7 +298,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         <div className="relative">
           <div className="flex flex-col gap-12 md:flex-row md:items-end md:justify-between">
             <nav className={`flex gap-6 font-mono text-[13px] uppercase tracking-[0.14em] ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}>
-              <a href="https://github.com/maulana-tech/larel-main.git" className={`transition ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>GitHub</a>
+              <a href="https://github.com/maulana-tech/iqia-main.git" className={`transition ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>GitHub</a>
             </nav>
 
             <div className="flex justify-end">
@@ -311,7 +311,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
                   Build on Flare
                 </div>
                 <p className={`text-[13px] leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}>
-                  Larel is a application-run project. We're always developing for everyone in the Flare ecosystem.
+                  Iqia is a application-run project. We're always developing for everyone in the Flare ecosystem.
                 </p>
               </div>
             </div>
@@ -323,7 +323,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
                  color: dark ? 'rgba(255,255,255,0.5)' : 'rgba(25,25,25,0.5)',
                }}
           >
-            <span>© Larel Team 2026</span>
+            <span>© Iqia Team 2026</span>
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className={`transition ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useLarel } from '../hooks/useLarel'
+import { useIqia } from '../hooks/useIqia'
 import { useEvmWallet } from '../hooks/useEvmWallet'
 import { useWallet } from '../hooks/useWallet'
 import { addNote, getSpendingKey, loadNotes, markSpent, type StoredNote } from '../lib/note-store'
@@ -14,7 +14,7 @@ import {
   USE_MOCK,
   USE_MOCK_BRIDGE,
   EFFECTIVE_MOCK_BRIDGE,
-  LAREL_BRIDGE_ID,
+  IQIA_BRIDGE_ID,
   BRIDGE_CONFIGURED,
 } from '../lib/config'
 import {
@@ -56,20 +56,20 @@ import { CoinBadge } from './BrandIcons'
 // Endpoints & routing
 //
 // The Deposit surface moves value between an external Layer-1 (Flare or Ethereum)
-// and the Larel shielded pool, in either direction:
-//   • deposit  = L1 → Larel   (fund the pool)
-//   • withdraw = Larel → L1   (redeem back out)
-// The Larel side is always fixed; the L1 side is a chain picker.
+// and the Iqia shielded pool, in either direction:
+//   • deposit  = L1 → Iqia   (fund the pool)
+//   • withdraw = Iqia → L1   (redeem back out)
+// The Iqia side is always fixed; the L1 side is a chain picker.
 // ---------------------------------------------------------------------------
 
 type L1 = 'flare' | 'ethereum'
-type Endpoint = L1 | 'larel'
+type Endpoint = L1 | 'iqia'
 type Direction = 'deposit' | 'withdraw'
 
 const ENDPOINT_META: Record<Endpoint, { label: string; sub: string; icon: string }> = {
   flare: { label: 'Flare', sub: 'Coston2', icon: 'flare' },
   ethereum: { label: 'Ethereum', sub: 'Sepolia', icon: 'ethereum' },
-  larel: { label: 'Larel', sub: 'Shielded pool', icon: 'larel' },
+  iqia: { label: 'Iqia', sub: 'Shielded pool', icon: 'iqia' },
 }
 
 const L1_CHAINS: L1[] = ['flare', 'ethereum']
@@ -239,7 +239,7 @@ function ProvenanceStrip() {
   )
 }
 
-  /** Static chain identity (used for the fixed Larel endpoint). */
+  /** Static chain identity (used for the fixed Iqia endpoint). */
 function ChainIdentity({ endpoint }: { endpoint: Endpoint }) {
   const m = ENDPOINT_META[endpoint]
   return (
@@ -353,14 +353,14 @@ function TokenChip({ code }: { code: string }) {
 // ---------------------------------------------------------------------------
 
 export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgress?: (p: BridgeProgress) => void } = {}) {
-  const { sdk, refreshBalances, identityReady } = useLarel()
+  const { sdk, refreshBalances, identityReady } = useIqia()
   const evm = useEvmWallet()
   const flare = useWallet()
 
   const [l1, setL1] = useState<L1>('flare')
   const [direction, setDirection] = useState<Direction>('deposit')
-  const from: Endpoint = direction === 'deposit' ? l1 : 'larel'
-  const to: Endpoint = direction === 'deposit' ? 'larel' : l1
+  const from: Endpoint = direction === 'deposit' ? l1 : 'iqia'
+  const to: Endpoint = direction === 'deposit' ? 'iqia' : l1
 
   const [ethOriginCode, setEthOriginCode] = useState('ETH')
   const ethToken = CURATED_TOKENS.find(t => t.code === ethOriginCode)!
@@ -479,7 +479,7 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
 
   // --- deposit / withdraw flows --------------------------------------------
 
-  /** Flare → Larel: a native single-tx deposit of the selected token (LIVE). */
+  /** Flare → Iqia: a native single-tx deposit of the selected token (LIVE). */
   async function runFlareIn() {
     setStep(0)
     const { hash } = await sdk.deposit({
@@ -494,7 +494,7 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
     await refreshBalances()
   }
 
-  /** Ethereum → Larel: lock on L1, wait for the light client, mint on Flare. */
+  /** Ethereum → Iqia: lock on L1, wait for the light client, mint on Flare. */
   async function runEthIn() {
     const amountBase = (() => {
       try {
@@ -551,7 +551,7 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
     await creditBridgeNote(bridgeResult)
   }
 
-  /** Larel → Flare: an in-browser ZK withdraw of one note to a Flare account. */
+  /** Iqia → Flare: an in-browser ZK withdraw of one note to a Flare account. */
   async function runFlareOut() {
     if (!selectedNote) throw new Error('No shielded note to withdraw.')
     setStep(0)
@@ -566,7 +566,7 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
     await refreshBalances()
   }
 
-  /** Larel → Ethereum: burn the selected note, unlock the L1 backing (preview). */
+  /** Iqia → Ethereum: burn the selected note, unlock the L1 backing (preview). */
   async function runEthOut() {
     if (!EFFECTIVE_MOCK_BRIDGE) {
       throw new Error(
@@ -648,14 +648,14 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
     ) : undefined
 
   const fromIdentity =
-    from === 'larel' ? (
-      <ChainIdentity endpoint="larel" />
+    from === 'iqia' ? (
+      <ChainIdentity endpoint="iqia" />
     ) : (
       <ChainSelect value={l1} onChange={selectChain} disabled={running} />
     )
   const toIdentity =
-    to === 'larel' ? (
-      <ChainIdentity endpoint="larel" />
+    to === 'iqia' ? (
+      <ChainIdentity endpoint="iqia" />
     ) : (
       <ChainSelect value={l1} onChange={selectChain} disabled={running} />
     )
@@ -674,8 +674,8 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
         <TxLink href={sepoliaTxUrl(l1Hash)} label={truncateKey(l1Hash, 8, 6)} />
       )
     }
-    if (direction === 'deposit' && l1 === 'ethereum' && i === 3 && status === 'done' && LAREL_BRIDGE_ID && !EFFECTIVE_MOCK_BRIDGE) {
-      return <TxLink href={flareContractUrl(LAREL_BRIDGE_ID)} label="LarelBridge" />
+    if (direction === 'deposit' && l1 === 'ethereum' && i === 3 && status === 'done' && IQIA_BRIDGE_ID && !EFFECTIVE_MOCK_BRIDGE) {
+      return <TxLink href={flareContractUrl(IQIA_BRIDGE_ID)} label="IqiaBridge" />
     }
     if (l1 === 'flare' && flareHash && !USE_MOCK) {
       const last = steps.length - 1
@@ -691,7 +691,7 @@ export function Bridge({ embedded, onProgress }: { embedded?: boolean; onProgres
       {!embedded && (
         <PageIntro
           title="Deposit"
-          subtitle="Move assets between Layer 1 and the Larel shielded pool — deposit in, or withdraw back out."
+          subtitle="Move assets between Layer 1 and the Iqia shielded pool — deposit in, or withdraw back out."
         />
       )}
 

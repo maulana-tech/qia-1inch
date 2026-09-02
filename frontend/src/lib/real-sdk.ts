@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { sendTransaction, waitForTransactionReceipt, getAccount, writeContract, readContract } from '@wagmi/core'
 // @ts-nocheck
-import { Larel, type EvmOperation, type ProofData, type BalanceNote, createNote, fieldToHex, hash2, hash4 } from '@larel/sdk'
+import { Iqia, type EvmOperation, type ProofData, type BalanceNote, createNote, fieldToHex, hash2, hash4 } from '@iqia/sdk'
 // @ts-nocheck
 import { wagmiConfig } from './wagmi'
 // @ts-nocheck
@@ -55,9 +55,9 @@ import type {
   TxResult,
   WithdrawParams,
   SwapShieldedParams,
-  LarelSdk,
+  IqiaSdk,
   HistoryItem,
-} from './larel-sdk'
+} from './iqia-sdk'
 // @ts-nocheck
 import { assetIdFor, assetMeta } from './tokens'
 // @ts-nocheck
@@ -79,12 +79,12 @@ export function baseUnitsToNumber(value: bigint, decimals: number): number {
   return Number(value) / (10 ** decimals)
 }
 
-export class RealLarelSdk implements LarelSdk {
-  private sdk: Larel | null = null;
+export class RealIqiaSdk implements IqiaSdk {
+  private sdk: Iqia | null = null;
 
-  private getSdk(): Larel {
+  private getSdk(): Iqia {
     if (!this.sdk) {
-      this.sdk = new Larel({
+      this.sdk = new Iqia({
         contractAddress: POOL_CONTRACT_ID,
         spendingKey: getSpendingKey()
       })

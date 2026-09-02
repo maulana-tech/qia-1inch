@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title SimpleAMM
- * @notice Simple Uniswap V2 style AMM for Larel testnet.
+ * @notice Simple Uniswap V2 style AMM for Iqia testnet.
  *         Supports token swaps with constant product formula (x * y = k).
  */
 contract SimpleAMM {

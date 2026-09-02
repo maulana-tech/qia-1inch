@@ -1,4 +1,4 @@
-//! LaxStell `place_order` circuit (SPEC sec 8.3).
+//! Iqia `place_order` circuit (SPEC sec 8.3).
 //!
 //! Proves ownership of a balance note with enough funds to back a hidden order,
 //! locks those funds by revealing the note's nullifier, commits to the order,
@@ -7,7 +7,7 @@
 //! Public inputs (SHARED sec 7, IN THIS ORDER):
 //!   merkle_root, nullifier, order_commitment, change_commitment, locked_asset_id
 
-use dep::larel_lib as w;
+use dep::iqia_lib as w;
 
 fn main(
     // ---- public inputs (order is load-bearing: SHARED sec 7) ----

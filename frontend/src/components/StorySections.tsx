@@ -213,19 +213,19 @@ export function SystemArchitecture() {
         <div className="flex flex-col">
           <Layer
             eyebrow="L1 · Ethereum Sepolia"
-            title="LarelBridge"
+            title="IqiaBridge"
             items={['lock ETH / USDC', 'emit Locked(commitment)']}
           />
           <Connector note="untrusted relayer — transports data, holds no authority" />
           <Layer
             eyebrow="Flare EVM · verification"
-            title="EthLightClient → LarelBridge"
+            title="EthLightClient → IqiaBridge"
             items={['BLS12-381 sync-committee', 'MPT storage proof vs state_root', 'bridge_in → mint note']}
           />
           <Connector note="native BN254 / BLS — no SNARK wrap" />
           <Layer
             eyebrow="Flare EVM · shielded state"
-            title="LarelPool"
+            title="IqiaPool"
             items={['Poseidon2 commitment notes', 'append-only Merkle · depth 20', 'nullifier set · 100-root ring']}
             highlight
           />

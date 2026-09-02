@@ -1,11 +1,11 @@
 /**
  * Bridge helpers — Ethereum Sepolia ↔ Flare Coston2.
  *
- * Creates bridge notes (bETH/bUSDC/bBTC/bXRP) using the @larel/sdk, and provides
+ * Creates bridge notes (bETH/bUSDC/bBTC/bXRP) using the @iqia/sdk, and provides
  * L1 lock/inclusion polling for the live bridge path. When USE_MOCK_BRIDGE is true,
  * the Bridge component uses only createBridgeNote + commitmentHex from this file.
  */
-import { createNote, fieldToHex, type Field, type BalanceNote } from '@larel/sdk'
+import { createNote, fieldToHex, type Field, type BalanceNote } from '@iqia/sdk'
 import {
   deriveBridgedAssetId,
   ETH_L1_ADDRESS,
@@ -204,7 +204,7 @@ export async function readLightClientHead(): Promise<LightClientHead | null> {
  */
 export async function readIsBridged(_commitment: string): Promise<boolean> {
   // In mock mode or when bridge is not configured, this is never called.
-  // For live mode, this would query the LarelBridge contract on Flare.
+  // For live mode, this would query the IqiaBridge contract on Flare.
   return false
 }
 

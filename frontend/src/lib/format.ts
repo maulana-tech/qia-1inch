@@ -1,4 +1,4 @@
-/** Formatting and validation helpers for the Larel UI. */
+/** Formatting and validation helpers for the Iqia UI. */
 
 /** Shorten a long key/hash to `ABCDE…WXYZ`. */
 export function truncateKey(key: string, lead = 5, tail = 4): string {

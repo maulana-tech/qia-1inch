@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROOF_BYTES, decodePublicInputs, type Field, type ProofData } from "@larel/sdk";
+import { PROOF_BYTES, decodePublicInputs, type Field, type ProofData } from "@iqia/sdk";
 import { xdr } from "@stellar/stellar-sdk";
 import { MatchSubmitter, resolveContractId } from "../src/submitter.js";
 
@@ -17,19 +17,19 @@ describe("resolveContractId — precedence", () => {
     expect(
       resolveContractId({
         contractId: "C_EXPLICIT",
-        env: { LAREL_POOL_CONTRACT: "C_ENV" },
-        deployments: { contracts: { laxStellPool: "C_DEP" } },
+        env: { IQIA_POOL_CONTRACT: "C_ENV" },
+        deployments: { contracts: { iqiaPool: "C_DEP" } },
       }),
     ).toBe("C_EXPLICIT");
 
     expect(
       resolveContractId({
-        env: { LAREL_POOL_CONTRACT: "C_ENV" },
-        deployments: { contracts: { laxStellPool: "C_DEP" } },
+        env: { IQIA_POOL_CONTRACT: "C_ENV" },
+        deployments: { contracts: { iqiaPool: "C_DEP" } },
       }),
     ).toBe("C_ENV");
 
-    expect(resolveContractId({ env: {}, deployments: { contracts: { laxStellPool: "C_DEP" } } })).toBe("C_DEP");
+    expect(resolveContractId({ env: {}, deployments: { contracts: { iqiaPool: "C_DEP" } } })).toBe("C_DEP");
   });
 
   it("throws when nothing is configured", () => {
@@ -88,7 +88,7 @@ describe("MatchSubmitter.fromSources", () => {
     const sub = MatchSubmitter.fromSources({
       deployments: {
         networkPassphrase: "Test SDF Network ; September 2015",
-        contracts: { laxStellPool: POOL },
+        contracts: { iqiaPool: POOL },
       },
     });
     expect(sub.contractId).toBe(POOL);

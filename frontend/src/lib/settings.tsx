@@ -15,7 +15,7 @@ const SettingsContext = createContext<SettingsContextValue | null>(null)
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     try {
-      const saved = localStorage.getItem('larel.locale')
+      const saved = localStorage.getItem('iqia.locale')
       return (saved as Locale) || 'en'
     } catch {
       return 'en'
@@ -24,7 +24,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const [currency, setCurrencyState] = useState<DisplayCurrency>(() => {
     try {
-      const saved = localStorage.getItem('larel.currency')
+      const saved = localStorage.getItem('iqia.currency')
       return (saved as DisplayCurrency) || 'usdc'
     } catch {
       return 'usdc'
@@ -34,7 +34,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
     try {
-      localStorage.setItem('larel.locale', newLocale)
+      localStorage.setItem('iqia.locale', newLocale)
     } catch {
       // storage unavailable
     }
@@ -43,7 +43,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setCurrency = useCallback((newCurrency: DisplayCurrency) => {
     setCurrencyState(newCurrency)
     try {
-      localStorage.setItem('larel.currency', newCurrency)
+      localStorage.setItem('iqia.currency', newCurrency)
     } catch {
       // storage unavailable
     }
@@ -90,8 +90,8 @@ const en = {
   'settings.viewExplorer': 'View on explorer',
   'settings.copy': 'Copy',
   'settings.copied': 'Copied',
-  'settings.about': 'Larel is a privacy-preserving financial layer built on Flare.',
-  'settings.byline': 'Larel App',
+  'settings.about': 'Iqia is a privacy-preserving financial layer built on Flare.',
+  'settings.byline': 'Iqia App',
   'settings.langEn': 'English',
   'settings.langId': 'Bahasa Indonesia',
   'settings.langVi': 'Tiếng Việt',
@@ -133,8 +133,8 @@ const id = {
   'settings.viewExplorer': 'Lihat di explorer',
   'settings.copy': 'Salin',
   'settings.copied': 'Tersalin',
-  'settings.about': 'Larel adalah lapisan finansial penjaga privasi di Flare.',
-  'settings.byline': 'Aplikasi Larel',
+  'settings.about': 'Iqia adalah lapisan finansial penjaga privasi di Flare.',
+  'settings.byline': 'Aplikasi Iqia',
   'settings.langEn': 'English',
   'settings.langId': 'Bahasa Indonesia',
   'settings.langVi': 'Tiếng Việt',
@@ -176,8 +176,8 @@ const vi = {
   'settings.viewExplorer': 'Xem trên explorer',
   'settings.copy': 'Sao chép',
   'settings.copied': 'Đã sao chép',
-  'settings.about': 'Larel là một lớp tài chính bảo mật được xây dựng trên Flare.',
-  'settings.byline': 'Ứng dụng Larel',
+  'settings.about': 'Iqia là một lớp tài chính bảo mật được xây dựng trên Flare.',
+  'settings.byline': 'Ứng dụng Iqia',
   'settings.langEn': 'English',
   'settings.langId': 'Bahasa Indonesia',
   'settings.langVi': 'Tiếng Việt',
@@ -219,8 +219,8 @@ const fil = {
   'settings.viewExplorer': 'Tingnan sa explorer',
   'settings.copy': 'Kopyahin',
   'settings.copied': 'Nakopya',
-  'settings.about': 'Ang Larel ay isang privacy-preserving financial layer sa Flare.',
-  'settings.byline': 'Larel App',
+  'settings.about': 'Ang Iqia ay isang privacy-preserving financial layer sa Flare.',
+  'settings.byline': 'Iqia App',
   'settings.langEn': 'English',
   'settings.langId': 'Bahasa Indonesia',
   'settings.langVi': 'Tiếng Việt',
