@@ -82,8 +82,11 @@ contract IqiaAquaTaker is ITakerCallbacks {
     /// @param minAmountOut Ambang slippage. Diperiksa di sini, bukan hanya
     ///   diserahkan ke threshold SwapVM, supaya kolam tetap terlindungi meski
     ///   taker data dirakit keliru.
+    /// @param encodedOrder `abi.encode(ISwapVM.Order)`. Dilewatkan sebagai bytes
+    ///   supaya kolam tidak perlu mengimpor seluruh tumpukan tipe SwapVM hanya
+    ///   untuk meneruskan satu argumen.
     function swapForPool(
-        ISwapVM.Order calldata order,
+        bytes calldata encodedOrder,
         address tokenIn,
         address tokenOut,
         uint256 amount,
@@ -93,6 +96,7 @@ contract IqiaAquaTaker is ITakerCallbacks {
     ) external onlyPool returns (uint256 amountIn, uint256 amountOut) {
         IERC20(tokenIn).safeTransferFrom(POOL, address(this), maxAmountIn);
 
+        ISwapVM.Order memory order = abi.decode(encodedOrder, (ISwapVM.Order));
         (amountIn, amountOut,) = ROUTER.swap(order, tokenIn, tokenOut, amount, takerTraitsAndData);
         require(amountOut >= minAmountOut, IqiaTakerInsufficientOutput(amountOut, minAmountOut));
         require(amountIn <= maxAmountIn, IqiaTakerExcessiveInput(amountIn, maxAmountIn));

@@ -78,6 +78,9 @@ router. Satu kontrak memenuhi dua syarat.
 | ✅ Pindah chain | Target sekarang Base Sepolia. Escrow lintas-chain, sisi L1-nya, dan dependency mati dari chain lama semuanya dibuang |
 | ✅ Pasang Aqua + SwapVM | `aqua v1.0.0` dan `swap-vm v1.0.2` sebagai submodule, solc naik ke 0.8.30 |
 | ✅ Test integrasi pertama | 3 test lolos: `ship()` nol transfer, swap memindahkan token sungguhan, quote sama dengan swap |
+| ✅ Dua opcode custom | `ShieldedGate` dan `SolvencyGuard`, di slot cadangan 22 dan 23 |
+| ✅ Router + perantara taker | `IqiaSwapVMRouter` sekaligus Aqua app, `IqiaAquaTaker` menjembatani kolam |
+| ✅ Kolam tersambung ke meja | Jalur enclave mati dibuang, kontrol akses ditambahkan, `rebalance()` lewat Aqua |
 
 Ketiganya terverifikasi: SDK 41 test lolos, matcher 25 test lolos, frontend
 typecheck bersih, sirkuit Noir 5 test lolos.
@@ -99,12 +102,24 @@ typecheck bersih, sirkuit Noir 5 test lolos.
 
 | Tahap | Selesai kalau |
 |---|---|
-| ⬜ Router SwapVM custom + opcode set | Test yang ada masih hijau |
-| ⬜ Adapter taker — `IqiaPool` bisa jadi taker | Swap dari kolam berhasil |
+| ⬜ Sirkuit swap terlindung | **Belum ada.** Lihat catatan di bawah |
 | ⬜ Hapus `SimpleAMM`, arahkan frontend | Mode swap jalan di UI |
-| ⬜ Opcode custom + testnya | Cabang baru terbukti bekerja |
 | ⬜ Suite invariant | 7 invariant lolos |
 | ⬜ Deploy + demo transfer onchain | Syarat kualifikasi terpenuhi |
+
+### Sirkuit yang hilang
+
+Swap terlindung per pengguna menuntut sirkuit yang **membatasi nilai commitment
+keluaran**. Lima sirkuit yang ada — `place_order`, `match_orders`, `cancel_order`,
+`transfer`, `withdraw` — tidak satupun melakukannya.
+
+Memakai ulang `withdraw` dengan menaruh commitment keluaran di `recipient_hash`
+sempat terlihat menggoda, tapi **tidak aman**: sirkuit itu tidak membatasi nilai
+commitment tersebut, jadi penyerang bisa mengklaim commitment yang jauh lebih
+besar daripada hasil swap, lalu menariknya. Jangan tempuh jalan itu.
+
+Sampai sirkuitnya ada, `IqiaPool.rebalance()` bekerja di tingkat kolam: mengubah
+komposisi aset kolam, bukan catatan note siapa pun.
 
 ---
 

@@ -142,7 +142,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
 
         vm.prank(pool);
         (uint256 amountIn, uint256 amountOut) = adapter.swapForPool(
-            order, address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true)
+            abi.encode(order), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true)
         );
 
         assertEq(amountIn, SWAP_AMOUNT, "amountIn");
@@ -170,7 +170,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
 
         vm.prank(pool);
         (, uint256 amountOut) = adapter.swapForPool(
-            correct, address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true)
+            abi.encode(correct), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true)
         );
         assertEq(amountOut, 20e18, "gerbang menyebut perantara: lolos");
 
@@ -183,7 +183,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
         vm.expectRevert(
             abi.encodeWithSelector(ShieldedGate.ShieldedGateTakerNotAllowed.selector, address(adapter), pool)
         );
-        adapter.swapForPool(wrong, address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true));
+        adapter.swapForPool(abi.encode(wrong), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true));
     }
 
     function test_OnlyPoolCanSwap() public {
@@ -193,7 +193,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
 
         vm.prank(outsider);
         vm.expectRevert(abi.encodeWithSelector(IqiaAquaTaker.IqiaTakerOnlyPool.selector, outsider));
-        adapter.swapForPool(order, address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true));
+        adapter.swapForPool(abi.encode(order), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true));
     }
 
     /// @dev Callback hanya boleh datang dari router. Tanpa penjagaan ini, siapa
@@ -213,7 +213,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
         vm.expectRevert(
             abi.encodeWithSelector(IqiaAquaTaker.IqiaTakerInsufficientOutput.selector, 20e18, 21e18)
         );
-        adapter.swapForPool(order, address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 21e18, _takerData(true));
+        adapter.swapForPool(abi.encode(order), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 21e18, _takerData(true));
     }
 
     /// @dev Pada exact-out, SwapVM memakai kurang dari yang ditarik perantara.
@@ -227,7 +227,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
 
         vm.prank(pool);
         (uint256 amountIn, uint256 amountOut) = adapter.swapForPool(
-            order, address(tokenB), address(tokenA), desiredOut, SWAP_AMOUNT, 0, _takerData(false)
+            abi.encode(order), address(tokenB), address(tokenA), desiredOut, SWAP_AMOUNT, 0, _takerData(false)
         );
 
         assertEq(amountOut, desiredOut, "exact-out memberi persis yang diminta");

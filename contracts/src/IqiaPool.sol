@@ -37,6 +37,7 @@ contract IqiaPool {
     error BadEthValue();
 
     constructor(address _poseidon, address _withdrawVerifier) {
+        owner = msg.sender;
         poseidon = IPoseidon(_poseidon);
         withdrawVerifier = IWithdrawVerifier(_withdrawVerifier);
         
@@ -151,97 +152,108 @@ contract IqiaPool {
     }
 
     // -------------------------------------------------------------------------
-    // Order Settlement
+    // Meja likuiditas Aqua
     //
-    // TIDAK AKTIF. Jalur ini dulu menerima hasil pencocokan dari enclave tepercaya
-    // dan mempercayainya lewat tanda tangan enclave. Enclave itu infrastruktur milik
-    // chain lama dan sudah dibuang, jadi `teeAddress` tidak akan pernah terisi dan
-    // `settle()` selalu gagal di pemeriksaan tanda tangan.
+    // Menggantikan jalur penyelesaian lama, yang dulu menerima hasil pencocokan
+    // dari enclave tepercaya dan mempercayainya lewat tanda tangan. Enclave itu
+    // milik infrastruktur chain lama dan sudah dibuang bersama seluruh lapisannya.
     //
-    // Penggantinya adalah SwapVM: aturan yang dulu dijaga enclave secara rahasia
-    // menjadi program bytecode yang dijalankan on-chain, dan order bersandar Aqua
-    // tidak butuh tanda tangan sama sekali. Kode di bawah dipertahankan sebagai
-    // rujukan bentuk data sampai router SwapVM terpasang — lihat migrasi.md.
+    // Gantinya bukan sekadar tanda tangan yang lain, melainkan mesin virtual:
+    // aturan yang dulu dijaga enclave secara rahasia sekarang menjadi program
+    // bytecode SwapVM yang dijalankan on-chain, dan likuiditasnya bersandar pada
+    // Aqua sehingga tidak pernah meninggalkan dompet market maker.
     // -------------------------------------------------------------------------
 
-    address public teeAddress; // Set by governance/admin
-    
-    event OrderMatched(
-        bytes32 indexed orderA,
-        bytes32 indexed orderB,
-        bytes32[] leafCommitments,
-        uint32[] leafIndices,
-        bytes[] leafMemos,
-        bytes32[] residualCommitments,
-        bytes[] residualMemos
-    );
+    /// @notice Boleh menunjuk meja dan memicu penyeimbangan.
+    address public owner;
 
-    function setTeeAddress(address _teeAddress) external {
-        // TODO: add access control (onlyOwner)
-        teeAddress = _teeAddress;
+    /// @notice Perantara menuju router SwapVM. Lihat IqiaAquaTaker.
+    address public desk;
+
+    event OwnerTransferred(address indexed previousOwner, address indexed newOwner);
+    event DeskUpdated(address indexed previousDesk, address indexed newDesk);
+    event Rebalanced(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
+
+    error NotOwner(address caller);
+    error DeskNotSet();
+    error ApprovalFailed();
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner(msg.sender);
+        _;
     }
 
-    function settle(
-        bytes32 _actionId,
-        bytes calldata _submissionTag,
-        uint8 _status,
-        bytes calldata _resultData,
-        bytes calldata _signature
-    ) external {
-        if (_status != 1) revert("status must be success");
+    function transferOwnership(address newOwner) external onlyOwner {
+        emit OwnerTransferred(owner, newOwner);
+        owner = newOwner;
+    }
 
-        // Verify TEE Signature
-        bytes32 resultHash = keccak256(abi.encodePacked(
-            keccak256(_resultData), _actionId, keccak256(_submissionTag), _status
-        ));
-        
-        bytes32 payloadHash = keccak256(abi.encode(bytes32("TEE_ACTION_RESULT"), block.chainid, resultHash));
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
-        
-        address signer = _recover(ethSignedMessageHash, _signature);
-        require(signer != address(0) && signer == teeAddress, "bad TEE signature");
+    /// @notice Menunjuk perantara yang berhak membelanjakan aset kolam saat rebalance.
+    /// @dev Izin lama dicabut lebih dulu supaya meja yang sudah diganti tidak
+    ///   menyisakan hak belanja atas dana kolam.
+    function setDesk(address newDesk) external onlyOwner {
+        emit DeskUpdated(desk, newDesk);
+        desk = newDesk;
+    }
 
-        // Decode matched result (must match Go ABI encoding)
-        (
-            bytes32 orderA,
-            bytes32 orderB,
-            bytes32[] memory leafCommitments,
-            bytes[] memory leafMemos,
-            bytes32[] memory residualCommitments,
-            bytes[] memory residualMemos
-        ) = abi.decode(_resultData, (bytes32, bytes32, bytes32[], bytes[], bytes32[], bytes[]));
-        
-        // Nullify the matched orders
-        if (nullifiers[orderA]) revert NullifierUsed();
-        if (nullifiers[orderB]) revert NullifierUsed();
-        nullifiers[orderA] = true;
-        nullifiers[orderB] = true;
+    /// @notice Menyeimbangkan komposisi aset kolam lewat meja Aqua.
+    ///
+    /// @dev Kolam menerima apa pun yang disetor pengguna, tapi penarikan bisa
+    ///   meminta aset lain. Kalau komposisinya menyimpang, kolam perlu menukar
+    ///   sebagian isinya. Penukaran itu lewat meja Aqua, bukan AMM publik: harga
+    ///   datang dari market maker yang dananya tidak pernah terkunci, dan gerbang
+    ///   di program mereka membatasi siapa yang boleh mengisi.
+    ///
+    /// @dev CAKUPAN: ini operasi tingkat kolam. Dia mengubah isi kolam, bukan
+    ///   catatan note siapa pun. Swap terlindung per pengguna menuntut sirkuit
+    ///   yang membatasi nilai commitment keluaran, dan sirkuit itu belum ada —
+    ///   lihat docs/migrasi.md. Memakai ulang sirkuit `withdraw` untuk keperluan
+    ///   ini TIDAK AMAN: nilai keluarannya tidak terbatasi, sehingga penyerang
+    ///   bisa mengklaim commitment yang lebih besar daripada hasil swap.
+    ///
+    /// @param amount Pada exact-in jumlah masukan, pada exact-out jumlah keluaran
+    /// @param maxAmountIn Batas atas token yang boleh dibelanjakan meja
+    /// @param minAmountOut Ambang slippage
+    function rebalance(
+        bytes calldata order,
+        address tokenIn,
+        address tokenOut,
+        uint256 amount,
+        uint256 maxAmountIn,
+        uint256 minAmountOut,
+        bytes calldata takerTraitsAndData
+    ) external onlyOwner returns (uint256 amountIn, uint256 amountOut) {
+        address desk_ = desk;
+        if (desk_ == address(0)) revert DeskNotSet();
 
-        // Insert new commitments (settlement fills / refunds) into tree
-        uint32[] memory leafIndices = new uint32[](leafCommitments.length);
-        for (uint256 i = 0; i < leafCommitments.length; i++) {
-            leafIndices[i] = _insert(leafCommitments[i]);
-        }
-        
-        emit OrderMatched(
-            orderA, orderB,
-            leafCommitments, leafIndices, leafMemos,
-            residualCommitments, residualMemos
+        // Izin diberikan tepat sebesar kebutuhan dan dicabut lagi setelahnya,
+        // jadi meja tidak pernah memegang hak belanja di luar satu transaksi.
+        _approve(tokenIn, desk_, maxAmountIn);
+        (amountIn, amountOut) = IIqiaDesk(desk_).swapForPool(
+            order, tokenIn, tokenOut, amount, maxAmountIn, minAmountOut, takerTraitsAndData
         );
+        _approve(tokenIn, desk_, 0);
+
+        emit Rebalanced(tokenIn, tokenOut, amountIn, amountOut);
     }
 
-    function _recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
-        if (signature.length != 65) return address(0);
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-        }
-        if (v < 27) v += 27;
-        if (v != 27 && v != 28) return address(0);
-        return ecrecover(hash, v, r, s);
+    function _approve(address token, address spender, uint256 amount) internal {
+        (bool ok, bytes memory data) = token.call(abi.encodeWithSignature("approve(address,uint256)", spender, amount));
+        if (!ok || (data.length != 0 && !abi.decode(data, (bool)))) revert ApprovalFailed();
     }
+}
+
+/// @notice Bagian dari IqiaAquaTaker yang dipakai kolam.
+/// @dev Dideklarasikan di sini supaya kolam tidak perlu mengimpor seluruh tumpukan
+///   SwapVM. `order` dilewatkan sebagai bytes mentah dan diteruskan apa adanya.
+interface IIqiaDesk {
+    function swapForPool(
+        bytes calldata order,
+        address tokenIn,
+        address tokenOut,
+        uint256 amount,
+        uint256 maxAmountIn,
+        uint256 minAmountOut,
+        bytes calldata takerTraitsAndData
+    ) external returns (uint256 amountIn, uint256 amountOut);
 }
