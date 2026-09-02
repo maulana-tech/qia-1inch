@@ -234,7 +234,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
       {!embedded && (
         <PageIntro
           title="Swap"
-          subtitle="Dark-pool DEX. Orders stay sealed until matched, so there is no front-running."
+          subtitle="Likuiditas dari dompet market maker lewat 1inch Aqua. Tidak ada kontrak yang menahan dana."
         />
       )}
 
@@ -326,11 +326,11 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                 <ChartIcon className="h-4 w-4 text-zinc-500" />
                 <h2 className="panel-title">{mode === 'market' ? 'Instant Swap' : 'Place order'}</h2>
               </div>
-              {/* ZK privacy badge */}
+              {/* Lencana sumber likuiditas */}
               <div className="flex items-center gap-1.5 rounded-full border border-spectral/20 bg-spectral/10 px-2.5 py-1">
                 <ShieldIcon className="h-3 w-3 text-spectral/70" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-spectral/70">
-                  ZK sealed
+                  1inch Aqua
                 </span>
               </div>
             </div>

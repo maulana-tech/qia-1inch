@@ -27,10 +27,10 @@ const STACK = [
   },
   {
     n: '02',
-    label: 'amm swap',
-    coord: '[ x * y = k · midpoint ]',
-    title: 'constant product & blind matching.',
-    body: 'swaps run on a constant product formula (x * y = k) combined with shielded matching. orders are submitted as cryptographic commitments, matched blind off-chain at the midpoint reference price, and settled publicly on-chain without exposing user identities or trade paths.',
+    label: 'aqua desk',
+    coord: '[ x * y = k · in bytecode ]',
+    title: 'liquidity that stays in the wallet.',
+    body: 'swaps price on a constant product curve (x * y = k) that runs inside SwapVM, not in a hand-written contract. the liquidity behind them never enters a pool: market makers keep their tokens, Aqua records an allowance, and the tokens move only at the moment a swap settles.',
     src: asset2,
     poster: asset2,
     flip: true,
@@ -58,10 +58,11 @@ const STACK = [
 ]
 
 const MODULES = [
-  { k: 'DEPOSIT / WITHDRAW', d: 'assets in, or in from Ethereum, BLS-verified on Base EVM.', to: '/deposit' },
-  { k: 'PORTFOLIO', d: 'private multi-asset balances only you can see.', to: '/portfolio' },
-  { k: 'PAY', d: 'confidential payments; amounts and parties hidden.', to: '/pay' },
-  { k: 'SWAP', d: 'a zero-knowledge dark pool; orders matched blind.', to: '/swap' },
+  { k: 'DEPOSIT / WITHDRAW', d: 'assets into the pool, and out again behind a ZK proof.', to: '/deposit' },
+  { k: 'PORTFOLIO', d: 'your balances and history in one place.', to: '/portfolio' },
+  { k: 'PAY', d: 'send to another holder inside the pool.', to: '/pay' },
+  { k: 'MARKETS', d: 'live Aqua positions you can trade against.', to: '/app' },
+  { k: 'SWAP', d: 'trade straight into a market maker wallet.', to: '/swap' },
 ]
 
 
@@ -156,10 +157,10 @@ export function StoryShielded({ onEnter }: { onEnter: () => void }) {
         {/* bento — the platform at a glance, below the three story beats */}
         <BentoSection />
 
-        {/* system architecture — L1 lock → on-chain verify → shielded settle */}
+        {/* arsitektur sistem — wallet → SwapVM → Aqua → dompet maker */}
         <SystemArchitecture />
 
-        {/* swap & amm mechanism — commitment → midpoint match → ZK-settlement */}
+        {/* mekanisme swap — program → quote → settle dari dompet maker */}
         <SwapAmmMechanism />
 
         {/* modules + CTA — one card */}

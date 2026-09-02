@@ -1,7 +1,7 @@
 /**
- * Client for the off-chain dark-pool matcher.
+ * Klien untuk mesin pencocokan order di luar rantai.
  *
- * Placing an order on-chain only posts a sealed commitment — the matcher can't see it. To
+ * Menempatkan order di rantai hanya mencatat commitment-nya — mesin pencocokan tidak bisa membacanya. Untuk
  * opt into matching, the trader hands the matcher the order's preimage (price/amount/side/
  * assets/owner/nonce) plus their receive code, so it can find a cross, build the settlement
  * proof, and seal the fill back to them (see services/matcher). This is the *only* place the

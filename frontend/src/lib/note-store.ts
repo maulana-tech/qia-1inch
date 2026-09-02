@@ -8,7 +8,7 @@ const SPENDING_PREFIX = 'iqia.spendingKey.v1'
 const LEAVES_PREFIX = 'iqia.leaves.v1'
 const CURSOR_PREFIX = 'iqia.indexcursor.v1'
 
-// Placed dark-pool orders (per identity).
+// Order yang sudah ditempatkan, per identitas.
 const ORDERS_PREFIX = 'iqia.orders.v1'
 
 
@@ -301,7 +301,7 @@ export function setLeafIndexForCommitment(commitmentHex: string, leafIndex: numb
   return changed
 }
 
-// --- Dark-pool orders (device-local; the order's secrets never leave this browser) --------
+// --- Order (tersimpan di perangkat; rahasianya tidak pernah keluar dari browser) ---------
 
 const HISTORY_PREFIX = 'iqia.history.v1'
 

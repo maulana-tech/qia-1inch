@@ -33,7 +33,7 @@ export function ProvenLedger() {
             <span className="tabular-nums text-spectral/45">{clock(n.createdAt)}</span>
             <span className="uppercase tracking-[0.14em] text-zinc-400">{VERB[n.source ?? 'received']}</span>
             <span className={proven ? 'text-emerald-400/80' : 'text-emerald-400/45'}>
-              {proven ? '✓ proven' : '· sealed'}
+              {proven ? '✓ proven' : '· pending'}
             </span>
             {proven && <span className="tabular-nums text-spectral/40">{truncateKey(n.txHash!, 4, 4)}</span>}
           </li>

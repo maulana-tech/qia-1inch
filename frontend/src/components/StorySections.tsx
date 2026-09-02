@@ -102,22 +102,23 @@ export function BentoSection() {
           <Stat value="5" label="Noir circuits · one verifier each" />
         </Tile>
 
-        {/* bridge */}
+        {/* likuiditas tanpa penitipan */}
         <Tile className="sm:col-span-2 md:col-span-2">
-          <TileHead eyebrow="03 · trust-minimized bridge" title="bridged, not wrapped." />
+          <TileHead eyebrow="03 · 1inch Aqua" title="liquidity that never locks." />
           <p className="mt-3 text-[13.5px] font-medium leading-relaxed text-[#555555] dark:text-[#c4c4c4]">
-            assets locked on Ethereum arrive as shielded notes an Ethereum sync-committee BLS
-            signature is verified <span className="text-[#7a7a7a] dark:text-[#bfbfbf]">natively on Base EVM</span>, no
-            trusted relayer, no SNARK wrap.
+            market makers keep their tokens in their own wallets. Aqua records an allowance, not a
+            deposit <span className="text-[#7a7a7a] dark:text-[#bfbfbf]">nothing is ever held by a
+            pool contract</span>, and the same capital can back several strategies at once.
           </p>
         </Tile>
 
-        {/* dark pool */}
+        {/* strategi sebagai bytecode */}
         <Tile className="sm:col-span-2 md:col-span-2">
-          <TileHead eyebrow="04 · dark pool" title="matched blind." />
+          <TileHead eyebrow="04 · SwapVM" title="strategies as bytecode." />
           <p className="mt-3 text-[13.5px] font-medium leading-relaxed text-[#555555] dark:text-[#c4c4c4]">
-            orders are placed and matched at the midpoint without revealing size or side, then settled
-            atomically a zero-knowledge DEX where the book itself stays hidden.
+            pricing rules run inside a virtual machine, not a hand-written contract. two custom
+            opcodes ship with Iqia: one restricts who may fill an order, the other moves the price as
+            the maker's real backing thins.
           </p>
         </Tile>
       </div>
@@ -202,38 +203,38 @@ export function SystemArchitecture() {
     >
       <Label>
         <span className="text-[#191919]/80 dark:text-[#d6d6d6]">system architecture</span>
-        <span className="text-[#7a7a7a] dark:text-[#8a8a8a]">[ L1 lock → on-chain verify → shielded settle ]</span>
+        <span className="text-[#7a7a7a] dark:text-[#8a8a8a]">[ wallet → SwapVM → Aqua → maker wallet ]</span>
       </Label>
       <h3 className="mt-6 max-w-2xl font-display text-[clamp(1.5rem,3.2vw,2.2rem)] font-medium lowercase leading-[1.06] tracking-[-0.02em] text-[#191919] dark:text-[#f5f5f5]">
-        every value crosses one boundary, and it's checked on-chain.
+        no contract ever holds the liquidity it quotes.
       </h3>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_16rem]">
         {/* main vertical flow */}
         <div className="flex flex-col">
           <Layer
-            eyebrow="L1 · Base"
-            title="IqiaBridge"
-            items={['lock ETH / USDC', 'emit Locked(commitment)']}
+            eyebrow="maker · own wallet"
+            title="ship() to Aqua"
+            items={['approve once, deposit never', 'virtual balance recorded', 'tokens stay put']}
           />
-          <Connector note="untrusted relayer — transports data, holds no authority" />
+          <Connector note="no token moves — ship() is bookkeeping only" />
           <Layer
-            eyebrow="Base EVM · verification"
-            title="EthLightClient → IqiaBridge"
-            items={['BLS12-381 sync-committee', 'MPT storage proof vs state_root', 'bridge_in → mint note']}
-          />
-          <Connector note="native BN254 / BLS — no SNARK wrap" />
-          <Layer
-            eyebrow="Base EVM · shielded state"
-            title="IqiaPool"
-            items={['Poseidon2 commitment notes', 'append-only Merkle · depth 20', 'nullifier set · 100-root ring']}
+            eyebrow="Base EVM · execution"
+            title="IqiaSwapVMRouter"
+            items={['runs the strategy bytecode', 'ExclusiveFill · SolvencyGuard', 'doubles as the Aqua app']}
             highlight
           />
-          <Connector note="every exit gated by a zero-knowledge proof" />
+          <Connector note="taker approves the router — no adapter contract needed" />
+          <Layer
+            eyebrow="Base EVM · settlement"
+            title="Aqua pull / push"
+            items={['pull tokenOut from maker wallet', 'push tokenIn back to it', 'Aqua holds nothing']}
+          />
+          <Connector note="every exit from the pool still gated by a zero-knowledge proof" />
           <Layer
             eyebrow="Base EVM · UltraHonk verifiers"
-            title="5 circuits · one contract each"
-            items={['withdraw', 'transfer', 'place_order', 'match_orders', 'cancel_order']}
+            title="deposit · withdraw · transfer"
+            items={['Poseidon2 commitment notes', 'append-only Merkle · depth 20', 'nullifier set · 100-root ring']}
           />
         </div>
 
@@ -241,8 +242,8 @@ export function SystemArchitecture() {
         <aside className="flex flex-col gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a7a7a] dark:text-[#8a8a8a]">off-chain · no authority</span>
           <RailCard title="SDK" lines={['notes · Merkle · Poseidon2', 'UltraHonk proofs (bb.js)', 'Base EVM tx building']} />
-          <RailCard title="Matcher" lines={['off-chain price-time', 'mirrors match_orders', 're-proven on-chain']} />
-          <RailCard title="Relayer" lines={['beacon finality updates', 'eth_getProof', 'every value re-verified']} />
+          <RailCard title="SwapVM builder" lines={['program bytecode', 'MakerTraits / TakerTraits', 'byte-identical to Solidity']} />
+          <RailCard title="Market reader" lines={['Aqua ship / push / dock logs', '1inch token metadata', 'live balances on chain']} />
         </aside>
       </div>
     </div>
@@ -258,41 +259,41 @@ export function SwapAmmMechanism() {
     >
       <Label>
         <span className="text-[#191919]/80 dark:text-[#d6d6d6]">swap & amm mechanism</span>
-        <span className="text-[#7a7a7a] dark:text-[#8a8a8a]">[ commitment → midpoint match → ZK-settlement ]</span>
+        <span className="text-[#7a7a7a] dark:text-[#8a8a8a]">[ program → quote → settle from the maker wallet ]</span>
       </Label>
       <h3 className="mt-6 max-w-2xl font-display text-[clamp(1.5rem,3.2vw,2.2rem)] font-medium lowercase leading-[1.06] tracking-[-0.02em] text-[#191919] dark:text-[#f5f5f5]">
-        how dark swaps work: from commitment to constant product settlement.
+        how a swap works: from bytecode to a transfer out of someone's wallet.
       </h3>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_16rem]">
         {/* main vertical flow */}
         <div className="flex flex-col">
           <Layer
-            eyebrow="Phase 1 · Client Commitment"
-            title="SDK / Zero-Knowledge Circuit"
-            items={['shielded input notes locked', 'generate place_order proof', 'order commitment emitted']}
+            eyebrow="Phase 1 · maker"
+            title="compose the strategy"
+            items={['assemble opcodes into bytecode', 'ship() records the allowance', 'wallet balance unchanged']}
           />
-          <Connector note="sealed commitments sent to matcher — size and price hidden" />
+          <Connector note="the program is the order — no signature needed in Aqua mode" />
           <Layer
-            eyebrow="Phase 2 · Midpoint Matching"
-            title="Off-Chain Matcher Engine"
-            items={['live reference price queried', 'match bids & asks at midpoint', 'calculate constant product (x * y = k)']}
+            eyebrow="Phase 2 · taker"
+            title="quote, then swap"
+            items={['quote() previews the exact amounts', 'threshold enforces slippage', 'approve the router, call swap()']}
           />
-          <Connector note="generates blind execution path and ZK match proof" />
+          <Connector note="SwapVM pulls tokenIn itself — the taker can be a plain wallet" />
           <Layer
-            eyebrow="Phase 3 · On-Chain Settlement"
-            title="Base EVM Contract (match_orders)"
-            items={['verify ZK proof of matching', 'nullify spent input notes', 'append output notes to Merkle tree']}
+            eyebrow="Phase 3 · settlement"
+            title="Aqua moves the tokens"
+            items={['tokenOut leaves the maker wallet', 'tokenIn arrives in it', 'Aqua never holds either']}
             highlight
           />
         </div>
 
         {/* Technical specs panel */}
         <aside className="flex flex-col gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a7a7a] dark:text-[#8a8a8a]">AMM Specifications</span>
-          <RailCard title="Constant Product" lines={['x * y = k formula', 'maintains pool invariant', 'slippage computed blind']} />
-          <RailCard title="Anti-Frontrunning" lines={['matched at fair midpoint', 'no public mempool visibility', 'sandwiches are impossible']} />
-          <RailCard title="ZK Privacy" lines={['notes nullified privately', 'only roots are updated', 'unlinkable asset paths']} />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a7a7a] dark:text-[#8a8a8a]">Program Specifications</span>
+          <RailCard title="Constant Product" lines={['x * y = k, in bytecode', 'rounding favours the maker', 'quote equals swap, exactly']} />
+          <RailCard title="ExclusiveFill" lines={['only the named taker fills', 'full 20-byte comparison', 'taker read from msg.sender']} />
+          <RailCard title="SolvencyGuard" lines={['reads the maker wallet', 'price moves with real backing', 'degrades instead of reverting']} />
         </aside>
       </div>
     </div>
