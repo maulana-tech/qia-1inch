@@ -13,10 +13,8 @@ import type { ProofData } from './types.js';
 
 // We import the generated ABIs. Note: you need to ensure they are available in the build.
 import IqiaPoolAbiJson from './abi/IqiaPool.json' with { type: "json" };
-import IqiaInstructionSenderAbiJson from './abi/IqiaInstructionSender.json' with { type: "json" };
 
 export const iqiaPoolAbi = IqiaPoolAbiJson;
-export const iqiaInstructionSenderAbi = IqiaInstructionSenderAbiJson;
 
 /** Public-input field order per circuit. SHARED sec 7 (authoritative). */
 export const PUBLIC_INPUT_ORDER = {
@@ -130,23 +128,23 @@ export class IqiaContract {
     });
   }
   
-  // For other functions like placeOrder, we will likely call InstructionSender on EVM.
-  placeOrderData(args: {
+  /**
+   * Order placement previously went through IqiaInstructionSender, which handed the
+   * encrypted order to a Flare Confidential Compute enclave. That enclave was Flare
+   * infrastructure and does not exist off Flare, so the path is gone.
+   *
+   * Its replacement is SwapVM: the execution gate that the enclave enforced in
+   * private becomes an opcode the VM enforces on-chain, and Aqua-backed orders need
+   * no signature at all. Wiring lands with the SwapVM router — see migrasi.md.
+   */
+  placeOrderData(_args: {
     proof: Uint8Array;
     publicInputs: Field[];
     encryptedMemos: Uint8Array;
   }): `0x${string}` {
-    this.assertProofLen(args.proof);
-    const pubInputs = args.publicInputs.map((f) => bytesToHex(fieldToBytes(f)));
-    return encodeFunctionData({
-      abi: iqiaInstructionSenderAbi,
-      functionName: 'placeOrder',
-      args: [
-        bytesToHex(args.proof),
-        pubInputs,
-        bytesToHex(args.encryptedMemos),
-      ],
-    });
+    throw new Error(
+      'placeOrderData: the Flare TEE path was removed and the SwapVM router is not wired yet',
+    );
   }
 
   private assertProofLen(proof: Uint8Array): void {

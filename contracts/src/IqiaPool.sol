@@ -151,7 +151,17 @@ contract IqiaPool {
     }
 
     // -------------------------------------------------------------------------
-    // Order Settlement (TEE integration)
+    // Order Settlement
+    //
+    // TIDAK AKTIF. Jalur ini dulu menerima hasil pencocokan dari enclave Flare
+    // Confidential Compute dan mempercayainya lewat tanda tangan TEE. Enclave itu
+    // infrastruktur Flare dan sudah dibuang, jadi `teeAddress` tidak akan pernah
+    // terisi dan `settle()` selalu gagal di pemeriksaan tanda tangan.
+    //
+    // Penggantinya adalah SwapVM: aturan yang dulu dijaga enclave secara rahasia
+    // menjadi program bytecode yang dijalankan on-chain, dan order bersandar Aqua
+    // tidak butuh tanda tangan sama sekali. Kode di bawah dipertahankan sebagai
+    // rujukan bentuk data sampai router SwapVM terpasang — lihat migrasi.md.
     // -------------------------------------------------------------------------
 
     address public teeAddress; // Set by governance/admin
