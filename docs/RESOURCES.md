@@ -199,6 +199,14 @@ justru verifier UltraHonk yang pecah, di sekitar `PAIRING_POINTS_SIZE`. Jawabann
 `compilation_restrictions` per-file di `foundry.toml`: verifier tetap di pipeline
 lama, sisanya via_ir.
 
+**#13 — Perbandingan pointer fungsi akan dilarang solc.**
+`ProgramBuilder.findOpcode` mencari opcode dengan membandingkan pointer fungsi
+internal. Solc mengeluarkan peringatan 3075: hasilnya bisa tidak terduga di
+pipeline lama dengan optimizer, dan fitur ini **akan dilarang sepenuhnya di
+rilis breaking berikutnya**. Karena `ProgramBuilder` adalah satu-satunya cara
+merakit program yang disediakan SwapVM, perubahan itu akan menyentuh semua yang
+membangun di atasnya. Untuk sekarang aman selama kompilasi memakai via_ir.
+
 **#12 — Program dirakit lewat utilitas test, bukan API `src/`.**
 `ProgramBuilder` ada di `test/utils/ProgramBuilder.sol`, dan opcode dirujuk lewat
 pointer fungsi (`p.build(XYCSwap._xycSwapXD)`) yang dicari indeksnya di array

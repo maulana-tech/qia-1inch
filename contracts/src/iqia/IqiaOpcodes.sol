@@ -55,6 +55,14 @@ contract IqiaOpcodes is AquaOpcodes, ShieldedGate, SolvencyGuard {
     /// @dev Menolak kalau slot yang mau dipakai ternyata sudah berisi instruksi.
     ///   Menimpa instruksi yang sudah ada akan mengubah arti setiap program yang
     ///   memakai nomor opcode itu — gagal keras jauh lebih baik.
+    ///
+    /// @dev BATASNYA: perbandingan pointer fungsi internal memicu peringatan solc
+    ///   3075 dan akan dilarang sepenuhnya di rilis breaking berikutnya. Risikonya
+    ///   tidak berlaku sekarang karena kontrak ini dikompilasi dengan via_ir,
+    ///   bukan pipeline lama. Kalau solc menghapusnya, penjaga ini perlu ditulis
+    ///   ulang — bandingkan alamatnya lewat assembly, atau pindahkan verifikasi
+    ///   slot ke test. `ProgramBuilder` milik SwapVM memakai pola yang sama, jadi
+    ///   perubahan itu akan menyentuh seluruh ekosistemnya sekaligus.
     function _requireFreeSlot(
         function(Context memory, bytes calldata) internal[] memory opcodes,
         uint256 slot

@@ -59,7 +59,7 @@ contract AquaSwapTest is Test, AquaOpcodesDebug {
 
     /// @dev Program paling sederhana: satu instruksi kurva x*y=k, plus salt agar
     ///      strategyHash unik antar test. Salt tidak mempengaruhi perhitungan.
-    function _buildProgram() internal view returns (bytes memory) {
+    function _buildProgram() internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(XYCSwap._xycSwapXD),
