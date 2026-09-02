@@ -1,12 +1,12 @@
 # @iqia/matcher
 
-Off-chain order-matching service for the **Iqia** ZK dark pool on Stellar.
+Off-chain order-matching service for the **Iqia** ZK dark pool.
 
 Traders submit their order details (the order's commitment plus its full preimage) to this
 service. The engine keeps an in-memory book, finds crossable matches with **price-time
 priority**, and for each match assembles the `match_orders` circuit inputs + the 8
 public-input fields (SHARED §7) and submits `iqia-pool.match_orders(proof, public_inputs)`
-to the Soroban contract.
+to the on-chain contract.
 
 The matching math is a byte-for-byte mirror of the `match_orders` Noir circuit
 (`circuits/noir/match_orders/src/main.nr`). If it diverged, the on-chain UltraHonk verifier
@@ -115,7 +115,7 @@ Environment:
 | `MATCH_CIRCUIT` | — | path to compiled `match_orders.json`; set it to prove for real (needs the bb.js CRS at runtime). Unset ⇒ `MockMatchProver`. |
 | `IQIA_SUBMIT` | `dry-run` | set to `live` to actually submit |
 | `IQIA_MATCHER_SECRET` | — | funded `S…` key the matcher signs + pays gas with (required when `live`). **Server secret — never ship it to the frontend.** |
-| `IQIA_RPC_URL` | `https://soroban-testnet.stellar.org` | Soroban RPC used for live submission |
+| `IQIA_RPC_URL` | `https://sepolia.base.org` | RPC used for live submission |
 | `MATCH_INTERVAL_MS` | `2000` | background match-loop interval (0 disables) |
 
 ### Going live (runbook)
@@ -128,8 +128,8 @@ pnpm --filter @iqia/matcher build
 ( cd circuits/noir/match_orders && nargo compile )   # -> target/match_orders.json
 
 # 2. fund a matcher key (testnet) and export its secret
-#    stellar keys generate matcher --network testnet --fund
-#    export IQIA_MATCHER_SECRET=$(stellar keys show matcher)   # keep this off the frontend
+#    Generate an EVM keypair and fund it with testnet gas, then:
+#    export IQIA_MATCHER_PRIVATE_KEY=0x...   # keep this off the frontend
 
 # 3. run live
 MATCH_CIRCUIT=circuits/noir/match_orders/target/match_orders.json \
@@ -149,7 +149,7 @@ on-chain memos the wallet's indexer discovers (self-custodial — the matcher ca
 | Public-input assembly + commitments (`prover.ts`) | **Real** Poseidon2 commitments via `@iqia/sdk`; validated against the circuit's golden settlement vectors. |
 | ZK proof generation | **Integration-only.** `proveMatch` takes an injectable `MatchProver`; wire the SDK's `NoirProver` (compiled `match_orders.json` + bb.js, keccak transcript) for real proofs. The default `MockMatchProver` returns the correct public inputs with a zero-filled proof (the verifier will reject it) so the pipeline runs without a circuit. |
 | Settlement memo sealing (`memo.ts`) | **Real & unit-tested** — seals each fill/refund note + residual order to its owner (shared `@iqia/sdk` sealed box), in the contract's exact insertion order; round-trip verified against owner recovery. |
-| Soroban encoding (`submitter.ts`) | **Real & unit-tested** — builds the exact `match_orders(proof, public_inputs, leaf_memos, residual_memos)` invoke op. |
+| EVM encoding (`submitter.ts`) | **Real & unit-tested** — builds the exact `match_orders(proof, public_inputs, leaf_memos, residual_memos)` invoke op. |
 | On-chain submission (`MatchSubmitter.submit`) | **Integration-only** — RPC prepare → sign → send; never exercised by unit tests. Needs a funded source account and a real, verifier-accepted proof. |
 | Note discovery / persistence | Delivery is **on-chain memos** (`OrderMatchedEvent`), discovered by the wallet's indexer — self-custodial, works offline. The book is still in-memory (persistence is a hardening item). |
 

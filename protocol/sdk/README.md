@@ -1,8 +1,8 @@
 # @iqia/sdk
 
-TypeScript client library for **Iqia**, the privacy platform on Stellar. It provides
+TypeScript client library for **Iqia**, the privacy platform. It provides
 the cryptographic primitives (Poseidon2, note/order commitments, an incremental Merkle
-tree), UltraHonk proof generation wiring, and Soroban transaction building used by the
+tree), UltraHonk proof generation wiring, and EVM transaction building used by the
 frontend and matcher.
 
 - **ESM + CJS**, ships type declarations. Built with `tsup`, tested with `vitest`.
@@ -74,7 +74,7 @@ beta.9, hence the external dep.)
 | `src/order.ts` | `createOrder`, `computeOrderCommitment`, `orderLockedAmount` | Order commitments (`hash7`) + locked-balance math. |
 | `src/prover.ts` | `NoirProver`, `buildWithdrawInputs`/`buildPlaceOrderInputs`/`buildCancelOrderInputs`, `isValidProofLength` | UltraHonk proof gen via `@noir-lang/noir_js` + `@aztec/bb.js` with the **keccak** transcript. |
 | `src/wallet.ts` | `Wallet` | In-memory note store, per-asset balance aggregation, greedy note selection, open-order tracking. |
-| `src/stellar.ts` | `IqiaContract`, `encodePublicInputs`/`decodePublicInputs`, `addressToField`, `assetIdFromAddress`, `recipientHash`, `nativeAsset`, `assetFromSac`, `buildTransaction`, `PUBLIC_INPUT_ORDER` | Soroban invoke-op building + public-input encoding (32-byte BE concat). |
+| `src/evm.ts` | `IqiaContract`, `encodePublicInputs`/`decodePublicInputs`, `addressToField`, `assetIdFromAddress`, `recipientHash`, `nativeAsset`, `assetFromSac`, `buildTransaction`, `PUBLIC_INPUT_ORDER` | EVM calldata building + public-input encoding (32-byte BE concat). |
 | `src/index.ts` | `Iqia` (impl. of `IqiaSdk`) + re-exports | High-level surface the frontend uses: `deposit`, `withdraw`, `transfer`, `placeOrder`, `cancelOrder`, `getShieldedBalances`, `getOpenOrders`. |
 
 ---
@@ -82,7 +82,7 @@ beta.9, hence the external dep.)
 ## Proof generation (UltraHonk, keccak transcript)
 
 `NoirProver` drives `@noir-lang/noir_js` (witness) + `@aztec/bb.js`'s `UltraHonkBackend`.
-The **keccak** transcript is mandatory — the Soroban verifier only accepts Keccak-256:
+The **keccak** transcript is mandatory — the on-chain verifier only accepts Keccak-256:
 
 ```ts
 const prover = new NoirProver(compiledCircuitJson, { keccak: true }); // keccak:true is the default
@@ -106,7 +106,6 @@ elements live inside the proof, not in `public_inputs`.
 | `@noir-lang/noir_js` | `1.0.0-beta.9` | Matches pinned `nargo`. |
 | `@aztec/bb.js` | `0.87.0` | Matches pinned `bb`; this pin yields the verifier-accepted 14 592-byte proof / 1 760-byte VK. beta.22 / bb 5.0.0 are **rejected** by the verifier. |
 | `@zkpassport/poseidon2` | `^0.6.2` | Golden-validated Poseidon2 (see above). |
-| `@stellar/stellar-sdk` | `^13.3.0` | Soroban tx building + SAC. |
 
 ---
 
@@ -120,7 +119,7 @@ elements live inside the proof, not in `public_inputs`.
 - Note commitments / nullifiers / key derivation — matched against Noir golden vectors.
 - Order commitments + locked-amount math — matched against a Noir golden vector.
 - Wallet: balances, greedy note selection, order tracking.
-- `public_inputs` encode/decode, address→field, SAC asset helpers, and Soroban invoke-op
+- `public_inputs` encode/decode, address→field, ERC20 asset helpers, and EVM calldata
   construction (deposit/withdraw/transfer/place_order/match_orders/cancel_order).
 - `Iqia` orchestrator: `deposit` (no proof) end-to-end; local Merkle mirror sync;
   balance/order views; proof flows assemble notes/commitments/nullifiers/inputs and build
@@ -133,7 +132,7 @@ elements live inside the proof, not in `public_inputs`.
   `NoirProver` is implemented against the noir_js/bb.js interface; the full pipeline test
   is `it.skip`ped (it also needs the Barretenberg CRS). Wire by passing each compiled
   circuit via `IqiaConfig.provers`.
-- **`addressToField` convention.** The SDK maps a Stellar address to a field by decoding
+- **`addressToField` convention.** The SDK maps an EVM address to a field by decoding
   its StrKey to the raw 32 bytes and interpreting them big-endian (mod r). This must match
   whatever the deployed `iqia-pool` contract uses to derive `asset_id` / `recipient_hash`;
   it is the one mapping not verifiable until the contract branch lands.

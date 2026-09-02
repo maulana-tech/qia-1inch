@@ -3,7 +3,7 @@
 Five zero-knowledge circuits that gate every state transition out of Iqia's
 shielded layer, plus a shared library (`iqia_lib`) holding the cryptographic
 invariants that must stay byte-for-byte identical across the Noir circuits, the
-Soroban contract, and the TypeScript SDK.
+on-chain contract, and the TypeScript SDK.
 
 | Circuit | Purpose | Public inputs |
 |---------|---------|---------------|
@@ -25,7 +25,7 @@ poseidon lib  tag v0.2.0  (github.com/noir-lang/poseidon)
 ```
 
 This pin yields **proof = 14592 bytes** and **vk = 1760 bytes** with the Keccak
-transcript — the only combination the `rs-soroban-ultrahonk` verifier accepts.
+transcript — the only combination the `UltraHonk` verifier accepts.
 Source the toolchain first:
 
 ```bash
