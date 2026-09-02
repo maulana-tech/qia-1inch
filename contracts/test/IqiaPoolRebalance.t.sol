@@ -19,7 +19,7 @@ import { IqiaPool, IPoseidon } from "../src/IqiaPool.sol";
 import { IqiaSwapVMRouter } from "../src/iqia/IqiaSwapVMRouter.sol";
 import { IqiaOpcodes } from "../src/iqia/IqiaOpcodes.sol";
 import { IqiaAquaTaker } from "../src/iqia/IqiaAquaTaker.sol";
-import { ShieldedGate, ShieldedGateArgsBuilder } from "../src/iqia/instructions/ShieldedGate.sol";
+import { ExclusiveFill, ExclusiveFillArgsBuilder } from "../src/iqia/instructions/ExclusiveFill.sol";
 
 contract PoseidonStub is IPoseidon {
     function hash(uint256[2] memory inputs) external pure returns (uint256) {
@@ -72,7 +72,7 @@ contract IqiaPoolRebalanceTest is Test, IqiaOpcodes {
         Program memory p = ProgramBuilder.init(_opcodes());
         bytes memory program = bytes.concat(
             // Gerbang menyebut MEJA, karena meja itulah msg.sender ke router.
-            p.build(ShieldedGate._onlyShieldedPool, ShieldedGateArgsBuilder.build(address(desk))),
+            p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(address(desk))),
             p.build(XYCSwap._xycSwapXD),
             p.build(Controls._salt, abi.encodePacked(salt))
         );

@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import { Context } from "@1inch/swap-vm/src/libs/VM.sol";
 import { AquaOpcodes } from "@1inch/swap-vm/src/opcodes/AquaOpcodes.sol";
 
-import { ShieldedGate } from "./instructions/ShieldedGate.sol";
+import { ExclusiveFill } from "./instructions/ExclusiveFill.sol";
 import { SolvencyGuard } from "./instructions/SolvencyGuard.sol";
 
 /// @title IqiaOpcodes
@@ -27,9 +27,9 @@ import { SolvencyGuard } from "./instructions/SolvencyGuard.sol";
 /// @dev Nomor slotnya diverifikasi saat dijalankan, bukan diasumsikan: kalau
 ///   versi SwapVM berikutnya mengisi slot itu, `_opcodes()` akan langsung gagal
 ///   alih-alih diam-diam menimpa instruksi orang lain.
-contract IqiaOpcodes is AquaOpcodes, ShieldedGate, SolvencyGuard {
+contract IqiaOpcodes is AquaOpcodes, ExclusiveFill, SolvencyGuard {
     /// @dev Slot cadangan pertama setelah `Fee._flatFeeAmountInXD`.
-    uint256 internal constant OPCODE_ONLY_SHIELDED_POOL = 22;
+    uint256 internal constant OPCODE_EXCLUSIVE_FILL = 22;
     uint256 internal constant OPCODE_SOLVENCY_GUARD = 23;
 
     error IqiaOpcodeSlotAlreadyTaken(uint256 slot);
@@ -45,10 +45,10 @@ contract IqiaOpcodes is AquaOpcodes, ShieldedGate, SolvencyGuard {
     {
         result = super._opcodes();
 
-        _requireFreeSlot(result, OPCODE_ONLY_SHIELDED_POOL);
+        _requireFreeSlot(result, OPCODE_EXCLUSIVE_FILL);
         _requireFreeSlot(result, OPCODE_SOLVENCY_GUARD);
 
-        result[OPCODE_ONLY_SHIELDED_POOL] = ShieldedGate._onlyShieldedPool;
+        result[OPCODE_EXCLUSIVE_FILL] = ExclusiveFill._onlyExclusiveTaker;
         result[OPCODE_SOLVENCY_GUARD] = SolvencyGuard._solvencyGuardXD;
     }
 

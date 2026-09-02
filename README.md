@@ -126,8 +126,31 @@ Kontraknya butuh Foundry:
 
 ```bash
 curl -L https://foundry.paradigm.xyz | bash && foundryup
-cd contracts && forge build && forge test
+cd contracts && forge build && forge test    # 29 test
 ```
+
+## Demo transfer on-chain
+
+Menjalankan seluruh alur sebagai transaksi sungguhan di rantai lokal:
+
+```bash
+anvil &
+cd contracts
+forge script script/DemoIqiaDesk.s.sol --rpc-url http://localhost:8545 --broadcast
+```
+
+Yang dibuktikan skrip itu, dengan `require` di setiap langkah:
+
+| Langkah | Bukti |
+|---|---|
+| `ship()` | Saldo dompet maker **tidak berubah sedikit pun**, Aqua menahan nol |
+| swap | WETH keluar dari dompet maker, USDC masuk — transfer ERC20 sungguhan |
+| | Harga dari kurva `x*y=k` di dalam bytecode, bukan kode Solidity |
+| `dock()` | Posisi tutup, **nol transfer token** |
+
+Contoh keluaran: 3.500 USDC masuk, 0,90909… WETH keluar. Sepanjang alur Aqua
+tidak pernah menahan satu token pun — likuiditasnya diambil langsung dari
+dompet market maker saat swap terjadi.
 
 ---
 

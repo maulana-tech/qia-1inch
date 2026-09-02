@@ -19,7 +19,7 @@ import { dynamic } from "@1inch/swap-vm/test/utils/Dynamic.sol";
 import { IqiaSwapVMRouter } from "../src/iqia/IqiaSwapVMRouter.sol";
 import { IqiaOpcodes } from "../src/iqia/IqiaOpcodes.sol";
 import { IqiaAquaTaker } from "../src/iqia/IqiaAquaTaker.sol";
-import { ShieldedGate, ShieldedGateArgsBuilder } from "../src/iqia/instructions/ShieldedGate.sol";
+import { ExclusiveFill, ExclusiveFillArgsBuilder } from "../src/iqia/instructions/ExclusiveFill.sol";
 
 /// @notice Alur lengkap: kolam terlindung berdagang lewat perantara, ke likuiditas
 ///   yang tidak pernah meninggalkan dompet market maker.
@@ -65,7 +65,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
     function _program(bool gated, address allowedTaker, uint256 salt) internal view returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
-            gated ? p.build(ShieldedGate._onlyShieldedPool, ShieldedGateArgsBuilder.build(allowedTaker)) : bytes(""),
+            gated ? p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(allowedTaker)) : bytes(""),
             p.build(XYCSwap._xycSwapXD),
             p.build(Controls._salt, abi.encodePacked(salt))
         );
@@ -181,7 +181,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
 
         vm.prank(pool);
         vm.expectRevert(
-            abi.encodeWithSelector(ShieldedGate.ShieldedGateTakerNotAllowed.selector, address(adapter), pool)
+            abi.encodeWithSelector(ExclusiveFill.ExclusiveFillTakerNotAllowed.selector, address(adapter), pool)
         );
         adapter.swapForPool(abi.encode(wrong), address(tokenB), address(tokenA), SWAP_AMOUNT, SWAP_AMOUNT, 0, _takerData(true));
     }

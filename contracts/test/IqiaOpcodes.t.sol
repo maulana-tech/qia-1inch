@@ -17,11 +17,11 @@ import { MockTaker } from "@1inch/swap-vm/test/mocks/MockTaker.sol";
 
 import { IqiaSwapVMRouter } from "../src/iqia/IqiaSwapVMRouter.sol";
 import { IqiaOpcodes } from "../src/iqia/IqiaOpcodes.sol";
-import { ShieldedGate, ShieldedGateArgsBuilder } from "../src/iqia/instructions/ShieldedGate.sol";
+import { ExclusiveFill, ExclusiveFillArgsBuilder } from "../src/iqia/instructions/ExclusiveFill.sol";
 import { SolvencyGuard, SolvencyGuardArgsBuilder } from "../src/iqia/instructions/SolvencyGuard.sol";
 
 /// @notice Dua opcode custom Iqia, diuji terhadap kontrak Aqua dan SwapVM resmi.
-contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
+contract IqiaOpcodesTest is Test, IqiaOpcodes {
     using ProgramBuilder for Program;
 
     Aqua public immutable AQUA = new Aqua();
@@ -30,8 +30,8 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     TokenMock public tokenA;
     TokenMock public tokenB;
 
-    /// @dev Berperan sebagai kolam terlindung — satu-satunya taker yang berhak.
-    MockTaker public pool;
+    /// @dev Taker yang ditunjuk — satu-satunya yang berhak mengisi.
+    MockTaker public desk;
     /// @dev Taker lain, mewakili bot publik.
     MockTaker public outsider;
 
@@ -49,7 +49,7 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         tokenA = new TokenMock("Token A", "TKA");
         tokenB = new TokenMock("Token B", "TKB");
         router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
-        pool = new MockTaker(AQUA, router, address(this));
+        desk = new MockTaker(AQUA, router, address(this));
         outsider = new MockTaker(AQUA, router, address(this));
     }
 
@@ -58,7 +58,7 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     function _program(bool gated, uint32 surchargeBps, uint256 salt) internal view returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
-            gated ? p.build(ShieldedGate._onlyShieldedPool, ShieldedGateArgsBuilder.build(address(pool))) : bytes(""),
+            gated ? p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(address(desk))) : bytes(""),
             surchargeBps > 0
                 ? p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(surchargeBps))
                 : bytes(""),
@@ -134,17 +134,17 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         vm.stopPrank();
     }
 
-    // ------------------------------------------------------------ ShieldedGate
+    // ------------------------------------------------------------ ExclusiveFill
 
-    function test_Gate_ShieldedPoolCanFill() public {
+    function test_Gate_AllowedTakerCanFill() public {
         ISwapVM.Order memory order = _order(_program(true, 0, 1));
         _ship(order, VIRTUAL_A);
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
 
         (, uint256 amountOut) =
-            pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+            desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
 
-        assertEq(amountOut, 20e18, "kolam terlindung boleh mengisi");
+        assertEq(amountOut, 20e18, "taker yang ditunjuk boleh mengisi");
     }
 
     function test_Gate_OutsiderIsRejected() public {
@@ -154,7 +154,7 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ShieldedGate.ShieldedGateTakerNotAllowed.selector, address(outsider), address(pool)
+                ExclusiveFill.ExclusiveFillTakerNotAllowed.selector, address(outsider), address(desk)
             )
         );
         outsider.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(outsider), true));
@@ -166,13 +166,13 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         ISwapVM.Order memory order = _order(_program(true, 0, 3));
         _ship(order, VIRTUAL_A);
 
-        address nearMiss = address(uint160(address(pool)) ^ 1); // beda satu bit
+        address nearMiss = address(uint160(address(desk)) ^ 1); // beda satu bit
         vm.deal(nearMiss, 1 ether);
         tokenB.mint(nearMiss, SWAP_AMOUNT);
 
         vm.prank(nearMiss);
         vm.expectRevert(
-            abi.encodeWithSelector(ShieldedGate.ShieldedGateTakerNotAllowed.selector, nearMiss, address(pool))
+            abi.encodeWithSelector(ExclusiveFill.ExclusiveFillTakerNotAllowed.selector, nearMiss, address(desk))
         );
         router.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(nearMiss, true));
     }
@@ -186,12 +186,12 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         _ship(guarded, VIRTUAL_A); // dompet menutupi seluruh saldo virtual
         _ship(plain, VIRTUAL_A);
 
-        tokenB.mint(address(pool), SWAP_AMOUNT * 2);
+        tokenB.mint(address(desk), SWAP_AMOUNT * 2);
 
         (, uint256 guardedOut) =
-            pool.swap(guarded, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+            desk.swap(guarded, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
         (, uint256 plainOut) =
-            pool.swap(plain, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+            desk.swap(plain, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
 
         assertEq(guardedOut, plainOut, "sandaran penuh: tidak ada biaya tambahan");
     }
@@ -199,10 +199,10 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     function test_Solvency_ThinBackingWorsensPrice() public {
         ISwapVM.Order memory order = _order(_program(false, MAX_SURCHARGE_BPS, 20));
         _ship(order, VIRTUAL_A / 2); // dompet hanya menutupi separuh
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
 
         (, uint256 amountOut) =
-            pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+            desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
 
         // kekurangan 50% -> tambahan 5% dari 10%
         uint256 surcharge = uint256(MAX_SURCHARGE_BPS) / 2;
@@ -224,10 +224,10 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         for (uint256 i = 0; i < wallets.length; i++) {
             ISwapVM.Order memory order = _order(_program(false, MAX_SURCHARGE_BPS, 30 + i));
             _ship(order, wallets[i]);
-            tokenB.mint(address(pool), smallSwap);
+            tokenB.mint(address(desk), smallSwap);
 
             (, uint256 amountOut) =
-                pool.swap(order, address(tokenB), address(tokenA), smallSwap, _takerData(address(pool), true));
+                desk.swap(order, address(tokenB), address(tokenA), smallSwap, _takerData(address(desk), true));
 
             assertLt(amountOut, previousOut, "sandaran menipis harus memperburuk harga");
             previousOut = amountOut;
@@ -241,10 +241,10 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     function test_Solvency_HardLimitStillApplies() public {
         ISwapVM.Order memory order = _order(_program(false, MAX_SURCHARGE_BPS, 80));
         _ship(order, VIRTUAL_A / 20); // dompet 5e18, keluaran diminta ~19e18
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
 
         vm.expectRevert();
-        pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+        desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
     }
 
     /// @dev Inti gagasannya: dengan sandaran tipis, swap yang MASIH MUAT tetap
@@ -257,12 +257,12 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         ISwapVM.Order memory plain = _order(_program(false, 0, 41));
         _ship(guarded, VIRTUAL_A / 20); // sandaran 5%
         _ship(plain, VIRTUAL_A / 20);
-        tokenB.mint(address(pool), smallSwap * 2);
+        tokenB.mint(address(desk), smallSwap * 2);
 
         (, uint256 guardedOut) =
-            pool.swap(guarded, address(tokenB), address(tokenA), smallSwap, _takerData(address(pool), true));
+            desk.swap(guarded, address(tokenB), address(tokenA), smallSwap, _takerData(address(desk), true));
         (, uint256 plainOut) =
-            pool.swap(plain, address(tokenB), address(tokenA), smallSwap, _takerData(address(pool), true));
+            desk.swap(plain, address(tokenB), address(tokenA), smallSwap, _takerData(address(desk), true));
 
         assertGt(guardedOut, 0, "swap tetap berhasil");
         assertLt(guardedOut, plainOut, "tapi lebih mahal daripada tanpa penjaga");
@@ -271,14 +271,14 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     function test_Solvency_NoBackingReverts() public {
         ISwapVM.Order memory order = _order(_program(false, MAX_SURCHARGE_BPS, 50));
         _ship(order, 0); // dompet kosong
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 SolvencyGuard.SolvencyGuardMakerHasNoBacking.selector, maker, address(tokenA)
             )
         );
-        pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+        desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
     }
 
     /// @dev Izin yang dicabut sama saja dengan dompet kosong: Aqua tidak bisa menarik.
@@ -289,13 +289,13 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
         vm.prank(maker);
         tokenA.approve(address(AQUA), 0);
 
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
         vm.expectRevert(
             abi.encodeWithSelector(
                 SolvencyGuard.SolvencyGuardMakerHasNoBacking.selector, maker, address(tokenA)
             )
         );
-        pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(pool), true));
+        desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(address(desk), true));
     }
 
     // ------------------------------------------------------------- konsistensi
@@ -303,16 +303,16 @@ contract IqiaShieldedDeskTest is Test, IqiaOpcodes {
     function test_QuoteMatchesSwapWithBothOpcodes() public {
         ISwapVM.Order memory order = _order(_program(true, MAX_SURCHARGE_BPS, 70));
         _ship(order, VIRTUAL_A / 2);
-        tokenB.mint(address(pool), SWAP_AMOUNT);
+        tokenB.mint(address(desk), SWAP_AMOUNT);
 
-        bytes memory takerData = _takerData(address(pool), true);
+        bytes memory takerData = _takerData(address(desk), true);
 
-        vm.prank(address(pool));
+        vm.prank(address(desk));
         (uint256 quotedIn, uint256 quotedOut,) =
             router.quote(order, address(tokenB), address(tokenA), SWAP_AMOUNT, takerData);
 
         (uint256 swappedIn, uint256 swappedOut) =
-            pool.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, takerData);
+            desk.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, takerData);
 
         assertEq(swappedIn, quotedIn, "amountIn quote harus sama dengan swap");
         assertEq(swappedOut, quotedOut, "amountOut quote harus sama dengan swap");
