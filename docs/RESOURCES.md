@@ -164,9 +164,13 @@ Dipakai 9 instruksi: `FeeFlat`, `FeeProgressive`, `FeeProtocol`, `Decay`, `MinRa
 `TWAPSwap`, `Invalidators`, `Balances`, `Debug`. Sebuah opcode bisa menjalankan sisa
 program lalu memproses hasilnya. `MinRate.sol` memuat dua opcode dalam 119 baris.
 
-**#6 — README ketinggalan dari kode.**
-`MakerTraitsLib.Args` punya field `tokenA`/`tokenB` yang tidak disebut README.
-`TakerTraitsLib.Args` punya `isAToB` dan `allowPartialFill`. Ikuti kode.
+**#6 — Branch `main` berbeda dari rilis. Pakai tag, jangan `main`.**
+Di branch `main`, `MakerTraitsLib.Args` punya field `tokenA`/`tokenB` dan
+`TakerTraitsLib.Args` punya `isAToB` serta `allowPartialFill`. **Di rilis
+v1.0.2 ketiganya tidak ada**, dan bentuknya justru sama dengan README.
+
+Proyek ini dipatok ke `aqua v1.0.0` dan `swap-vm v1.0.2`. Kalau membaca contoh
+dari branch `main`, sesuaikan dulu — struct-nya tidak cocok.
 
 **#7 — Di mode Aqua, `app` = alamat router SwapVM.**
 `aqua.ship(address(swapVM), abi.encode(order), tokens, amounts)`.
@@ -182,6 +186,24 @@ README kedua repo menginstruksikan `npm install @1inch/swap-vm`, dan ada badge n
 di bagian atas. Kenyataannya `@1inch/aqua` dan `@1inch/swap-vm` sama-sama 404 di
 registry publik. Satu-satunya cara memakainya adalah vendor dari git, dan karena
 keduanya proyek Foundry dengan remapping sendiri, Foundry menjadi wajib.
+
+**#10 — Dependensinya dicari di `node_modules/`, bukan `lib/`.**
+`remappings.txt` di kedua repo menunjuk `node_modules/@openzeppelin/contracts/`
+dan `node_modules/@1inch/solidity-utils/`. Jadi meski dipasang lewat
+`forge install`, paket npm-nya tetap harus ada. Versi yang dipatok keduanya sama:
+`@openzeppelin/contracts` 5.4.0 dan `@1inch/solidity-utils` 6.9.7.
+
+**#11 — `via_ir` wajib, tapi merusak verifier hasil-generate Noir.**
+Tanpa `via_ir` compiler kehabisan stack saat mengompilasi SwapVM. Dengan `via_ir`
+justru verifier UltraHonk yang pecah, di sekitar `PAIRING_POINTS_SIZE`. Jawabannya
+`compilation_restrictions` per-file di `foundry.toml`: verifier tetap di pipeline
+lama, sisanya via_ir.
+
+**#12 — Program dirakit lewat utilitas test, bukan API `src/`.**
+`ProgramBuilder` ada di `test/utils/ProgramBuilder.sol`, dan opcode dirujuk lewat
+pointer fungsi (`p.build(XYCSwap._xycSwapXD)`) yang dicari indeksnya di array
+`_opcodes()`. Artinya kontrak test harus mewarisi `AquaOpcodesDebug` untuk
+mendapat `_opcodes()`.
 
 ---
 

@@ -3,14 +3,34 @@ src = "src"
 out = "out"
 test = "test"
 script = "script"
-libs = ["lib"]
-solc = "0.8.24"
+libs = ["lib", "node_modules"]
+solc = "0.8.30"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
+# Aqua dan SwapVM butuh via_ir: tanpa itu compiler kehabisan stack.
+# Aqua sendiri memakainya di foundry.toml-nya.
+via_ir = true
 # forge auto-detects the forge-std remapping from lib/. Kept explicit for clarity.
-remappings = ["forge-std/=lib/forge-std/src/"]
+# Remapping ada di remappings.txt — Aqua dan SwapVM mencari dependensinya
+# di node_modules/, jadi jalurnya tidak seragam.
 fs_permissions = [{ access = "read", path = "./" }]
+
+# Profil tambahan yang memenuhi pengecualian di bawah.
+[[profile.default.additional_compiler_profiles]]
+name = "legacy-pipeline"
+via_ir = false
+
+# Verifier hasil-generate Noir justru PECAH dengan via_ir — pipeline barunya
+# kehabisan stack di sekitar PAIRING_POINTS_SIZE. Keduanya kompilasi mulus
+# dengan pipeline lama, jadi dikecualikan per-file.
+[[profile.default.compilation_restrictions]]
+paths = "src/HonkVerifier.sol"
+via_ir = false
+
+[[profile.default.compilation_restrictions]]
+paths = "src/TransferVerifier.sol"
+via_ir = false
 
 [fmt]
 line_length = 100

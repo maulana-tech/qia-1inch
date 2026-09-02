@@ -76,6 +76,8 @@ router. Satu kontrak memenuhi dua syarat.
 | ✅ Ganti nama aplikasi | 337 kemunculan di 87 file, plus 10 file/folder. Termasuk nama lama yang tertinggal di sirkuit dan SDK |
 | ✅ Buang lapisan enclave | 82 file: layanan pencocokan ber-Docker, pengirim instruksi, ABI-nya |
 | ✅ Pindah chain | Target sekarang Base Sepolia. Escrow lintas-chain, sisi L1-nya, dan dependency mati dari chain lama semuanya dibuang |
+| ✅ Pasang Aqua + SwapVM | `aqua v1.0.0` dan `swap-vm v1.0.2` sebagai submodule, solc naik ke 0.8.30 |
+| ✅ Test integrasi pertama | 3 test lolos: `ship()` nol transfer, swap memindahkan token sungguhan, quote sama dengan swap |
 
 Ketiganya terverifikasi: SDK 41 test lolos, matcher 25 test lolos, frontend
 typecheck bersih, sirkuit Noir 5 test lolos.
@@ -97,11 +99,7 @@ typecheck bersih, sirkuit Noir 5 test lolos.
 
 | Tahap | Selesai kalau |
 |---|---|
-| 🚧 Pasang Foundry | `forge` tersedia. **Memblokir semua tahap di bawah** |
-| ⬜ Vendor Aqua + SwapVM ke `contracts/lib/` | `forge build` hijau |
-| ⬜ Naikkan solc 0.8.24 → 0.8.30 | 6 kontrak lama masih kompilasi |
-| ⬜ Test Foundry pertama: satu swap lewat Aqua | Meniru `SwapVMAqua.t.sol` |
-| ⬜ Router SwapVM custom + opcode set | Test sebelumnya masih hijau |
+| ⬜ Router SwapVM custom + opcode set | Test yang ada masih hijau |
 | ⬜ Adapter taker — `IqiaPool` bisa jadi taker | Swap dari kolam berhasil |
 | ⬜ Hapus `SimpleAMM`, arahkan frontend | Mode swap jalan di UI |
 | ⬜ Opcode custom + testnya | Cabang baru terbukti bekerja |
