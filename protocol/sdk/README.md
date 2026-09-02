@@ -21,8 +21,7 @@ pnpm --filter @iqia/sdk test
 SHARED §9 mandates that the SDK's Poseidon2 reproduce the on-chain / Noir hash before it
 is used for any commitment. Golden vectors were generated from the **pinned Noir
 `poseidon` v0.2.0 lib** (`nargo 1.0.0-beta.9`, BN254, t=4, RATE=3, `iv = num_inputs·2^64`,
-output `state[0]`) — identical params to `soroban-poseidon`'s
-`poseidon2_hash::<4, BnScalar>`.
+output `state[0]`). Pin that version — a different one shifts every vector.
 
 Backing library: **`@zkpassport/poseidon2`** (`poseidon2Hash`).
 

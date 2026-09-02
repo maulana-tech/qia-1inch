@@ -8,8 +8,8 @@ use poseidon::poseidon2::Poseidon2;
 // Run:  cd test/golden-gen && source ../../../env.sh && nargo test --show-output
 //
 // Poseidon2 here is noir-lang/poseidon v0.2.0 (BN254, t=4, RATE=3,
-// IV = in_len * 2^64, output = state[0]) -- byte-for-byte identical to
-// soroban-poseidon poseidon2_hash::<4, BnScalar> and to the in-circuit hashes.
+// IV = in_len * 2^64, output = state[0]) -- byte-for-byte identical to the
+// in-circuit hashes. Pin the version: a different one shifts every vector.
 
 global DEPTH: u32 = 20;
 
