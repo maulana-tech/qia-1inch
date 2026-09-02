@@ -1,0 +1,19 @@
+{
+  "name": "larel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Full-privacy platform on Flare — shielded FXRP, portfolio, private pay, ZK dark pool.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "dependencies": {
+    "push-wuzz": "^1.0.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1"
+  }
+}

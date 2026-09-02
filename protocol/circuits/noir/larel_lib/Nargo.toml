@@ -1,0 +1,7 @@
+[package]
+name = "larel_lib"
+type = "lib"
+authors = ["Larel"]
+
+[dependencies]
+poseidon = { tag = "v0.2.0", git = "https://github.com/noir-lang/poseidon" }

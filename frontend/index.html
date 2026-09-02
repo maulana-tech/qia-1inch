@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Set the theme class before first paint (no flash). Saved choice wins;
+      // otherwise follow the OS preference, defaulting to the signature dark "Mist".
+      (function () {
+        try {
+          var saved = localStorage.getItem('lax-stell.theme');
+          // Default to the signature dark "Mist" theme; only go light if the user chose it.
+          var dark = saved ? saved === 'dark' : true;
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/png" href="/src/assets/larel-logo.png" />
+    <link rel="apple-touch-icon" href="/src/assets/larel-logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="description"
+      content="Larel — a Build privacy platform on Flare. Bridge, hold, pay, and trade in a shielded ZK layer."
+    />
+    <title>Larel App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

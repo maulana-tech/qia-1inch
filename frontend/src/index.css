@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * Theme tokens — neutral gray scale, no warm/sepia tint.
+ * :root = LIGHT theme, .dark = DARK theme.
+ * ink/mist = surfaces & borders; zinc = text; spectral/halo = foreground accent.
+ * R = G = B throughout so there is zero warm cast on backgrounds or text.
+ * ------------------------------------------------------------------------- */
+:root {
+  /* LIGHT — near-white background, near-black text */
+  --mist-50:  25 25 25;
+  --mist-100: 32 32 32;
+  --mist-200: 43 43 43;
+  --mist-300: 60 60 60;
+  --mist-400: 89 89 89;
+  --mist-500: 117 117 117;
+  --mist-600: 147 147 147;
+  --mist-700: 180 180 180;
+  --mist-750: 202 202 202;
+  --mist-800: 240 240 240;
+  --mist-850: 255 255 255;
+  --mist-900: 255 255 255;
+  --mist-950: 255 255 255;
+
+  --halo: 33 33 33;
+  --halo-soft: 22 22 22;
+  --halo-dim: 105 105 105;
+  --halo-glow: 38 38 38;
+  --halo-deep: 147 147 147;
+
+  --patina-300: 90 90 90;
+  --patina-400: 64 64 64;
+  --patina-500: 40 40 40;
+
+  --zinc-50:  25 25 25;
+  --zinc-100: 32 32 32;
+  --zinc-200: 43 43 43;
+  --zinc-300: 60 60 60;
+  --zinc-400: 89 89 89;
+  --zinc-500: 117 117 117;
+  --zinc-600: 147 147 147;
+  --zinc-700: 180 180 180;
+  --zinc-800: 240 240 240;
+  --zinc-900: 255 255 255;
+  --zinc-950: 255 255 255;
+}
+
+.dark {
+  /* DARK — near-black background, near-white text */
+  --mist-50:  238 238 238;
+  --mist-100: 225 225 225;
+  --mist-200: 203 203 203;
+  --mist-300: 175 175 175;
+  --mist-400: 145 145 145;
+  --mist-500: 110 110 110;
+  --mist-600: 78 78 78;
+  --mist-700: 53 53 53;
+  --mist-750: 43 43 43;
+  --mist-800: 32 32 32;
+  --mist-850: 25 25 25;
+  --mist-900: 19 19 19;
+  --mist-950: 13 13 13;
+
+  --halo: 234 234 234;
+  --halo-soft: 246 246 246;
+  --halo-dim: 178 178 178;
+  --halo-glow: 240 240 240;
+  --halo-deep: 106 106 106;
+
+  --patina-300: 214 214 214;
+  --patina-400: 178 178 178;
+  --patina-500: 140 140 140;
+
+  --zinc-50:  241 241 241;
+  --zinc-100: 228 228 228;
+  --zinc-200: 206 206 206;
+  --zinc-300: 175 175 175;
+  --zinc-400: 139 139 139;
+  --zinc-500: 105 105 105;
+  --zinc-600: 75 75 75;
+  --zinc-700: 53 53 53;
+  --zinc-800: 32 32 32;
+  --zinc-900: 19 19 19;
+  --zinc-950: 13 13 13;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Act-nav jump links glide; honour reduced-motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    @apply min-h-screen bg-ink-950 font-sans text-zinc-300;
+    /* Subtle fractal-noise grain over the neutral background. */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"),
+      radial-gradient(60rem 40rem at 50% -14rem, rgba(255, 255, 255, 0.03), transparent 60%),
+      radial-gradient(42rem 32rem at 86% 2rem, rgba(255, 255, 255, 0.015), transparent 58%);
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-size: 140px 140px, auto, auto;
+    background-blend-mode: overlay, normal, normal;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+    @apply tracking-tight text-zinc-100;
+  }
+
+  ::selection {
+    @apply bg-spectral/30 text-mist-950;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--mist-700)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-600;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-none border border-ink-700 bg-ink-850/80 shadow-panel;
+  }
+
+  .panel-title {
+    @apply text-sm font-semibold tracking-tight text-zinc-100;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-zinc-400;
+  }
+
+  .input {
+    @apply w-full rounded-none border border-ink-700 bg-ink-900/70 px-3.5 py-2.5 text-sm text-zinc-100
+           outline-none transition placeholder:text-zinc-600
+           focus:border-spectral/60 focus:ring-2 focus:ring-spectral/20;
+  }
+  .input-mono {
+    @apply font-mono tracking-tight;
+  }
+
+  .btn {
+    @apply inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-none px-4 py-2.5
+           text-sm font-semibold transition active:scale-[0.99]
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  }
+  .btn-sm {
+    @apply rounded-none px-3 py-1.5 text-xs;
+  }
+  .btn-primary {
+    @apply bg-spectral text-mist-950 hover:bg-spectral-soft;
+  }
+  .btn-outline {
+    @apply border border-ink-600 bg-ink-800/50 text-zinc-200 hover:border-spectral/50 hover:text-zinc-100;
+  }
+  .btn-ghost {
+    @apply text-zinc-400 hover:bg-ink-800 hover:text-zinc-100;
+  }
+  .btn-danger {
+    @apply border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium;
+  }
+
+  /* --- Continuum shell (monopo-continuous /app) ------------------------------ */
+
+  /* The coordinate-label vernacular carried over from the landing hero. */
+  .coord-label {
+    @apply font-mono text-[10px] uppercase tracking-[0.16em] text-spectral/55;
+  }
+
+  /* Uppercase grotesque display type — the masthead + act titles. Uses the
+     themed `spectral-soft` (near-white in dark, near-black in light) so app-shell
+     titles stay legible in both themes. Only used on app surfaces, never the
+     always-dark landing. */
+  .display-hd {
+    @apply font-display font-semibold uppercase tracking-[-0.03em] text-spectral-soft;
+    line-height: 0.98;
+  }
+
+  /* Footer panel — neutral light gray in light theme, dark gray in dark theme. */
+  .cream-panel {
+    @apply relative overflow-hidden text-[#1f1f1f] dark:text-zinc-400;
+    background: #f0f0f0;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .dark .cream-panel {
+    background: #121212;
+  }
+
+  .footer-gradient-wash {
+    background: linear-gradient(to bottom, rgba(246,246,246,0) 0%, rgba(246,246,246,0) 20%, rgba(246,246,246,0.14) 42%, rgba(246,246,246,0.42) 62%, rgba(246,246,246,0.74) 78%, rgba(246,246,246,0.93) 91%, #f0f0f0 100%);
+    transition: background 0.2s;
+  }
+  .dark .footer-gradient-wash {
+    background: linear-gradient(to bottom, rgba(13,13,13,0) 0%, rgba(13,13,13,0) 20%, rgba(13,13,13,0.14) 42%, rgba(13,13,13,0.42) 62%, rgba(13,13,13,0.74) 78%, rgba(13,13,13,0.93) 91%, #121212 100%);
+  }
+}
+
+/* Film grain, shared by the brand canvas and the cream footer. */
+.wr-grain {
+  display: none;
+}
+
+/* ScrambleText — encrypted glyphs decoding into letters (monopo-style intro). */
+.wr-scramble-glyph {
+  display: inline-block;
+  font-variant-ligatures: none;
+}
+/* Scrambling glyphs are filled with fine film grain (not a glitch) — a grainy
+   dissolve that resolves to solid type once the letter settles. */
+.wr-scramble-char {
+  color: rgb(var(--halo-dim));
+}

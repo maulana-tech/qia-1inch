@@ -1,0 +1,7 @@
+[package]
+name = "place_order"
+type = "bin"
+authors = ["Larel"]
+
+[dependencies]
+larel_lib = { path = "../larel_lib" }
