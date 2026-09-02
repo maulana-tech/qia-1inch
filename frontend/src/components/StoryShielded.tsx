@@ -50,7 +50,7 @@ const STACK = [
     label: 'proven math',
     coord: '[ UltraHonk · BN254 ]',
     title: 'the math is the lock.',
-    body: 'every move out is a zero-knowledge proof, checked on-chain inside a Flare EVM contract. a spend reveals only a nullifier, so the old note and the new never link. no valid proof, no funds move.',
+    body: 'every move out is a zero-knowledge proof, checked on-chain inside a Base EVM contract. a spend reveals only a nullifier, so the old note and the new never link. no valid proof, no funds move.',
     src: asset4,
     poster: asset4,
     flip: true,
@@ -58,7 +58,7 @@ const STACK = [
 ]
 
 const MODULES = [
-  { k: 'DEPOSIT / WITHDRAW', d: 'assets in, or in from Ethereum, BLS-verified on Flare EVM.', to: '/deposit' },
+  { k: 'DEPOSIT / WITHDRAW', d: 'assets in, or in from Ethereum, BLS-verified on Base EVM.', to: '/deposit' },
   { k: 'PORTFOLIO', d: 'private multi-asset balances only you can see.', to: '/portfolio' },
   { k: 'PAY', d: 'confidential payments; amounts and parties hidden.', to: '/pay' },
   { k: 'SWAP', d: 'a zero-knowledge dark pool; orders matched blind.', to: '/swap' },

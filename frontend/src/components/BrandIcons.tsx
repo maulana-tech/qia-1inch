@@ -7,11 +7,11 @@ import iqiaLogo from '../assets/iqia-logo.png'
  *
  * Rendered as single-color glyphs (they inherit `currentColor`) so they sit cleanly
  * in the black-and-white UI — no external image fetches, so nothing can 404. The
- * Flare and Ethereum paths are the canonical simple-icons marks; USDC and the
+ * Base and Ethereum paths are the canonical simple-icons marks; USDC and the
  * Iqia mark are drawn to match the same weight.
  */
 
-export function FlareGlyph(props: SVGProps<SVGSVGElement>) {
+export function BaseGlyph(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 36.7 36.6" fill="currentColor" aria-hidden {...props}>
       <path d="M27.3,13.7H9.2c-5,0-9,3.9-9.2,8.9c0,0.1,0.1,0.2,0.2,0.2h18.1c5,0,9-3.9,9.2-8.9 C27.5,13.8,27.4,13.7,27.3,13.7L27.3,13.7L27.3,13.7z" />
@@ -81,10 +81,8 @@ type GlyphComponent = FC<SVGProps<SVGSVGElement>>
 
 /** Registry keyed by both chain ids and token codes. */
 const GLYPHS: Record<string, GlyphComponent> = {
-  flare: FlareGlyph,
   ethereum: EthereumGlyph,
   'iqia': IqiaMark,
-  FLR: FlareGlyph,
   ETH: EthereumGlyph,
   bETH: EthereumGlyph,
   USDC: UsdcGlyph,
@@ -101,7 +99,7 @@ const SIZES = {
 
 /**
  * A chain or token logo inside a round monochrome chip. `name` is a chain id
- * (`flare`/`ethereum`/`iqia`) or a token code (`FLR`, `ETH`, `bETH`, …).
+ * (`ethereum`/`iqia`) or a token code (`ETH`, `USDC`, `WBTC`, …).
  * Unknown names fall back to a short mono label so nothing renders empty.
  */
 export function CoinBadge({

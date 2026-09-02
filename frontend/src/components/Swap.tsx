@@ -6,6 +6,7 @@ import { formatAmount, formatPrice, parseAmount } from '../lib/format'
 import type { OpenOrder, OrderSide } from '../lib/iqia-sdk'
 import { TOKEN_OPTIONS, assetMeta } from '../lib/tokens'
 import { cx } from '../lib/cx'
+import { explorerTxUrl } from '../lib/config'
 import {
   Badge,
   Button,
@@ -135,7 +136,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
 
   const [mode, setMode] = useState<'market' | 'limit'>('market')
   const [side, setSide] = useState<OrderSide>('buy')
-  const [base, setBase] = useState('FLR')
+  const [base, setBase] = useState('ETH')
   const [quote, setQuote] = useState('USDC')
   const [price, setPrice] = useState('')
   const [amount, setAmount] = useState('')
@@ -631,7 +632,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                         <td className="py-3.5 pl-3 pr-5 text-right">
                           {item.txHash ? (
                             <a
-                              href={`https://coston2-explorer.flare.network/tx/${item.txHash}`}
+                              href={explorerTxUrl(item.txHash)}
                               target="_blank"
                               rel="noreferrer"
                               className="font-mono text-xs text-zinc-500 hover:text-spectral underline transition"

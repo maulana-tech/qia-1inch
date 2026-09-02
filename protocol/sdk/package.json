@@ -1,7 +1,7 @@
 {
   "name": "@iqia/sdk",
   "version": "0.1.0",
-  "description": "Iqia TypeScript SDK — notes, orders, Poseidon2, Merkle tree, UltraHonk proofs, and Soroban tx building for the Iqia privacy platform on Stellar.",
+  "description": "Iqia TypeScript SDK — notes, orders, Poseidon2, Merkle tree, UltraHonk proofs, and EVM tx building for the Iqia privacy platform.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

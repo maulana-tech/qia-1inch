@@ -2,7 +2,7 @@
   "name": "iqia-1inch",
   "version": "0.1.0",
   "private": true,
-  "description": "Full-privacy platform on Flare — shielded FXRP, portfolio, private pay, ZK dark pool.",
+  "description": "Full-privacy platform on Base — shielded WBTC, portfolio, private pay, ZK dark pool.",
   "license": "MIT",
   "packageManager": "pnpm@10.11.0",
   "scripts": {

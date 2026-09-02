@@ -37,7 +37,7 @@ const IqiaContext = createContext<IqiaContextValue | null>(null)
 
 /**
  * Provides the app-wide Iqia SDK client plus cached shielded balances and open orders.
- * The shielded identity (spending + viewing keys) is derived from the connected Flare
+ * The shielded identity (spending + viewing keys) is derived from the connected Base
  * wallet, and this is the only place that constructs the SDK, drives that derivation, and
  * runs the client indexer that rebuilds the Merkle tree and discovers incoming notes.
  */

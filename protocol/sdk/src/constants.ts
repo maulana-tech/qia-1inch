@@ -2,7 +2,7 @@
  * Iqia SDK constants.
  *
  * All values here are cross-component invariants (SHARED.md). Do not change them
- * without changing the Noir circuits and the Soroban contract in lockstep.
+ * without changing the Noir circuits and the on-chain contract in lockstep.
  */
 
 /** Price scaling factor for limit prices (10^7). SHARED sec 4 / SPEC sec 7.1. */

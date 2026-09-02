@@ -1,13 +1,13 @@
 import { createConfig, http } from 'wagmi'
-import { flareTestnet, sepolia } from 'wagmi/chains'
+import { base, baseSepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 export const wagmiConfig = createConfig({
-  chains: [flareTestnet, sepolia],
+  chains: [baseSepolia, base],
   connectors: [injected()],
   transports: {
-    [flareTestnet.id]: http(),
-    [sepolia.id]: http(),
+    [baseSepolia.id]: http(),
+    [base.id]: http(),
   },
 })
 

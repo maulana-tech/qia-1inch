@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { cx } from '../lib/cx'
 import { Act } from '../components/Act'
-import { Bridge, type BridgeProgress } from '../components/Bridge'
+import { CHAIN_NAME } from '../lib/config'
+import { Deposit, type DepositProgress } from '../components/Deposit'
 
-/** Act 01 crossing droplet — a rule that fills as the bridge flow advances. */
-function CrossingRule({ progress }: { progress: BridgeProgress }) {
+/** Act 01 crossing droplet — a rule that fills as the deposit flow advances. */
+function CrossingRule({ progress }: { progress: DepositProgress }) {
   const frac = progress.total > 1 ? progress.step / (progress.total - 1) : 0
   const pct = progress.status === 'done' ? 100 : Math.round(frac * 100)
   const lit = progress.status === 'running' || progress.status === 'done'
@@ -33,20 +34,20 @@ function CrossingRule({ progress }: { progress: BridgeProgress }) {
   )
 }
 
-export function BridgePage() {
-  const [cross, setCross] = useState<BridgeProgress>({ step: 0, total: 2, status: 'idle' })
+export function DepositPage() {
+  const [cross, setCross] = useState<DepositProgress>({ step: 0, total: 2, status: 'idle' })
   return (
     <Act
       no="Act 01"
       id="act-cross"
       title="Cross the veil"
-      standfirst="Move value across the veil between the public chains and the shielded pool. Every crossing is proven, not trusted a real ZK proof out, or a light-client inclusion proof in."
-      coords={['Flare · Coston2', 'Ethereum · Sepolia']}
+      standfirst="Move value across the veil between the public chain and the shielded pool. Every crossing is proven, not trusted — a real ZK proof on the way out."
+      coords={[CHAIN_NAME, 'Iqia · shielded pool']}
     >
       <CrossingRule progress={cross} />
-      <Bridge embedded onProgress={setCross} />
+      <Deposit embedded onProgress={setCross} />
     </Act>
   )
 }
 
-export default BridgePage
+export default DepositPage

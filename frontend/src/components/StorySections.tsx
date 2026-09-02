@@ -82,7 +82,7 @@ export function BentoSection() {
         <Tile className="sm:col-span-2 md:col-span-2">
           <TileHead eyebrow="02 · ultrahonk" title="proofs, not disclosures." />
           <p className="mt-3 text-[13.5px] font-medium leading-relaxed text-[#555555] dark:text-[#c4c4c4]">
-            each exit is a Noir/UltraHonk zero-knowledge proof, checked inside a Flare EVM contract over
+            each exit is a Noir/UltraHonk zero-knowledge proof, checked inside a Base EVM contract over
             BN254. no amounts, no addresses leave the circuit.
           </p>
           <div className="mt-5 flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#7a7a7a] dark:text-[#858585]">
@@ -107,7 +107,7 @@ export function BentoSection() {
           <TileHead eyebrow="03 · trust-minimized bridge" title="bridged, not wrapped." />
           <p className="mt-3 text-[13.5px] font-medium leading-relaxed text-[#555555] dark:text-[#c4c4c4]">
             assets locked on Ethereum arrive as shielded notes an Ethereum sync-committee BLS
-            signature is verified <span className="text-[#7a7a7a] dark:text-[#bfbfbf]">natively on Flare EVM</span>, no
+            signature is verified <span className="text-[#7a7a7a] dark:text-[#bfbfbf]">natively on Base EVM</span>, no
             trusted relayer, no SNARK wrap.
           </p>
         </Tile>
@@ -212,26 +212,26 @@ export function SystemArchitecture() {
         {/* main vertical flow */}
         <div className="flex flex-col">
           <Layer
-            eyebrow="L1 · Ethereum Sepolia"
+            eyebrow="L1 · Base"
             title="IqiaBridge"
             items={['lock ETH / USDC', 'emit Locked(commitment)']}
           />
           <Connector note="untrusted relayer — transports data, holds no authority" />
           <Layer
-            eyebrow="Flare EVM · verification"
+            eyebrow="Base EVM · verification"
             title="EthLightClient → IqiaBridge"
             items={['BLS12-381 sync-committee', 'MPT storage proof vs state_root', 'bridge_in → mint note']}
           />
           <Connector note="native BN254 / BLS — no SNARK wrap" />
           <Layer
-            eyebrow="Flare EVM · shielded state"
+            eyebrow="Base EVM · shielded state"
             title="IqiaPool"
             items={['Poseidon2 commitment notes', 'append-only Merkle · depth 20', 'nullifier set · 100-root ring']}
             highlight
           />
           <Connector note="every exit gated by a zero-knowledge proof" />
           <Layer
-            eyebrow="Flare EVM · UltraHonk verifiers"
+            eyebrow="Base EVM · UltraHonk verifiers"
             title="5 circuits · one contract each"
             items={['withdraw', 'transfer', 'place_order', 'match_orders', 'cancel_order']}
           />
@@ -240,7 +240,7 @@ export function SystemArchitecture() {
         {/* off-chain rail */}
         <aside className="flex flex-col gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a7a7a] dark:text-[#8a8a8a]">off-chain · no authority</span>
-          <RailCard title="SDK" lines={['notes · Merkle · Poseidon2', 'UltraHonk proofs (bb.js)', 'Flare EVM tx building']} />
+          <RailCard title="SDK" lines={['notes · Merkle · Poseidon2', 'UltraHonk proofs (bb.js)', 'Base EVM tx building']} />
           <RailCard title="Matcher" lines={['off-chain price-time', 'mirrors match_orders', 're-proven on-chain']} />
           <RailCard title="Relayer" lines={['beacon finality updates', 'eth_getProof', 'every value re-verified']} />
         </aside>
@@ -281,7 +281,7 @@ export function SwapAmmMechanism() {
           <Connector note="generates blind execution path and ZK match proof" />
           <Layer
             eyebrow="Phase 3 · On-Chain Settlement"
-            title="Flare EVM Contract (match_orders)"
+            title="Base EVM Contract (match_orders)"
             items={['verify ZK proof of matching', 'nullify spent input notes', 'append output notes to Merkle tree']}
             highlight
           />

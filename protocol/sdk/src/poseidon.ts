@@ -13,7 +13,7 @@
  *   arity 4  ->  PASS
  *   arity 7  ->  PASS
  *
- * Inputs are reduced mod r before hashing, matching the on-chain Soroban path
+ * Inputs are reduced mod r before hashing, matching the on-chain path
  * (`U256::from_be_bytes(..).rem_euclid(&modulus)`), so out-of-range inputs cannot
  * produce an SDK/contract divergence.
  */

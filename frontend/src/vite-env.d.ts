@@ -5,39 +5,37 @@ interface ImportMetaEnv {
   readonly VITE_USE_MOCK?: string
   /** Enable the experimental in-browser withdraw prover (heavy). */
   readonly VITE_ENABLE_WITHDRAW?: string
-  /** Overrides for the live deployment (default to deployments.json / testnet). */
+
+  // --- Network ---
+  /** Target chain id. Base Sepolia = 84532, Base mainnet = 8453. */
+  readonly VITE_CHAIN_ID?: string
+  /** Display name for the target chain. */
+  readonly VITE_CHAIN_NAME?: string
+  /** Block explorer base URL. */
+  readonly VITE_EXPLORER_URL?: string
+
+  // --- Core contracts ---
+  /** IqiaPool address (0x…). */
   readonly VITE_IQIA_POOL?: string
-  readonly VITE_NATIVE_SAC?: string
-  readonly VITE_USDC_SAC?: string
-  readonly VITE_SOROBAN_RPC_URL?: string
-  readonly VITE_NETWORK_PASSPHRASE?: string
-  // --- Cross-chain bridge (Ethereum Sepolia <-> Flare Coston2) ---
-  /** Run the Bridge tab as a self-contained mock walkthrough (no wallets). */
-  readonly VITE_USE_MOCK_BRIDGE?: string
-  /** Ethereum chain id of the L1 bridge (Sepolia = 11155111). */
-  readonly VITE_L1_CHAIN_ID?: string
-  /** Sepolia execution RPC for viem reads. */
-  readonly VITE_SEPOLIA_RPC_URL?: string
-  /** IqiaBridgeL1 escrow address on Sepolia (0x…). */
-  readonly VITE_L1_BRIDGE_ADDRESS?: string
-  /** Soroban EthLightClient contract id (C…). */
-  readonly VITE_ETH_LIGHT_CLIENT?: string
-  /** Soroban IqiaBridge contract id (C…). */
-  readonly VITE_IQIA_BRIDGE?: string
-  /** Optional relayer base URL for the bridge-in nudge. */
-  readonly VITE_RELAYER_URL?: string
-  /** Bridge-asset domain separator (BRIDGE_SPEC §3). */
-  readonly VITE_BRIDGE_DOMAIN?: string
-  /** Sepolia test-USDC ERC20 address (0x…). */
-  readonly VITE_BRIDGE_USDC_L1?: string
-  /** Sepolia test-BTC ERC20 address (0x…). */
-  readonly VITE_BRIDGE_BTC_L1?: string
-  /** Sepolia test-XRP ERC20 address (0x…). */
-  readonly VITE_BRIDGE_XRP_L1?: string
-  /** Mock ERC20 token addresses on Coston2 for the faucet. */
-  readonly VITE_ETH_SAC?: string
-  readonly VITE_BTC_SAC?: string
-  readonly VITE_XRP_SAC?: string
+  /** TransferProcessor address (0x…). */
+  readonly VITE_TRANSFER_PROCESSOR?: string
+  /** Block the pool was deployed at — the indexer's cold-start floor. */
+  readonly VITE_POOL_DEPLOY_BLOCK?: string
+
+  // --- Aqua / SwapVM ---
+  /** Aqua virtual-balance registry (0x…). */
+  readonly VITE_AQUA?: string
+  /** Iqia's custom SwapVM router, which doubles as the Aqua app (0x…). */
+  readonly VITE_SWAP_VM_ROUTER?: string
+
+  // --- Faucet tokens (7 decimals, see contracts/README.md) ---
+  readonly VITE_USDC_ADDRESS?: string
+  readonly VITE_WBTC_ADDRESS?: string
+  readonly VITE_DAI_ADDRESS?: string
+
+  // --- Services ---
+  /** Off-chain dark-pool matcher base URL. Empty disables matching. */
+  readonly VITE_MATCHER_URL?: string
 }
 
 interface ImportMeta {

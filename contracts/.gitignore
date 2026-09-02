@@ -3,7 +3,7 @@ out/
 cache/
 broadcast/
 
-# Local env / secrets (PRIVATE_KEY, SEPOLIA_RPC_URL)
+# Local env / secrets (PRIVATE_KEY, RPC_URL)
 .env
 .env.local
 

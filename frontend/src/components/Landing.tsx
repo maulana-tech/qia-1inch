@@ -11,7 +11,7 @@ const ROTATING = ['shielded', 'unlinkable', 'verified', 'private', 'yours']
 
 
 const NET_TITLE = ['Testnet']
-const NET_VALUE = ['Flare · Coston2']
+const NET_VALUE = ['Base · Base Sepolia']
 const PROOF_TITLE = ['Proof']
 const PROOF_VALUE = ['UltraHonk · BN254']
 const SHIELD_TITLE = ['Shielded']
@@ -147,7 +147,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <span
               className={`block font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
             >
-              [ Flare · Compute Extension · zero-knowledge ]
+              [ Base · Compute Extension · zero-knowledge ]
             </span>
 
             <h1
@@ -174,7 +174,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <p
               className={`mt-8 max-w-xl text-[15px] font-medium leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}
             >
-              Deposit, transfer and trade on Flare with amounts, balances and counterparties
+              Deposit, transfer and trade on Base with amounts, balances and counterparties
               hidden — every move still verified on-chain by a zero-knowledge proof.
             </p>
 
@@ -272,7 +272,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           <div className="animate-lax-marquee" style={{ fontSize: 'clamp(2rem, 8.2vw, 6.5rem)', color: dark ? '#a6a6a6' : '#7a7a7a' }}>
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FLARE</a>
+            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FCE</a>
             <span className="mx-8 opacity-45">·</span>
@@ -283,7 +283,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             {/* Duplicate for infinite loop */}
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FLARE</a>
+            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
             <span className="mx-8 opacity-45">·</span>
             <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FCE</a>
             <span className="mx-8 opacity-45">·</span>
@@ -308,10 +308,10 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
                     <circle cx="5" cy="6.5" r="4.5" stroke="currentColor" />
                     <circle cx="8" cy="6.5" r="4.5" stroke="currentColor" />
                   </svg>
-                  Build on Flare
+                  Build on Base
                 </div>
                 <p className={`text-[13px] leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}>
-                  Iqia is a application-run project. We're always developing for everyone in the Flare ecosystem.
+                  Iqia is a application-run project. We're always developing for everyone in the Base ecosystem.
                 </p>
               </div>
             </div>

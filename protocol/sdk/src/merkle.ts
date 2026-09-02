@@ -5,7 +5,7 @@
  *  - Depth 20, leaves are note commitments, node hash = `hash2`.
  *  - Empty subtrees use the precomputed `ZEROS` constants.
  *  - Insertion uses the frontier / `filledSubtrees` algorithm, byte-for-byte matching
- *    the Soroban contract, so locally-computed roots equal on-chain roots.
+ *    the on-chain contract, so locally-computed roots equal on-chain roots.
  *  - Proof bit ordering matches the in-circuit `check_merkle_proof`:
  *      pathIndices[i] == 0  => current node is LEFT  => hash2(current, sibling)
  *      pathIndices[i] == 1  => current node is RIGHT => hash2(sibling, current)

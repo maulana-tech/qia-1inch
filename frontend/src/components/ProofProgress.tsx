@@ -41,7 +41,7 @@ export function ProofProgress({
       )}
 
       <div className="relative flex w-full max-w-lg flex-col items-center text-center">
-        <div className="coord-label mb-8">zero-knowledge proof · flare testnet</div>
+        <div className="coord-label mb-8">zero-knowledge proof · base sepolia</div>
 
         {subject ? (
           <ScrambleNumber
@@ -56,7 +56,7 @@ export function ProofProgress({
         <div className="mt-8 flex items-center gap-2.5">
           {done ? (
             <span className="flex items-center gap-2 text-sm font-medium text-emerald-300">
-              <CheckIcon className="h-4 w-4" /> Confirmed on Flare
+              <CheckIcon className="h-4 w-4" /> Confirmed on Base
             </span>
           ) : errored ? (
             <span className="flex items-center gap-2 text-sm font-medium text-red-300">

@@ -2,7 +2,7 @@
  * UltraHonk proof generation via @noir-lang/noir_js (witness gen) + @aztec/bb.js
  * (`UltraHonkBackend`). SHARED.md sec 8.
  *
- * The KECCAK transcript is mandatory: the Soroban verifier only accepts the Keccak-256
+ * The KECCAK transcript is mandatory: the on-chain verifier only accepts the Keccak-256
  * transcript (`bb prove --oracle_hash keccak`). In bb.js this is the
  * `{ keccak: true }` option to `generateProof` / `verifyProof` / `getVerificationKey`
  * (confirmed against @aztec/bb.js@0.87.0 `UltraHonkBackendOptions`).

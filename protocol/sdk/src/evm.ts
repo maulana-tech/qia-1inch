@@ -130,8 +130,8 @@ export class IqiaContract {
   
   /**
    * Order placement previously went through IqiaInstructionSender, which handed the
-   * encrypted order to a Flare Confidential Compute enclave. That enclave was Flare
-   * infrastructure and does not exist off Flare, so the path is gone.
+   * encrypted order to a trusted enclave. That enclave belonged to the old chain's
+   * infrastructure and does not exist here, so the path is gone.
    *
    * Its replacement is SwapVM: the execution gate that the enclave enforced in
    * private becomes an opcode the VM enforces on-chain, and Aqua-backed orders need
@@ -143,7 +143,7 @@ export class IqiaContract {
     encryptedMemos: Uint8Array;
   }): `0x${string}` {
     throw new Error(
-      'placeOrderData: the Flare TEE path was removed and the SwapVM router is not wired yet',
+      'placeOrderData: the trusted-enclave path was removed and the SwapVM router is not wired yet',
     );
   }
 

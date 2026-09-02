@@ -1,7 +1,7 @@
 //! Iqia `withdraw` circuit (SPEC sec 8.1).
 //!
 //! Proves ownership of a shielded balance note and authorises a withdrawal of
-//! its full amount to a classic Stellar address.
+//! its full amount to an EVM address.
 //!
 //! Public inputs (SHARED sec 7, IN THIS ORDER):
 //!   merkle_root, nullifier, recipient_hash, amount, asset_id

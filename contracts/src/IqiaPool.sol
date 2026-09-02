@@ -153,10 +153,10 @@ contract IqiaPool {
     // -------------------------------------------------------------------------
     // Order Settlement
     //
-    // TIDAK AKTIF. Jalur ini dulu menerima hasil pencocokan dari enclave Flare
-    // Confidential Compute dan mempercayainya lewat tanda tangan TEE. Enclave itu
-    // infrastruktur Flare dan sudah dibuang, jadi `teeAddress` tidak akan pernah
-    // terisi dan `settle()` selalu gagal di pemeriksaan tanda tangan.
+    // TIDAK AKTIF. Jalur ini dulu menerima hasil pencocokan dari enclave tepercaya
+    // dan mempercayainya lewat tanda tangan enclave. Enclave itu infrastruktur milik
+    // chain lama dan sudah dibuang, jadi `teeAddress` tidak akan pernah terisi dan
+    // `settle()` selalu gagal di pemeriksaan tanda tangan.
     //
     // Penggantinya adalah SwapVM: aturan yang dulu dijaga enclave secara rahasia
     // menjadi program bytecode yang dijalankan on-chain, dan order bersandar Aqua

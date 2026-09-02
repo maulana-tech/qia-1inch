@@ -42,7 +42,7 @@ export function generateKeyPair(): KeyPair {
 /**
  * Asset id for a SAC asset: `hash2(sacAddressAsField, 0)`. Native XLM uses `assetId = 0`.
  * SHARED sec 4 / SPEC sec 5.3. The caller is responsible for mapping a StrKey "C..."
- * address to a field via {@link addressToField} in stellar.ts.
+ * address to a field via {@link addressToField} in evm.ts.
  */
 export function assetIdFromAddressField(addressAsField: FieldLike): Field {
   return hash2(addressAsField, 0);

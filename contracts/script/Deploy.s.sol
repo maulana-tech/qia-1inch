@@ -33,14 +33,11 @@ contract DeployScript is Script {
         MockERC20 usdc = new MockERC20("Test USD Coin", "USDC", 7);
         console.log("MockUSDC deployed at:", address(usdc));
 
-        MockERC20 eth = new MockERC20("Test Ethereum", "ETH", 7);
-        console.log("MockETH deployed at:", address(eth));
+        MockERC20 wbtc = new MockERC20("Test Wrapped Bitcoin", "WBTC", 7);
+        console.log("MockWBTC deployed at:", address(wbtc));
 
-        MockERC20 btc = new MockERC20("Test Bitcoin", "BTC", 7);
-        console.log("MockBTC deployed at:", address(btc));
-
-        MockERC20 xrp = new MockERC20("Test XRP", "XRP", 7);
-        console.log("MockXRP deployed at:", address(xrp));
+        MockERC20 dai = new MockERC20("Test Dai", "DAI", 7);
+        console.log("MockDAI deployed at:", address(dai));
 
         vm.stopBroadcast();
     }

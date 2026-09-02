@@ -13,9 +13,8 @@
 import { NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
 import {
   MOCK_USDC_ADDRESS,
-  MOCK_ETH_ADDRESS,
-  MOCK_BTC_ADDRESS,
-  MOCK_XRP_ADDRESS,
+  MOCK_WBTC_ADDRESS,
+  MOCK_DAI_ADDRESS,
 } from './config'
 
 export interface TokenMeta {
@@ -27,47 +26,38 @@ export interface TokenMeta {
   decimals: number
   /** Display price estimate (USD). */
   priceUsd: number
-  /** ERC20 contract address on Coston2, or undefined if not available here. */
+  /** ERC20 contract address on the active network, or undefined if not deployed. */
   sac?: string
-  /** True for the native FLR (asset_id = 0). */
+  /** True for the chain's native token (asset_id = 0). */
   native?: boolean
-  /** True for cross-chain bridged assets (no native ERC20; minted by the bridge). */
-  bridged?: boolean
   /** True for a testnet faucet token — the app can mint it to you on demand. */
   faucet?: boolean
 }
 
 /**
- * Curated tokens shown in the deposit picker. FLR is native; USDC/ETH/BTC/XRP
- * are testnet faucet tokens (deployed permissionless-mint MockERC20 mocks) so they're
- * depositable out of the box — the app can mint them to you. Override any address via
- * `VITE_<CODE>_SAC` (e.g. to point at the real mainnet assets).
+ * Curated tokens shown in the deposit picker. ETH is the chain's native token;
+ * USDC/WBTC/DAI are testnet faucet tokens (permissionless-mint MockERC20) so they're
+ * depositable out of the box. Override any address via `VITE_<CODE>_ADDRESS`.
  *
- * IMPORTANT: These must be EVM contract addresses (0x...) on Flare Coston2.
+ * Faucet tokens use 7 decimals, not 18: the Noir circuits assert amounts fit in
+ * 64 bits (see assert_64 in iqia_lib), and 18 decimals overflows that for ordinary
+ * amounts.
+ *
  * Deploy mock tokens: cd contracts && forge script script/Deploy.s.sol --broadcast
  */
 export const CURATED_TOKENS: TokenMeta[] = [
-  { code: 'FLR', name: 'Flare', icon: 'FLR', decimals: 18, priceUsd: 0.03, native: true },
+  { code: 'ETH', name: 'Ether', icon: 'ETH', decimals: 18, priceUsd: 3500, native: true },
   { code: 'USDC', name: 'Test USD Coin', icon: 'USDC', decimals: 7, priceUsd: 1, faucet: true,
     sac: MOCK_USDC_ADDRESS || undefined },
-  { code: 'ETH', name: 'Test Ethereum', icon: 'ETH', decimals: 7, priceUsd: 3500, faucet: true,
-    sac: MOCK_ETH_ADDRESS || undefined },
-  { code: 'BTC', name: 'Test Bitcoin', icon: 'BTC', decimals: 7, priceUsd: 65000, faucet: true,
-    sac: MOCK_BTC_ADDRESS || undefined },
-  { code: 'XRP', name: 'Test XRP', icon: 'XRP', decimals: 7, priceUsd: 0.6, faucet: true,
-    sac: MOCK_XRP_ADDRESS || undefined },
+  { code: 'WBTC', name: 'Test Wrapped Bitcoin', icon: 'WBTC', decimals: 7, priceUsd: 65000, faucet: true,
+    sac: MOCK_WBTC_ADDRESS || undefined },
+  { code: 'DAI', name: 'Test Dai', icon: 'DAI', decimals: 7, priceUsd: 1, faucet: true,
+    sac: MOCK_DAI_ADDRESS || undefined },
 ]
 
-export const BRIDGED_TOKENS: TokenMeta[] = [
-  { code: 'bETH', name: 'Bridged ETH', icon: 'bETH', decimals: 18, priceUsd: 3500, bridged: true },
-  { code: 'bUSDC', name: 'Bridged USDC', icon: 'bUSDC', decimals: 6, priceUsd: 1, bridged: true },
-  { code: 'bBTC', name: 'Bridged BTC', icon: 'bBTC', decimals: 8, priceUsd: 65000, bridged: true },
-  { code: 'bXRP', name: 'Bridged XRP', icon: 'bXRP', decimals: 6, priceUsd: 0.6, bridged: true },
-]
+const REGISTRY = new Map<string, TokenMeta>(CURATED_TOKENS.map((t) => [t.code, t]))
 
-const REGISTRY = new Map<string, TokenMeta>([...CURATED_TOKENS, ...BRIDGED_TOKENS].map((t) => [t.code, t]))
-
-export const ALL_TOKENS = [...CURATED_TOKENS, ...BRIDGED_TOKENS]
+export const ALL_TOKENS = [...CURATED_TOKENS]
 
 /** The canonical token codes (the global "enum") used by deposit / transfer / swap pickers. */
 export const TOKEN_CODES: string[] = ALL_TOKENS.map((t) => t.code)
@@ -75,15 +65,12 @@ export const TOKEN_CODES: string[] = ALL_TOKENS.map((t) => t.code)
 /** Select options for the token pickers (code — name). */
 export const TOKEN_OPTIONS = ALL_TOKENS.map((t) => ({ value: t.code, label: `${t.code} — ${t.name}` }))
 
-/** Cross-chain bridged asset codes (minted by the bridge; not curated deposit tokens). */
-export const BRIDGED_ASSET_CODES: string[] = BRIDGED_TOKENS.map((t) => t.code)
-
 /** Metadata for a code — falls back to a plain text badge for unknown/custom tokens. */
 export function assetMeta(code: string): TokenMeta {
   return REGISTRY.get(code) ?? { code, name: code, icon: code, decimals: 7, priceUsd: 0 }
 }
 
-/** The `asset_id` field for a token: native FLR = 0; else Poseidon2 of its ERC20 address. */
+/** The `asset_id` field for a token: native = 0; else Poseidon2 of its ERC20 address. */
 export function assetIdFor(token: Pick<TokenMeta, 'native' | 'sac'>): Field {
   if (token.native) return NATIVE_ASSET_ID
   if (!token.sac) throw new Error('Token has no ERC20 address to derive its asset id.')

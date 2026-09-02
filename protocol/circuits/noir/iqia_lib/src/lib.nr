@@ -1,7 +1,7 @@
 //! Iqia shared circuit library.
 //!
 //! Centralises every cryptographic invariant that MUST be byte-for-byte identical
-//! across the Noir circuits, the Soroban contract, and the TypeScript SDK.
+//! across the Noir circuits, the on-chain contract, and the TypeScript SDK.
 //! See SHARED.md (sec 3-5) -- this file is the in-circuit realisation of those rules.
 //!
 //! Poseidon2: BN254, state width t=4, RATE 3, HADES, S-box x^5, variable-length

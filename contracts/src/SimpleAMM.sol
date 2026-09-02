@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 /**
  * @title SimpleAMM
  * @notice Simple Uniswap V2 style AMM for Iqia testnet.
+ *         DIGANTIKAN: lihat docs/migrasi.md — likuiditas pindah ke Aqua + SwapVM.
  *         Supports token swaps with constant product formula (x * y = k).
  */
 contract SimpleAMM {
@@ -42,15 +43,15 @@ contract SimpleAMM {
     function addLiquidity(uint256 amountA, uint256 amountB) external payable {
         if (amountA == 0 || amountB == 0) revert InsufficientAmount();
         
-        // Handle native FLR (address(0))
+        // Handle the native token (address(0))
         if (tokenA == address(0)) {
-            require(msg.value == amountA, "Incorrect FLR amount");
+            require(msg.value == amountA, "Incorrect native amount");
         } else {
             _transferFrom(tokenA, msg.sender, address(this), amountA);
         }
         
         if (tokenB == address(0)) {
-            require(msg.value == amountB, "Incorrect FLR amount");
+            require(msg.value == amountB, "Incorrect native amount");
         } else {
             _transferFrom(tokenB, msg.sender, address(this), amountB);
         }
@@ -96,7 +97,7 @@ contract SimpleAMM {
         reserveA -= amountA;
         reserveB -= amountB;
         
-        // Transfer tokens back (handle native FLR)
+        // Transfer tokens back (handle the native token)
         if (tokenA == address(0)) {
             (bool success, ) = msg.sender.call{value: amountA}("");
             if (!success) revert TransferFailed();
@@ -135,9 +136,9 @@ contract SimpleAMM {
         
         if (amountOut < minAmountOut) revert InsufficientLiquidity();
         
-        // Handle native FLR
+        // Handle the native token
         if (tokenIn == address(0)) {
-            require(msg.value == amountIn, "Incorrect FLR amount");
+            require(msg.value == amountIn, "Incorrect native amount");
         } else {
             _transferFrom(tokenIn, msg.sender, address(this), amountIn);
         }

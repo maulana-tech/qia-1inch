@@ -35,7 +35,7 @@ export function Receive({ receiveCode }: { receiveCode: string | null }) {
         </>
       ) : (
         <p className="rounded-none border border-ink-700 bg-ink-900/50 px-4 py-4 text-center text-sm text-zinc-500">
-          Connect your Flare wallet to reveal your receive code.
+          Connect your Base wallet to reveal your receive code.
         </p>
       )}
     </div>

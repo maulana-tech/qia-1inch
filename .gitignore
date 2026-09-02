@@ -8,12 +8,6 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 
-# Rust / Soroban
-contracts/*/target/
-contracts/target/
-contracts/*/test_snapshots/
-*.wasm
-*.d
 
 # Node
 node_modules/
@@ -39,7 +33,6 @@ Thumbs.db
 vendor/
 
 # Deploy artifacts / secrets
-.soroban/
 deployments.json
 *.env
 

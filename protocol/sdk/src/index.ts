@@ -1,5 +1,5 @@
 /**
- * @iqia/sdk — TypeScript client for the Iqia privacy platform on Flare (EVM).
+ * @iqia/sdk — TypeScript client for the Iqia privacy platform (EVM).
  */
 import { TREE_DEPTH, ZEROS } from "./constants.js";
 import { MerkleTree } from "./merkle.js";

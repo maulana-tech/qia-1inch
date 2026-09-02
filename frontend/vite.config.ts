@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5173,
   },
   define: {
-    // @stellar/stellar-sdk (stellar-base) references `global` in the browser.
+    // The proof tooling references `global` in the browser.
     global: 'globalThis',
   },
   optimizeDeps: {

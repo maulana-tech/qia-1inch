@@ -3,13 +3,13 @@ import { useWallet } from '../hooks/useWallet'
 import { CURATED_TOKENS } from '../lib/tokens'
 import { faucetMint } from '../lib/faucet'
 import { truncateKey } from '../lib/format'
-import { MOCK_TOKENS_DEPLOYED, USE_MOCK } from '../lib/config'
+import { MOCK_TOKENS_DEPLOYED, USE_MOCK, explorerTxUrl } from '../lib/config'
 import { CoinBadge } from './BrandIcons'
 import { Button } from './ui'
 import { ConnectWallet } from './ConnectWallet'
 
 import { useWalletClient, usePublicClient, useAccount, useSwitchChain } from 'wagmi'
-import { flareTestnet } from 'wagmi/chains'
+import { baseSepolia } from 'wagmi/chains'
 
 const FAUCET_TOKENS = CURATED_TOKENS.filter((t) => t.faucet)
 const DRIP = 1000
@@ -24,18 +24,18 @@ export function Faucet() {
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<Record<string, ReactNode>>({})
   const connected = wallet.status === 'connected'
-  const onCoston2 = chainId === flareTestnet.id
+  const onTargetChain = chainId === baseSepolia.id
 
   async function mint(code: string, sac: string, decimals: number) {
     if (!walletClient || !publicClient) {
-      setMsg((m) => ({ ...m, [code]: 'Switch MetaMask to Flare Coston2 first.' }))
+      setMsg((m) => ({ ...m, [code]: 'Switch MetaMask to Base Sepolia first.' }))
       return
     }
     setBusy(code)
     setMsg((m) => ({ ...m, [code]: '' }))
     try {
       const hash = await faucetMint(sac, BigInt(DRIP) * 10n ** BigInt(decimals), walletClient, publicClient)
-      const explorerUrl = `https://coston2-explorer.flare.network/tx/${hash}`
+      const explorerUrl = explorerTxUrl(hash)
       setMsg((m) => ({ ...m, [code]: <span>Minted {DRIP.toLocaleString()} {code} · <a href={explorerUrl} target="_blank" rel="noreferrer" className="text-spectral-soft hover:underline">{truncateKey(hash, 6, 6)}</a></span> }))
     } catch (e) {
       console.error(e)
@@ -69,21 +69,21 @@ export function Faucet() {
 
         {!connected && (
           <p className="mt-4 rounded-none border border-ink-700 bg-ink-900/50 px-3.5 py-3 text-center text-sm text-zinc-500">
-            Connect your Flare wallet to mint.
+            Connect your Base wallet to mint.
           </p>
         )}
 
-        {connected && !onCoston2 && (
+        {connected && !onTargetChain && (
           <div className="mt-4 rounded-none border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3">
             <p className="text-xs text-yellow-300 mb-2">
-              MetaMask is on chain {chainId}. Switch to Flare Coston2 (Chain 114) to mint tokens.
+              MetaMask is on chain {chainId}. Switch to Base Sepolia (Chain 114) to mint tokens.
             </p>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => switchChain({ chainId: flareTestnet.id })}
+              onClick={() => switchChain({ chainId: baseSepolia.id })}
             >
-              Switch to Coston2
+              Switch to Base Sepolia
             </Button>
           </div>
         )}

@@ -45,12 +45,10 @@ export function isPositiveAmount(input: string): boolean {
   return Number.isFinite(n) && n > 0
 }
 
-const FLARE_ADDRESS = /^G[A-Z2-7]{55}$/
+const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/
 
-/** Lightweight check for a classic Flare public key (G… base32, 56 chars). */
-export function isValidFlareAddress(addr: string): boolean {
-  return FLARE_ADDRESS.test(addr.trim())
+/** Lightweight check for an EVM address (0x + 40 hex chars). */
+export function isValidAddress(addr: string): boolean {
+  return EVM_ADDRESS.test(addr.trim())
 }
-
-export const isValidStellarAddress = isValidFlareAddress
 

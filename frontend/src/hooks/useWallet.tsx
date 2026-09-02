@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi'
 import { injected } from 'wagmi/connectors'
-import { flareTestnet } from 'wagmi/chains'
+import { baseSepolia } from 'wagmi/chains'
 
 export type WalletStatus = 'checking' | 'not-installed' | 'disconnected' | 'connecting' | 'connected'
 
@@ -30,8 +30,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       address: address ?? null,
-      network: chainId === flareTestnet.id ? 'COSTON2' : 'UNKNOWN',
-      isTestnet: chainId === flareTestnet.id,
+      network: chainId === baseSepolia.id ? 'BASE_SEPOLIA' : 'UNKNOWN',
+      isTestnet: chainId === baseSepolia.id,
       installed: true,
       error: connectError?.message ?? null,
       connect: async () => {

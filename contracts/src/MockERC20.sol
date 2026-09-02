@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 /**
  * @title MockERC20
  * @notice Permissionless-mint ERC20 for testnet faucet. Anyone can mint.
- *         Deploy one per test asset (USDC, ETH, BTC, XRP) on Coston2.
+ *         Deploy one per test asset (USDC, WBTC, DAI) on the target network.
  *         Minimal implementation — no OpenZeppelin dependency.
  */
 contract MockERC20 {

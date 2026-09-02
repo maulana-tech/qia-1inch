@@ -143,7 +143,7 @@ function AppFooter() {
             </span>
           </NavLink>
           <p className="max-w-[18rem] text-[12.5px] font-normal leading-relaxed text-[#1f1f1f]/70 dark:text-zinc-400">
-            Private money on Flare. Bridge in, hold, pay and trade — proven on-chain, never revealed.
+            Private money on Base. Bridge in, hold, pay and trade — proven on-chain, never revealed.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#141414]/55 dark:text-zinc-500">

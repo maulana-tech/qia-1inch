@@ -12,7 +12,7 @@ import { SettingsProvider } from './lib/settings'
 import { wagmiConfig } from './lib/wagmi'
 import './index.css'
 
-// @stellar/stellar-sdk (stellar-base) relies on a global Buffer in the browser.
+// bb.js and the proof tooling rely on a global Buffer in the browser.
 // This is still needed for some legacy dependencies during migration.
 if (!globalThis.Buffer) globalThis.Buffer = Buffer
 

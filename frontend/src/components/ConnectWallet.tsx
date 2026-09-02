@@ -64,7 +64,7 @@ export function ConnectWallet() {
             {copied && <p className="mt-1.5 text-xs text-patina-300">Copied to clipboard</p>}
 
             {!wallet.isTestnet && (
-              <p className="mt-2 text-xs text-zinc-400">Switch MetaMask to Coston2 Testnet for this demo.</p>
+              <p className="mt-2 text-xs text-zinc-400">Switch MetaMask to Base Sepolia Testnet for this demo.</p>
             )}
 
             <Button

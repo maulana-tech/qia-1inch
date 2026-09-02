@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Iqia off-chain order-matching service — price-time matching that mirrors the match_orders circuit, plus match_orders proof assembly and Soroban submission.",
+  "description": "Iqia off-chain order-matching service — price-time matching that mirrors the match_orders circuit, plus match_orders proof assembly and EVM submission.",
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -29,7 +29,6 @@
     "@iqia/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@stellar/stellar-sdk": "^14.6.1",
     "@zkpassport/poseidon2": "^0.6.2",
     "@types/node": "^20.19.0",
     "tsup": "^8.3.5",
