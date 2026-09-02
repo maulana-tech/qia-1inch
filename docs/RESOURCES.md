@@ -233,12 +233,6 @@ Ini sering dilewatkan peserta lain. Murah dipasang, langsung terlihat serius.
 - [Optimal Fees for Liquidity Provision — arXiv 2508.08152](https://arxiv.org/pdf/2508.08152)
 - [Dynamic Fees for AMMs — Atis E](https://atise.medium.com/dynamic-fees-for-automated-market-makers-liquidity-volatility-and-collected-fees-db211da18d0d)
 
-### Pembanding kualitas repo
-
-- [maulana-tech/larel-main](https://github.com/maulana-tech/larel-main) — 303 commit dalam seminggu.
-  Tidak memakai Aqua sama sekali, tapi struktur README dan disiplin commit-nya layak ditiru.
-  Jangan tiru volumenya — scope-nya jauh melebihi kebutuhan track ini.
-
 ### Berita
 
 - [1inch meluncurkan Aqua — The Block](https://www.theblock.co/press-releases/379041/1inch-launches-aqua-the-first-shared-liquidity-protocol-now-available-for-developers)
