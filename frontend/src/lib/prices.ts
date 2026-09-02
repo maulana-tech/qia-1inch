@@ -10,11 +10,10 @@
 import { assetMeta } from './tokens'
 
 const COINGECKO_IDS: Record<string, string> = {
-  FLR: 'flare-network',
-  USDC: 'usd-coin',
   ETH: 'ethereum',
-  BTC: 'bitcoin',
-  XRP: 'ripple',
+  USDC: 'usd-coin',
+  WBTC: 'wrapped-bitcoin',
+  DAI: 'dai',
 }
 
 const ENDPOINT = 'https://api.coingecko.com/api/v3/simple/price'

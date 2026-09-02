@@ -13,7 +13,7 @@ import { RealIqiaSdk } from './real-sdk'
 /**
  * A shielded asset's display code. The protocol is asset-agnostic — any ERC20
  * Contract (SAC) can be deposited — so this is an open string, not a fixed union. Well-
- * known codes (FLR, USDC, ETH, BTC, XRP, bETH, bUSDC) have curated metadata in
+ * known codes (ETH, USDC, WBTC, DAI) have curated metadata in
  * `lib/tokens.ts`; custom tokens carry their own descriptor (see {@link DepositParams}).
  */
 export type AssetCode = string
@@ -29,7 +29,7 @@ export interface ShieldedBalance {
 
 export interface OpenOrder {
   id: string
-  /** Trading pair "BASE/QUOTE", e.g. "FLR/USDC". */
+  /** Trading pair "BASE/QUOTE", e.g. "ETH/USDC". */
   pair: string
   base: AssetCode
   quote: AssetCode
@@ -44,14 +44,14 @@ export interface OpenOrder {
 }
 
 export interface TxResult {
-  /** Mock Soroban transaction hash. */
+  /** Mock transaction hash. */
   hash: string
 }
 
 export interface DepositParams {
   asset: AssetCode
   amount: string
-  /** Explicit token descriptor for curated/custom assets. When omitted, FLR is assumed. */
+  /** Explicit token descriptor for curated/custom assets. When omitted, the native token is assumed. */
   sac?: string
   decimals?: number
   native?: boolean
@@ -60,7 +60,7 @@ export interface DepositParams {
 export interface WithdrawParams {
   asset: AssetCode
   amount: string
-  /** Classic Flare recipient address (0x…). */
+  /** Recipient address (0x…). */
   recipient: string
   /** The exact note to withdraw (commitment hex), from the note picker. */
   commitment?: string
@@ -122,7 +122,7 @@ export interface IqiaSdk {
 
 // --- Mock implementation ----------------------------------------------------
 
-const PRICES: Record<AssetCode, number> = { FLR: 0.03, USDC: 1, bETH: 3500, bUSDC: 1 }
+const PRICES: Record<AssetCode, number> = { ETH: 3500, USDC: 1, WBTC: 65000, DAI: 1 }
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -149,13 +149,13 @@ function round2(value: number): number {
 }
 
 class MockIqiaSdk implements IqiaSdk {
-  private balances: Record<AssetCode, number> = { FLR: 1240.5, USDC: 3500, bETH: 0, bUSDC: 0 }
+  private balances: Record<AssetCode, number> = { ETH: 1.5, USDC: 3500, WBTC: 0, DAI: 0 }
 
   private orders: OpenOrder[] = [
     {
       id: 'ord_seed01',
-      pair: 'FLR/USDC',
-      base: 'FLR',
+      pair: 'ETH/USDC',
+      base: 'ETH',
       quote: 'USDC',
       side: 'buy',
       price: '0.38',
@@ -165,8 +165,8 @@ class MockIqiaSdk implements IqiaSdk {
     },
     {
       id: 'ord_seed02',
-      pair: 'FLR/USDC',
-      base: 'FLR',
+      pair: 'ETH/USDC',
+      base: 'ETH',
       quote: 'USDC',
       side: 'sell',
       price: '0.415',
@@ -286,7 +286,7 @@ let singleton: IqiaSdk | null = null
  * Returns the app-wide Iqia client.
  *
  * By default this is the LIVE `RealIqiaSdk`, wired to the deployed IqiaPool on
- * Flare Coston2 (real deposit + portfolio; experimental withdraw). Set
+ * the target network (real deposit + portfolio; experimental withdraw). Set
  * `VITE_USE_MOCK=true` to fall back to the offline `MockIqiaSdk` for UI dev with no
  * wallet / network. Nothing else in the UI changes between the two.
  */

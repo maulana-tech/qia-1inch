@@ -138,7 +138,7 @@ export function getSpendingKey(): Field {
       return cached
     }
   }
-  throw new Error('Shielded identity is not ready. Connect your Flare wallet to derive your spending key.')
+  throw new Error('Shielded identity is not ready. Connect your wallet to derive your spending key.')
 }
 
 import { CURATED_TOKENS } from './tokens'

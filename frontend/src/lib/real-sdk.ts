@@ -14,14 +14,19 @@ const transferProcessorAbi = parseAbi([
   'function transfer(bytes calldata proof, bytes32[6] calldata publicInputs) external',
 ])
 
-// SimpleAMM contract addresses on Coston2
-const AMM_POOLS: Record<string, string> = {
-  'FLR/USDC': '0x6BdB65a29aB0aA63Ed9ab1c6EC238Cd455cbdB2c',
-  'FLR/ETH': '0x8Ff8Ba795085540cC7021c5eb58CF4971eb3940E',
-  'FLR/BTC': '0xC5F9Be31f97EA13729a832F1fc41797D41C89aD1',
-  'FLR/XRP': '0xD0aCae33a7c4eB3b2A3Ce1bb3f2fc489e6B40B8e',
-  'USDC/ETH': '0x8A28b7F3448f75789c9D6ff5f0E5DdC59C744e98',
-}
+// Alamat pool SimpleAMM, diisi lewat env saat deploy.
+//
+// SimpleAMM dijadwalkan diganti Aqua + SwapVM — lihat docs/migrasi.md. Tabel
+// ini kosong sampai pool-nya dideploy di jaringan target; sebelum itu
+// getAMMPool mengembalikan undefined dan jalur swap gagal dengan pesan jelas
+// alih-alih menembak alamat chain lama yang sudah tidak ada.
+const AMM_POOLS: Record<string, string> = Object.fromEntries(
+  (import.meta.env?.VITE_AMM_POOLS ?? '')
+    .split(',')
+    .map((entry: string) => entry.trim())
+    .filter(Boolean)
+    .map((entry: string) => entry.split('=') as [string, string]),
+)
 
 // SimpleAMM ABI
 const simpleAMMAbi = parseAbi([
@@ -39,9 +44,9 @@ function getAMMPool(tokenIn: string, tokenOut: string): string | undefined {
   return AMM_POOLS[key1] || AMM_POOLS[key2]
 }
 
-// Get token address for AMM (native FLR = address(0))
+// Alamat token untuk AMM (token native = address(0))
 function getAMMTokenAddress(code: string): string {
-  if (code === 'FLR') return '0x0000000000000000000000000000000000000000'
+  if (assetMeta(code).native) return '0x0000000000000000000000000000000000000000'
   const meta = assetMeta(code)
   return meta.sac || '0x0000000000000000000000000000000000000000'
 }
@@ -110,7 +115,7 @@ export class RealIqiaSdk implements IqiaSdk {
   }
 
   async deposit(params: DepositParams): Promise<TxResult> {
-    const isNative = params.native ?? (params.asset === 'FLR')
+    const isNative = params.native ?? assetMeta(params.asset).native ?? false
     const address = params.sac ?? (isNative ? 'native' : '')
     if (!address && !isNative) throw new Error('Need ERC20 contract address for deposit')
     const decimals = params.decimals ?? 18
@@ -332,8 +337,8 @@ export class RealIqiaSdk implements IqiaSdk {
       side: params.side === 'buy' ? 0 : 1,
       price: params.price,
       amount: params.amount,
-      assetBase: assetIdFor({ native: params.base === 'FLR', sac: assetMeta(params.base).sac }).toString(),
-      assetQuote: assetIdFor({ native: params.quote === 'FLR', sac: assetMeta(params.quote).sac }).toString(),
+      assetBase: assetIdFor({ native: assetMeta(params.base).native, sac: assetMeta(params.base).sac }).toString(),
+      assetQuote: assetIdFor({ native: assetMeta(params.quote).native, sac: assetMeta(params.quote).sac }).toString(),
       baseCode: params.base,
       quoteCode: params.quote,
       ownerKey: getSpendingKey().toString(),
@@ -381,8 +386,8 @@ export class RealIqiaSdk implements IqiaSdk {
         args: [tokenInAddress as `0x${string}`, amountInBase],
       })
       
-      // Approve AMM to spend input token (skip for native FLR)
-      if (params.assetIn !== 'FLR') {
+      // Approve AMM to spend input token (skip for the native token)
+      if (!assetMeta(params.assetIn).native) {
         const approveHash = await writeContract(wagmiConfig, {
           address: tokenInAddress as `0x${string}`,
           abi: erc20Abi,
@@ -397,8 +402,8 @@ export class RealIqiaSdk implements IqiaSdk {
       // Execute swap on AMM
       const minAmountOut = expectedOut * 95n / 100n // 5% slippage tolerance
       
-      if (params.assetIn === 'FLR') {
-        // Native FLR -> Token
+      if (assetMeta(params.assetIn).native) {
+        // Native -> Token
         swapHash = await writeContract(wagmiConfig, {
           address: poolAddress as `0x${string}`,
           abi: simpleAMMAbi,
@@ -409,7 +414,7 @@ export class RealIqiaSdk implements IqiaSdk {
           account: from as `0x${string}`,
         })
       } else {
-        // Token -> Token or Token -> Native FLR
+        // Token -> Token, atau Token -> native
         swapHash = await writeContract(wagmiConfig, {
           address: poolAddress as `0x${string}`,
           abi: simpleAMMAbi,
