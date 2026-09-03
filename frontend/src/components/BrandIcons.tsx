@@ -1,6 +1,6 @@
 import type { FC, SVGProps } from 'react'
 import { cx } from '../lib/cx'
-import iqiaLogo from '../assets/iqia-logo.png'
+
 
 /**
  * Monochrome brand marks for chains and tokens.
@@ -62,7 +62,7 @@ export function XrpGlyph(props: SVGProps<SVGSVGElement>) {
 export function IqiaSpinnerMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 200 200" aria-hidden {...props}>
-      <image href={iqiaLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
+      <text x="100" y="118" textAnchor="middle" fontSize="64" fill="currentColor" fontFamily="monospace">iq</text>
     </svg>
   )
 }
@@ -70,7 +70,7 @@ export function IqiaSpinnerMark(props: SVGProps<SVGSVGElement>) {
 export function IqiaMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 200 200" aria-hidden {...props}>
-      <image href={iqiaLogo} width="200" height="200" preserveAspectRatio="xMidYMid meet" />
+      <text x="100" y="118" textAnchor="middle" fontSize="64" fill="currentColor" fontFamily="monospace">iq</text>
     </svg>
   )
 }

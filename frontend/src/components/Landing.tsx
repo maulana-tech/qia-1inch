@@ -1,21 +1,23 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import ScrambleCycle from './ScrambleCycle'
-import { StoryShielded } from './StoryShielded'
 
-import iqiaLogo from '../assets/iqia-logo.png'
+import { Logo } from './Logo'
+import { BentoGrid } from './BentoGrid'
+import { Mechanics } from './Mechanics'
+import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
 
-const ROTATING = ['shielded', 'unlinkable', 'verified', 'private', 'yours']
+const ROTATING = ['in your wallet', 'unlocked', 'yours', 'never pooled', 'put to work']
 
 
 const NET_TITLE = ['Testnet']
 const NET_VALUE = ['Base · Base Sepolia']
 const PROOF_TITLE = ['Proof']
 const PROOF_VALUE = ['UltraHonk · BN254']
-const SHIELD_TITLE = ['Shielded']
-const SHIELD_VALUE = ['Poseidon2 · Merkle']
+const SHIELD_TITLE = ['Liquidity']
+const SHIELD_VALUE = ['1inch Aqua · SwapVM']
 
 const GRID_V = 'rgba(255,255,255,0.06)'
 const GRID_H = 'rgba(255,255,255,0.09)'
@@ -67,6 +69,41 @@ function Readouts({ dark }: { dark: boolean }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+interface FooterLink {
+  label: string
+  href: string
+  external?: boolean
+}
+
+/** Satu kolom tautan di footer. Semua tautan menuju halaman yang benar-benar ada. */
+function FooterNav({ dark, heading, links }: { dark: boolean; heading: string; links: FooterLink[] }) {
+  return (
+    <nav aria-label={heading}>
+      <h2
+        className="font-mono text-[10px] uppercase tracking-[0.18em]"
+        style={{ color: dark ? 'rgba(255,255,255,0.42)' : 'rgba(25,25,25,0.42)' }}
+      >
+        {heading}
+      </h2>
+      <ul className="mt-4 space-y-2.5">
+        {links.map((l) => (
+          <li key={l.href}>
+            <a
+              href={l.href}
+              {...(l.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              className="text-[13.5px] transition hover:opacity-70"
+              style={{ color: dark ? 'rgba(255,255,255,0.72)' : 'rgba(25,25,25,0.72)' }}
+            >
+              {l.label}
+              {l.external ? <span aria-hidden> ↗</span> : null}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   )
 }
 
@@ -122,11 +159,12 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       {/* Header — fixed, inverts against whatever scrolls behind it. */}
       <header className="fixed inset-x-0 top-0 z-50">
         <div className="flex items-center justify-between px-8 py-5">
-          <a href="/" className="flex items-center gap-3">
-            <img src={iqiaLogo} alt="Iqia" className="h-12 w-auto" />
-            <span className={`font-display text-base font-semibold tracking-tight ${dark ? 'text-[#ffffff]' : 'text-[#191919]'}`}>
-              iqia
-            </span>
+          <a
+            href="/"
+            className={`flex items-center ${dark ? 'text-[#ffffff]' : 'text-[#191919]'}`}
+            aria-label="Iqia — beranda"
+          >
+            <Logo markClassName="h-7 w-7" />
           </a>
           <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em]">
             <a href="/faucet" className={`transition ${dark ? 'text-[#ffffff]/70 hover:text-[#ffffff]' : 'text-[#191919]/70 hover:text-[#191919]'}`}>
@@ -158,13 +196,12 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
               }}
             >
               <span className="flex flex-wrap gap-x-[0.26em]">
-                <Word>private</Word>
-                <Word>your</Word>
-                <Word>assets</Word>
+                <Word>liquidity</Word>
+                <Word>that</Word>
               </span>
               <span className="flex flex-wrap gap-x-[0.26em]">
-                <Word>that</Word>
-                <Word>stay</Word>
+                <Word>always</Word>
+                <Word>stays</Word>
               </span>
               <span className="block">
                 <ScrambleCycle words={ROTATING} duration={900} hold={2000} />
@@ -174,8 +211,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <p
               className={`mt-8 max-w-xl text-[15px] font-medium leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}
             >
-              Deposit, transfer and trade on Base with amounts, balances and counterparties
-              hidden — every move still verified on-chain by a zero-knowledge proof.
+              A trading desk built on 1inch Aqua. Market makers keep their tokens in their own
+              wallets — Aqua records an allowance, never a deposit — and the pricing rules run
+              as SwapVM bytecode instead of a hand-written contract.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -240,95 +278,86 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       />
       </section>
 
-      <StoryShielded onEnter={onEnter} />
+      <BentoGrid onEnter={onEnter} />
 
-      <footer className="relative flex min-h-screen flex-col justify-between overflow-hidden px-8 py-16 transition-colors duration-300"
-              style={{
-                backgroundColor: dark ? '#101010' : '#ffffff',
-                color: dark ? '#ffffff' : '#191919',
-              }}
+      <Mechanics />
+
+      <footer
+        className="relative border-t px-6 pb-10 pt-14 transition-colors duration-300 sm:px-10 lg:px-16"
+        style={{
+          backgroundColor: dark ? '#101010' : '#ffffff',
+          color: dark ? '#ffffff' : '#191919',
+          borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(25,25,25,0.10)',
+        }}
       >
-
-
-        <div className="relative flex items-start justify-between">
-          <a href="/" className="transition hover:opacity-75">
-            <img src={iqiaLogo} alt="Iqia" className="h-10 w-auto opacity-85" />
-          </a>
-        </div>
-
-        <style>{`
-          @keyframes lax-marquee {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-50%, 0, 0); }
-          }
-          .animate-lax-marquee {
-            display: inline-block;
-            white-space: nowrap;
-            animation: lax-marquee 20s linear infinite;
-          }
-        `}</style>
-
-        <div className="relative overflow-hidden w-full whitespace-nowrap select-none">
-          <div className="animate-lax-marquee" style={{ fontSize: 'clamp(2rem, 8.2vw, 6.5rem)', color: dark ? '#a6a6a6' : '#7a7a7a' }}>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FCE</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>NOIR</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>SHIELDED</a>
-            <span className="mx-8 opacity-45">·</span>
-            {/* Duplicate for infinite loop */}
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>IQIA</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>FCE</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>NOIR</a>
-            <span className="mx-8 opacity-45">·</span>
-            <a href="/" className={`transition-colors ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>SHIELDED</a>
-            <span className="mx-8 opacity-45">·</span>
-          </div>
-          <div className="mt-6 h-px w-full" style={{ backgroundColor: dark ? 'rgba(255,255,255,0.2)' : 'rgba(25,25,25,0.2)' }} />
-        </div>
-
-        <div className="relative">
-          <div className="flex flex-col gap-12 md:flex-row md:items-end md:justify-between">
-            <nav className={`flex gap-6 font-mono text-[13px] uppercase tracking-[0.14em] ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}>
-              <a href="https://github.com/maulana-tech/iqia-main.git" className={`transition ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}>GitHub</a>
-            </nav>
-
-            <div className="flex justify-end">
-              <div className="max-w-[20rem] text-right">
-                <div className={`mb-4 flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.16em] justify-end ${dark ? 'text-[#ffffff]' : 'text-[#191919]'}`}>
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
-                    <circle cx="5" cy="6.5" r="4.5" stroke="currentColor" />
-                    <circle cx="8" cy="6.5" r="4.5" stroke="currentColor" />
-                  </svg>
-                  Build on Base
-                </div>
-                <p className={`text-[13px] leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}>
-                  Iqia is a application-run project. We're always developing for everyone in the Base ecosystem.
-                </p>
-              </div>
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="lg:col-span-1">
+              <a href="/" className="inline-flex transition hover:opacity-75" aria-label="Iqia — beranda">
+                <Logo markClassName="h-7 w-7" />
+              </a>
+              <p
+                className="mt-4 max-w-[22rem] text-[13px] leading-relaxed"
+                style={{ color: dark ? 'rgba(255,255,255,0.55)' : 'rgba(25,25,25,0.55)' }}
+              >
+                A trading desk on 1inch Aqua. Liquidity stays in the maker's wallet; the pricing
+                rules run as SwapVM bytecode.
+              </p>
             </div>
+
+            <FooterNav
+              dark={dark}
+              heading="App"
+              links={[
+                { label: 'Markets', href: '/app' },
+                { label: 'Swap', href: '/swap' },
+                { label: 'Deposit', href: '/deposit' },
+                { label: 'Portfolio', href: '/portfolio' },
+              ]}
+            />
+
+            <FooterNav
+              dark={dark}
+              heading="Wallet"
+              links={[
+                { label: 'Pay', href: '/pay' },
+                { label: 'Receive', href: '/receive' },
+                { label: 'Settings', href: '/settings' },
+              ]}
+            />
+
+            <FooterNav
+              dark={dark}
+              heading="Protocol"
+              links={[
+                { label: 'Source', href: 'https://github.com/maulana-tech/qia-1inch', external: true },
+                { label: '1inch Aqua', href: 'https://github.com/1inch/aqua', external: true },
+                { label: 'SwapVM', href: 'https://github.com/1inch/swap-vm', external: true },
+              ]}
+            />
           </div>
 
-          <div className="mt-14 flex items-center justify-between border-t pt-6 font-mono text-[11px] uppercase tracking-[0.14em]"
-               style={{
-                 borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(25,25,25,0.12)',
-                 color: dark ? 'rgba(255,255,255,0.5)' : 'rgba(25,25,25,0.5)',
-               }}
+          <div
+            className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t pt-6 font-mono text-[11px] uppercase tracking-[0.14em]"
+            style={{
+              borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(25,25,25,0.10)',
+              color: dark ? 'rgba(255,255,255,0.45)' : 'rgba(25,25,25,0.45)',
+            }}
           >
-            <span>© Iqia Team 2026</span>
+            <span className="inline-flex items-center gap-2">
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: dark ? '#7ee2a8' : '#1a8f4a' }}
+                aria-hidden
+              />
+              {CHAIN_NAME} · testnet
+            </span>
+            <span>© Iqia 2026</span>
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className={`transition ${dark ? 'hover:text-[#ffffff]' : 'hover:text-[#191919]'}`}
+              className="transition hover:opacity-70"
             >
-              Top ↑
+              Back to top ↑
             </button>
           </div>
         </div>
