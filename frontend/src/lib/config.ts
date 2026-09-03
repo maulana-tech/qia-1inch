@@ -25,6 +25,8 @@ function flag(key: string): boolean {
 
 const ZERO = '0x0000000000000000000000000000000000000000'
 
+const isValidAddress = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a)
+
 // ---------------------------------------------------------------------------
 // Jaringan
 // ---------------------------------------------------------------------------
@@ -89,7 +91,7 @@ export const DESK_EXCLUSIVE_TAKER = env('VITE_DESK_EXCLUSIVE_TAKER', '')
 
 /** True kalau lapisan Aqua/SwapVM sudah dikonfigurasi. */
 export const AQUA_CONFIGURED =
-  AQUA_ADDRESS.toLowerCase() !== ZERO && SWAP_VM_ROUTER_ADDRESS.toLowerCase() !== ZERO
+  isValidAddress(AQUA_ADDRESS) && isValidAddress(SWAP_VM_ROUTER_ADDRESS)
 
 // ---------------------------------------------------------------------------
 // Token faucet
@@ -104,7 +106,7 @@ export const MOCK_WBTC_ADDRESS = env('VITE_WBTC_ADDRESS', '')
 export const MOCK_DAI_ADDRESS = env('VITE_DAI_ADDRESS', '')
 
 /** Apakah token mock sudah dideploy dan dikonfigurasi. */
-export const MOCK_TOKENS_DEPLOYED = Boolean(MOCK_USDC_ADDRESS) && Boolean(MOCK_WBTC_ADDRESS)
+export const MOCK_TOKENS_DEPLOYED = isValidAddress(MOCK_USDC_ADDRESS) && isValidAddress(MOCK_WBTC_ADDRESS)
 
 // ---------------------------------------------------------------------------
 // Layanan
@@ -137,10 +139,11 @@ export interface AssetConfig {
 }
 
 function erc20Asset(code: AssetCode, address: string, decimals: number, priceUsd: number): AssetConfig {
+  const valid = /^0x[0-9a-fA-F]{40}$/.test(address)
   return {
     code,
-    assetId: address ? toField(BigInt(address)) : 0n,
-    sac: address || undefined,
+    assetId: valid ? toField(BigInt(address)) : 0n,
+    sac: valid ? address : undefined,
     decimals,
     priceUsd,
   }
