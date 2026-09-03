@@ -4,6 +4,7 @@ import ScrambleCycle from './ScrambleCycle'
 
 import { Logo } from './Logo'
 import { BentoGrid } from './BentoGrid'
+import { StoryStack } from './StoryStack'
 import { Mechanics } from './Mechanics'
 import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
@@ -185,7 +186,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <span
               className={`block font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
             >
-              [ Base · Compute Extension · zero-knowledge ]
+              [ Base · 1inch Aqua · SwapVM ]
             </span>
 
             <h1
@@ -279,6 +280,8 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       </section>
 
       <BentoGrid onEnter={onEnter} />
+
+      <StoryStack />
 
       <Mechanics />
 
