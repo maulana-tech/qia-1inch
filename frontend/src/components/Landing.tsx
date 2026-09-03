@@ -10,15 +10,11 @@ import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
 
+const STACK_MARKS = ['1inch Aqua', 'SwapVM', 'Base', 'Noir · UltraHonk', 'Foundry']
+
 const ROTATING = ['in your wallet', 'unlocked', 'yours', 'never pooled', 'put to work']
 
 
-const NET_TITLE = ['Testnet']
-const NET_VALUE = ['Base · Base Sepolia']
-const PROOF_TITLE = ['Proof']
-const PROOF_VALUE = ['UltraHonk · BN254']
-const SHIELD_TITLE = ['Liquidity']
-const SHIELD_VALUE = ['1inch Aqua · SwapVM']
 
 const GRID_V = 'rgba(255,255,255,0.06)'
 const GRID_H = 'rgba(255,255,255,0.09)'
@@ -44,34 +40,6 @@ function ChartBackground() {
   )
 }
 
-
-function Readouts({ dark }: { dark: boolean }) {
-  const textColor = dark ? 'text-[#ffffff]/50' : 'text-[#191919]/50'
-  const textHighlight = dark ? 'text-[#ffffff]/85' : 'text-[#191919]/85'
-  const rule = dark ? 'border-[#ffffff]/12' : 'border-[#191919]/12'
-  const rows = [
-    { title: NET_TITLE, value: NET_VALUE, td: 620, vd: 900 },
-    { title: PROOF_TITLE, value: PROOF_VALUE, td: 820, vd: 1150 },
-    { title: SHIELD_TITLE, value: SHIELD_VALUE, td: 1040, vd: 1400 },
-  ]
-  return (
-    <ul
-      className={`flex flex-row flex-wrap justify-start w-full gap-x-10 gap-y-6 font-mono text-[10px] uppercase tracking-[0.14em] ${textColor}`}
-      style={{ opacity: 'var(--grid-op, 1)' }}
-    >
-      {rows.map((r, i) => (
-        <li key={r.title[0]} className={`flex flex-col ${i > 0 ? `border-l ${rule} pl-8` : ''}`}>
-          <span className={`block ${textHighlight}`}>
-            <ScrambleCycle words={r.title} duration={r.td} glitch={false} once />
-          </span>
-          <span className="mt-1.5 block">
-            [ <ScrambleCycle words={r.value} duration={r.vd} glitch={false} once /> ]
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 interface FooterLink {
   label: string
@@ -180,21 +148,61 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       </header>
 
       
-      <div className="relative z-10 flex min-h-screen items-center">
-        <div className="mx-auto grid w-full max-w-[100rem] grid-cols-1 items-center gap-14 px-6 pb-28 pt-32 sm:px-10 lg:grid-cols-12 lg:gap-10 lg:px-16 lg:pb-24">
-          <div className="lg:col-span-6 xl:col-span-6">
-            <span
-              className={`block font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
-            >
-              [ Base · 1inch Aqua · SwapVM ]
-            </span>
+      {/* Hero — mengikuti pola Tailark Dusk hero-section-5: media full-bleed di
+          belakang, konten menempel di bawah, judul dan ajakan sebaris.
 
+          Tiga penyesuaian dari sumbernya:
+          - utilitas mask-* di sana Tailwind v4; kita v3.4, jadi mask-nya ditulis
+            sebagai CSS langsung
+          - tanpa lucide-react, ikonnya SVG inline
+          - tanpa next/link dan tombol shadcn, memakai gaya tombol yang sudah ada */}
+      <div className="relative z-10 flex min-h-screen flex-col justify-end">
+        {/* Media latar. aria-hidden: murni dekoratif, tidak membawa informasi. */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <video
+            aria-hidden
+            autoPlay
+            loop
+            muted
+            playsInline
+            src="/video.webm"
+            onLoadedMetadata={(e) => {
+              // Diperlambat seperti pada desain aslinya — gerakan lambat membuat
+              // teks di atasnya tetap terbaca.
+              e.currentTarget.playbackRate = 0.5
+            }}
+            className={`h-full w-full object-cover ${dark ? 'opacity-40' : 'opacity-55'}`}
+            style={{
+              maskImage:
+                'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
+              WebkitMaskImage:
+                'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
+            }}
+          />
+          {/* Scrim. Tanpa ini judulnya tenggelam di bagian video yang terang —
+              masalah yang baru terlihat setelah dijalankan, bukan dari kode. */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: dark
+                ? 'linear-gradient(to right, rgba(16,16,16,0.92) 0%, rgba(16,16,16,0.72) 38%, rgba(16,16,16,0.30) 70%, rgba(16,16,16,0.55) 100%)'
+                : 'linear-gradient(to right, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.78) 38%, rgba(255,255,255,0.42) 70%, rgba(255,255,255,0.66) 100%)',
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 mx-auto w-full max-w-[100rem] px-6 pb-12 pt-32 sm:px-10 lg:px-16 lg:pb-16">
+          <span
+            className={`block font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
+          >
+            [ Base · 1inch Aqua · SwapVM ]
+          </span>
+
+          {/* lg:w-2/3 seperti pada sumbernya — tanpa itu tombolnya terlempar
+              jauh ke kanan dan putus hubungannya dengan judul. */}
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-x-10 gap-y-8 lg:w-2/3">
             <h1
-              className="mt-7 font-display font-medium uppercase leading-[0.98] tracking-[-0.04em]"
-              style={{
-                fontSize: 'clamp(2.4rem, 6.2vw, 5.25rem)',
-                color: dark ? '#fafafa' : '#191919',
-              }}
+              className="max-w-2xl text-balance font-display text-[clamp(2.4rem,6.4vw,5rem)] font-medium uppercase leading-[0.94] tracking-[-0.03em]"
             >
               <span className="flex flex-wrap gap-x-[0.26em]">
                 <Word>liquidity</Word>
@@ -209,63 +217,66 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
               </span>
             </h1>
 
-            <p
-              className={`mt-8 max-w-xl text-[15px] font-medium leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}
-            >
-              A trading desk built on 1inch Aqua. Market makers keep their tokens in their own
-              wallets — Aqua records an allowance, never a deposit — and the pricing rules run
-              as SwapVM bytecode instead of a hand-written contract.
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={onEnter}
-                className="inline-flex items-center gap-2 px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.18em] transition hover:opacity-80"
+                className="inline-flex items-center gap-1.5 px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.18em] transition hover:opacity-80"
                 style={{
                   backgroundColor: dark ? '#ffffff' : '#191919',
                   color: dark ? '#101010' : '#ffffff',
                 }}
               >
-                Enter app →
+                Enter app
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
               <a
                 href="/faucet"
-                className={`inline-flex items-center gap-2 border px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
+                className={`inline-flex items-center px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.18em] backdrop-blur-sm transition ${
                   dark
-                    ? 'border-[#ffffff]/25 text-[#ffffff]/80 hover:border-[#ffffff]/60 hover:text-[#ffffff]'
-                    : 'border-[#191919]/25 text-[#191919]/80 hover:border-[#191919]/60 hover:text-[#191919]'
+                    ? 'border border-[#ffffff]/25 text-[#ffffff]/80 hover:border-[#ffffff]/60 hover:text-[#ffffff]'
+                    : 'border border-[#191919]/25 text-[#191919]/80 hover:border-[#191919]/60 hover:text-[#191919]'
                 }`}
               >
                 Get testnet funds
               </a>
             </div>
-            <div className="mt-16 w-full opacity-80 pt-6 border-t" style={{ borderColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
-              <Readouts dark={dark} />
-            </div>
           </div>
 
-          <div className="lg:col-span-6 lg:col-start-7 lg:flex lg:flex-col lg:justify-center gap-10 relative z-20 mt-10 lg:mt-0">
-            <div className="relative w-full overflow-hidden rounded-none">
-              <video 
-                src="/video.webm" 
-                autoPlay 
-                loop 
-                muted 
-                playsInline 
-                className={`w-full h-auto block transform scale-110 ${
-                  dark ? 'invert mix-blend-screen opacity-90' : 'mix-blend-multiply'
-                }`}
-              />
-            </div>
-          </div>
+          <p
+            className={`mt-8 max-w-xl text-[15px] font-medium leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}
+          >
+            A trading desk built on 1inch Aqua. Market makers keep their tokens in their own
+            wallets — Aqua records an allowance, never a deposit — and the pricing rules run
+            as SwapVM bytecode instead of a hand-written contract.
+          </p>
         </div>
 
-        {/* Scroll cue — pinned bottom-left, on the same rail as the headline. */}
-        <span
-          className={`absolute bottom-10 left-6 font-mono text-[11px] uppercase tracking-[0.3em] sm:left-10 lg:left-16 ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
+        {/* Padanan logo-cloud pada desain aslinya. Isinya tumpukan yang benar-benar
+            kami pakai, bukan logo pihak lain. */}
+        <div
+          className="relative z-10 border-t"
+          style={{ borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(25,25,25,0.10)' }}
         >
-          scroll ↓
-        </span>
+          <div className="mx-auto flex w-full max-w-[100rem] flex-wrap items-center gap-x-10 gap-y-3 px-6 py-6 sm:px-10 lg:px-16">
+            <span
+              className="font-mono text-[10px] uppercase tracking-[0.2em]"
+              style={{ color: dark ? 'rgba(255,255,255,0.38)' : 'rgba(25,25,25,0.38)' }}
+            >
+              built on
+            </span>
+            {STACK_MARKS.map((m) => (
+              <span
+                key={m}
+                className="font-mono text-[11px] uppercase tracking-[0.16em]"
+                style={{ color: dark ? 'rgba(255,255,255,0.62)' : 'rgba(25,25,25,0.62)' }}
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       
