@@ -113,38 +113,188 @@ docs/                      Peta migrasi dan rujukan Aqua/SwapVM
 
 ---
 
-## Menjalankan
+## Setup
+
+> Panduan di bawah diuji dari clone bersih: `git clone`, ikuti setiap langkah
+> apa adanya, sampai 108 test lolos dan demo on-chain berjalan.
+
+### Prasyarat
+
+| Alat | Versi yang dipakai | Untuk apa |
+|---|---|---|
+| Node.js | 24.x | SDK, matcher, frontend |
+| pnpm | 10.x | Workspace monorepo |
+| Foundry | 1.8.x | Kontrak, test, skrip deploy |
+| Nargo | 1.0.0-beta.9 | Sirkuit Noir — **opsional**, hanya kalau mau mengubah sirkuit |
+
+**Foundry wajib, dan tidak ada jalan memutar.** Aqua dan SwapVM tidak
+dipublikasikan ke npm — `@1inch/aqua` dan `@1inch/swap-vm` dua-duanya 404 di
+registry meski README mereka menulis `npm install`. Keduanya proyek Foundry
+dengan remapping sendiri, jadi harus di-vendor lewat `forge install`.
 
 ```bash
-pnpm install
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+### 1. Pasang dependensi
+
+```bash
+git clone https://github.com/maulana-tech/qia-1inch.git
+cd qia-1inch
+
+pnpm install                     # workspace TypeScript
+cd contracts && forge install    # submodule aqua, swap-vm, forge-std
+npm install                      # lihat catatan di bawah
+cd ..
+```
+
+`contracts/` punya `node_modules` sendiri, terpisah dari workspace pnpm. Itu
+disengaja: Aqua dan SwapVM mencari `@openzeppelin/contracts` dan
+`@1inch/solidity-utils` di `node_modules/`, bukan `lib/`, dan versinya dipatok
+mengikuti `package.json` mereka.
+
+### 2. Bangun
+
+```bash
 pnpm --filter @iqia/sdk build
+pnpm --filter @iqia/swapvm build     # WAJIB sebelum frontend
+pnpm --filter @iqia/matcher build
 
-pnpm --filter @iqia/sdk test        # 41 test
-pnpm --filter @iqia/matcher test    # 25 test
+cd contracts && forge build && cd ..
+```
+
+`@iqia/swapvm` harus dibangun lebih dulu. Frontend mengimpornya sebagai paket
+workspace, jadi tanpa `dist/` yang terisi, `pnpm dev` gagal.
+
+Build kontrak memakan waktu karena `via_ir` menyala. Itu tidak bisa dimatikan —
+tanpanya compiler kehabisan stack saat mengompilasi SwapVM. Tapi verifier
+UltraHonk hasil-generate Noir justru PECAH dengan `via_ir`, jadi keduanya
+dikecualikan per-file lewat `compilation_restrictions` di `foundry.toml`.
+
+### 3. Verifikasi
+
+```bash
+cd contracts && forge test && cd ..     # 32 test
+pnpm --filter @iqia/swapvm test         # 10 test
+pnpm --filter @iqia/sdk test            # 41 test
+pnpm --filter @iqia/matcher test        # 25 test
 pnpm --filter frontend typecheck
-pnpm --filter frontend dev
 
-cd protocol/circuits/noir/place_order && nargo test
+cd protocol/circuits/noir/place_order && nargo test && cd -   # 5 test, butuh nargo
 ```
 
-Kontraknya butuh Foundry:
+---
+
+## Menjalankan secara lokal
+
+Tiga terminal, atau jalankan yang pertama di latar belakang.
+
+### 1. Rantai lokal
 
 ```bash
-curl -L https://foundry.paradigm.xyz | bash && foundryup
-cd contracts && forge build && forge test    # 29 test
+anvil
 ```
 
-## Demo transfer on-chain
-
-Menjalankan seluruh alur sebagai transaksi sungguhan di rantai lokal:
+### 2. Deploy dan kirim posisi
 
 ```bash
-anvil &
 cd contracts
 forge script script/DemoIqiaDesk.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
-Yang dibuktikan skrip itu, dengan `require` di setiap langkah:
+Skrip ini melakukan dua hal. Pertama, menjalankan demo lengkap sebagai transaksi
+sungguhan — deploy, buka posisi, swap, tutup posisi — dengan `require` di setiap
+langkah, jadi ia gagal kalau klaimnya tidak benar. Kedua, mengirim satu posisi
+yang dibiarkan terbuka supaya frontend punya sesuatu untuk diajak berdagang, lalu
+mencetak env yang dibutuhkannya.
+
+Salin blok yang dicetaknya:
+
+```
+=== Salin ke frontend/.env.local ===
+VITE_CHAIN_ID=31337
+VITE_CHAIN_NAME=Anvil
+VITE_SWAP_VM_ROUTER=0x...
+VITE_AQUA=0x...
+VITE_DESK_MAKER=0x...
+VITE_DESK_SALT=2
+VITE_DESK_SURCHARGE_BPS=50000000
+VITE_WETH_ADDRESS=0x...
+VITE_USDC_ADDRESS=0x...
+```
+
+ke `frontend/.env.local`, lalu tambahkan satu baris:
+
+```
+VITE_POOL_DEPLOY_BLOCK=0
+```
+
+Tanpa baris itu, pembacaan event mulai dari blok yang salah dan daftar market
+tampil kosong.
+
+Alamatnya deterministik selama anvil dimulai dari keadaan bersih, jadi env yang
+sama bisa dipakai ulang setelah restart.
+
+### 3. Frontend
+
+```bash
+pnpm --filter frontend dev
+```
+
+Buka `http://localhost:5173`. Halaman `/app` seharusnya menampilkan satu market
+**USDC / WETH** dengan likuiditas 35.000 dan 10 — angka yang sama dengan yang
+dikirim skrip demo.
+
+---
+
+## Deploy ke testnet
+
+```bash
+cd contracts
+export PRIVATE_KEY=0x<kunci-deployer>
+export RPC_URL=https://sepolia.base.org
+
+forge script script/Deploy.s.sol --rpc-url "$RPC_URL" --broadcast
+```
+
+Isi `frontend/.env.local` dengan alamat hasil deploy, dan setel
+`VITE_CHAIN_ID=84532`.
+
+SwapVM resmi ada di `0x111111338c5091E8440b67B168bAe16a668AC0De` pada Base
+mainnet dan 14 chain lain, **tapi tidak di Base Sepolia**. Untuk testnet, router
+custom dideploy sendiri. Menambah opcode memang menuntut itu — set instruksi
+ditentukan saat kompilasi.
+
+---
+
+## Kalau ada yang tidak jalan
+
+**Halaman market kosong, muncul error `eth_getLogs is limited to a 10,000 range`.**
+Pesannya menyesatkan; masalahnya bukan rentang blok melainkan salah jaringan.
+Pastikan `VITE_CHAIN_ID` cocok dengan chain yang berjalan, lalu restart vite —
+berkas env hanya dibaca saat server dimulai.
+
+**`Cannot find module '@iqia/swapvm'`.** Paketnya belum dibangun. Jalankan
+`pnpm --filter @iqia/swapvm build`.
+
+**`forge build` gagal dengan "Stack too deep".** `via_ir` tidak menyala. Periksa
+`contracts/foundry.toml` masih memuat `via_ir = true` beserta kedua blok
+`compilation_restrictions`.
+
+**`forge install` menolak dengan "target or .gitmodules has existing changes".**
+Commit atau stash dulu perubahan di `contracts/lib/`, baru ulangi.
+
+**Swap gagal padahal market terlihat.** Parameter meja di `.env.local` harus sama
+persis dengan yang dipakai maker saat `ship()` — `strategyHash` dihitung dari byte
+order-nya, jadi salt atau fee yang meleset menghasilkan hash berbeda dan Aqua
+tidak menemukan saldonya.
+
+---
+
+## Demo transfer on-chain
+
+Yang dibuktikan skrip demo, dengan `require` di setiap langkah:
 
 | Langkah | Bukti |
 |---|---|
@@ -154,22 +304,16 @@ Yang dibuktikan skrip itu, dengan `require` di setiap langkah:
 | `dock()` | Posisi tutup, **nol transfer token** |
 
 Contoh keluaran: 3.500 USDC masuk, 0,90909… WETH keluar. Sepanjang alur Aqua
-tidak pernah menahan satu token pun — likuiditasnya diambil langsung dari
-dompet market maker saat swap terjadi.
+tidak pernah menahan satu token pun.
 
-Skripnya juga mengirim satu posisi yang dibiarkan terbuka dan mencetak env
-untuk frontend. Salin ke `frontend/.env.local`, lalu:
+Untuk memeriksanya sendiri, bukan dari log skrip:
 
 ```bash
-pnpm --filter @iqia/swapvm build
-pnpm --filter frontend dev
+cast logs --rpc-url http://localhost:8545 --from-block 0 \
+  'Pulled(address,address,bytes32,address,uint256)'
+
+cast call <WETH> 'balanceOf(address)(uint256)' <MAKER> --rpc-url http://localhost:8545
 ```
-
-Swap dari UI berjalan langsung ke router: dompet memberi izin, lalu `swap()`.
-Tidak ada kontrak perantara di sisi pengguna — flag `useTransferFromAndAquaPush`
-membuat SwapVM sendiri yang menarik tokenIn dan mendorongnya ke Aqua.
-
----
 
 ## Catatan teknis
 
