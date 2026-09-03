@@ -45,6 +45,7 @@ contract IqiaAquaTaker is ITakerCallbacks {
     /// @notice Satu-satunya pihak yang boleh memicu swap dan menerima hasilnya.
     address public immutable POOL;
 
+    error IqiaTakerZeroAddress();
     error IqiaTakerOnlyPool(address caller);
     error IqiaTakerOnlyRouter(address caller);
     error IqiaTakerInsufficientOutput(uint256 amountOut, uint256 minAmountOut);
@@ -62,7 +63,13 @@ contract IqiaAquaTaker is ITakerCallbacks {
         _;
     }
 
+    /// @dev Ketiganya immutable. Alamat nol membuat kontrak ini mati permanen —
+    ///   tidak ada yang bisa memicu swap, dan tidak ada cara memperbaikinya.
     constructor(IAqua aqua, ISwapVM router, address pool) {
+        require(
+            address(aqua) != address(0) && address(router) != address(0) && pool != address(0),
+            IqiaTakerZeroAddress()
+        );
         AQUA = aqua;
         ROUTER = router;
         POOL = pool;
@@ -94,7 +101,9 @@ contract IqiaAquaTaker is ITakerCallbacks {
         uint256 minAmountOut,
         bytes calldata takerTraitsAndData
     ) external onlyPool returns (uint256 amountIn, uint256 amountOut) {
-        IERC20(tokenIn).safeTransferFrom(POOL, address(this), maxAmountIn);
+        // msg.sender, bukan POOL: di dalam onlyPool keduanya identik, dan menulisnya
+        // begini membuat sumber dananya terbaca langsung dari tanda tangan fungsinya.
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), maxAmountIn);
 
         ISwapVM.Order memory order = abi.decode(encodedOrder, (ISwapVM.Order));
         (amountIn, amountOut,) = ROUTER.swap(order, tokenIn, tokenOut, amount, takerTraitsAndData);
@@ -107,6 +116,9 @@ contract IqiaAquaTaker is ITakerCallbacks {
             IERC20(tokenIn).safeTransfer(POOL, maxAmountIn - amountIn);
         }
 
+        // Event menyusul panggilan eksternal. Urutannya tidak bisa dibalik: jumlah
+        // yang dicatat baru diketahui setelah swap dijalankan. Aman di sini karena
+        // POOL dan ROUTER keduanya immutable dan tepercaya.
         emit SwappedForPool(tokenIn, tokenOut, amountIn, amountOut);
     }
 

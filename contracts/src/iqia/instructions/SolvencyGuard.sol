@@ -113,6 +113,10 @@ contract SolvencyGuard {
     }
 
     /// @dev args.maxSurchargeBps | 4 byte
+    ///
+    /// @dev Linter menandai cast di bawah sebagai berpotensi memotong nilai. Tidak
+    ///   di sini: sumbernya tepat 4 byte dan tujuannya uint32, jadi lebarnya sama
+    ///   persis. Pola yang sama dipakai `Fee.parseFlatFee` milik SwapVM.
     function _solvencyGuardXD(Context memory ctx, bytes calldata args) internal {
         uint32 maxSurchargeBps = uint32(bytes4(args.slice(0, 4, SolvencyGuardMissingSurchargeArg.selector)));
         require(ctx.swap.amountIn == 0 || ctx.swap.amountOut == 0, SolvencyGuardShouldRunBeforeSwap());

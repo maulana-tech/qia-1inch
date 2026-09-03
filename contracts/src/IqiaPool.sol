@@ -37,6 +37,7 @@ contract IqiaPool {
     error BadEthValue();
 
     constructor(address _poseidon, address _withdrawVerifier) {
+        emit OwnerTransferred(address(0), msg.sender);
         owner = msg.sender;
         poseidon = IPoseidon(_poseidon);
         withdrawVerifier = IWithdrawVerifier(_withdrawVerifier);
@@ -183,7 +184,9 @@ contract IqiaPool {
         _;
     }
 
+    /// @dev Alamat nol ditolak: itu akan mematikan setDesk dan rebalance selamanya.
     function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert NotOwner(newOwner);
         emit OwnerTransferred(owner, newOwner);
         owner = newOwner;
     }
