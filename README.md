@@ -199,8 +199,7 @@ anvil
 ### 2. Deploy dan kirim posisi
 
 ```bash
-cd contracts
-forge script script/DemoIqiaDesk.s.sol --rpc-url http://localhost:8545 --broadcast
+`
 ```
 
 Skrip ini melakukan dua hal. Pertama, menjalankan demo lengkap sebagai transaksi
