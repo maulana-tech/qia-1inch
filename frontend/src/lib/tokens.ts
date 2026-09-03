@@ -12,6 +12,7 @@
  */
 import { NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
 import {
+  MOCK_WETH_ADDRESS,
   MOCK_USDC_ADDRESS,
   MOCK_WBTC_ADDRESS,
   MOCK_DAI_ADDRESS,
@@ -47,6 +48,8 @@ export interface TokenMeta {
  */
 export const CURATED_TOKENS: TokenMeta[] = [
   { code: 'ETH', name: 'Ether', icon: 'ETH', decimals: 18, priceUsd: 3500, native: true },
+  { code: 'WETH', name: 'Wrapped Ether', icon: 'WETH', decimals: 18, priceUsd: 3500, faucet: true,
+    sac: MOCK_WETH_ADDRESS || undefined },
   { code: 'USDC', name: 'Test USD Coin', icon: 'USDC', decimals: 7, priceUsd: 1, faucet: true,
     sac: MOCK_USDC_ADDRESS || undefined },
   { code: 'WBTC', name: 'Test Wrapped Bitcoin', icon: 'WBTC', decimals: 7, priceUsd: 65000, faucet: true,

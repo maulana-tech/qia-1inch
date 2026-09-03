@@ -28,7 +28,7 @@ import {
   type Hex,
 } from '@iqia/swapvm'
 
-import { wagmiConfig } from './wagmi'
+import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import {
   SWAP_VM_ROUTER_ADDRESS,
   DESK_MAKER,
@@ -78,6 +78,7 @@ export async function quote(tokenIn: string, tokenOut: string, amountIn: bigint)
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'quote',
+    chainId: ACTIVE_CHAIN_ID,
     args: [
       deskOrder(),
       tokenIn as `0x${string}`,
@@ -115,6 +116,7 @@ export async function swap(
     address: tokenIn as `0x${string}`,
     abi: erc20Abi,
     functionName: 'allowance',
+    chainId: ACTIVE_CHAIN_ID,
     args: [account, SWAP_VM_ROUTER_ADDRESS as `0x${string}`],
   })
 
@@ -123,6 +125,7 @@ export async function swap(
       address: tokenIn as `0x${string}`,
       abi: erc20Abi,
       functionName: 'approve',
+      chainId: ACTIVE_CHAIN_ID,
       args: [SWAP_VM_ROUTER_ADDRESS as `0x${string}`, amountIn],
       chain: null,
       account,
@@ -151,6 +154,7 @@ export async function swap(
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'quote',
+    chainId: ACTIVE_CHAIN_ID,
     args,
   })
 
@@ -158,6 +162,7 @@ export async function swap(
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'swap',
+    chainId: ACTIVE_CHAIN_ID,
     args,
     chain: null,
     account,

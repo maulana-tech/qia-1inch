@@ -13,7 +13,7 @@
 import { getPublicClient, readContracts } from '@wagmi/core'
 import { erc20Abi, parseAbiItem, type Address } from 'viem'
 
-import { wagmiConfig } from './wagmi'
+import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import { AQUA_ADDRESS, CHAIN_ID, POOL_DEPLOY_BLOCK, SWAP_VM_ROUTER_ADDRESS, AQUA_CONFIGURED } from './config'
 
 const SHIPPED = parseAbiItem('event Shipped(address maker, address app, bytes32 strategyHash, bytes strategy)')
@@ -92,9 +92,9 @@ export function fetchOneInchTokens(): Promise<Record<string, TokenInfo>> {
 async function readTokenOnChain(address: string): Promise<TokenInfo> {
   const results = await readContracts(wagmiConfig as any, {
     contracts: [
-      { address: address as Address, abi: erc20Abi, functionName: 'symbol' },
-      { address: address as Address, abi: erc20Abi, functionName: 'name' },
-      { address: address as Address, abi: erc20Abi, functionName: 'decimals' },
+      { address: address as Address, abi: erc20Abi, functionName: 'symbol', chainId: ACTIVE_CHAIN_ID },
+      { address: address as Address, abi: erc20Abi, functionName: 'name', chainId: ACTIVE_CHAIN_ID },
+      { address: address as Address, abi: erc20Abi, functionName: 'decimals', chainId: ACTIVE_CHAIN_ID },
     ],
   })
   const [symbol, name, decimals] = results
@@ -119,7 +119,7 @@ async function readTokenOnChain(address: string): Promise<TokenInfo> {
 export async function fetchMarkets(): Promise<Market[]> {
   if (!AQUA_CONFIGURED) return []
 
-  const client = getPublicClient(wagmiConfig as any)
+  const client = getPublicClient(wagmiConfig as any, { chainId: ACTIVE_CHAIN_ID as any })
   if (!client) return []
 
   const fromBlock = BigInt(POOL_DEPLOY_BLOCK)
@@ -163,6 +163,7 @@ export async function fetchMarkets(): Promise<Market[]> {
           abi: aquaBalancesAbi,
           functionName: 'rawBalances',
           args: [maker as Address, SWAP_VM_ROUTER_ADDRESS as Address, strategyHash as `0x${string}`, token as Address],
+          chainId: ACTIVE_CHAIN_ID,
         }],
       }))
       const raw = (balance.result as readonly [bigint, number] | undefined)?.[0] ?? 0n

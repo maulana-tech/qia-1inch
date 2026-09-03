@@ -41,6 +41,7 @@ interface ImportMetaEnv {
   readonly VITE_AMM_POOLS?: string
 
   // --- Faucet tokens (7 decimals, see contracts/README.md) ---
+  readonly VITE_WETH_ADDRESS?: string
   readonly VITE_USDC_ADDRESS?: string
   readonly VITE_WBTC_ADDRESS?: string
   readonly VITE_DAI_ADDRESS?: string

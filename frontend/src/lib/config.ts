@@ -98,6 +98,7 @@ export const AQUA_CONFIGURED =
 // dan 18 desimal membuat jumlah wajar melampaui rentang 64-bit.
 // ---------------------------------------------------------------------------
 
+export const MOCK_WETH_ADDRESS = env('VITE_WETH_ADDRESS', '')
 export const MOCK_USDC_ADDRESS = env('VITE_USDC_ADDRESS', '')
 export const MOCK_WBTC_ADDRESS = env('VITE_WBTC_ADDRESS', '')
 export const MOCK_DAI_ADDRESS = env('VITE_DAI_ADDRESS', '')
@@ -147,6 +148,7 @@ function erc20Asset(code: AssetCode, address: string, decimals: number, priceUsd
 
 export const ASSET_CONFIG: Record<AssetCode, AssetConfig> = {
   ETH: { code: 'ETH', assetId: NATIVE_ASSET_ID, sac: undefined, decimals: 18, priceUsd: 3500 },
+  WETH: erc20Asset('WETH', MOCK_WETH_ADDRESS, 18, 3500),
   USDC: erc20Asset('USDC', MOCK_USDC_ADDRESS, 7, 1),
   WBTC: erc20Asset('WBTC', MOCK_WBTC_ADDRESS, 7, 65000),
   DAI: erc20Asset('DAI', MOCK_DAI_ADDRESS, 7, 1),
