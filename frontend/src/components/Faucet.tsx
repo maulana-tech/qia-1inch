@@ -5,6 +5,7 @@ import { faucetMint } from '../lib/faucet'
 import { truncateKey } from '../lib/format'
 import { CHAIN_NAME, MOCK_TOKENS_DEPLOYED, USE_MOCK, explorerTxUrl } from '../lib/config'
 import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
+import { tokenDecimals } from '../lib/payments'
 import { CoinBadge } from './BrandIcons'
 import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader } from './ui'
 
@@ -32,7 +33,7 @@ export function Faucet() {
   const connected = wallet.status === 'connected'
   const onTargetChain = chainId === ACTIVE_CHAIN_ID
 
-  async function mint(code: string, token: string, decimals: number) {
+  async function mint(code: string, token: string) {
     if (!walletClient || !publicClient) {
       setMsg((m) => ({ ...m, [code]: `Pindahkan dompet ke ${CHAIN_NAME} dulu.` }))
       return
@@ -40,6 +41,9 @@ export function Faucet() {
     setBusy(code)
     setMsg((m) => ({ ...m, [code]: '' }))
     try {
+      // Desimalnya dari kontrak, bukan dari registry: di sana USDC ditulis 7
+      // sedangkan mock yang ter-deploy 6, jadi angkanya akan sepuluh kali lipat.
+      const decimals = await tokenDecimals(token as `0x${string}`)
       const hash = await faucetMint(token, BigInt(DRIP) * 10n ** BigInt(decimals), walletClient, publicClient)
       setMsg((m) => ({
         ...m,
@@ -140,7 +144,7 @@ export function Faucet() {
                         setMsg((m) => ({ ...m, [t.code]: 'Alamat kontraknya belum ada.' }))
                         return
                       }
-                      void mint(t.code, t.sac, t.decimals)
+                      void mint(t.code, t.sac)
                     }}
                   >
                     {busy === t.code ? 'Mencetak…' : `Cetak ${DRIP.toLocaleString()}`}

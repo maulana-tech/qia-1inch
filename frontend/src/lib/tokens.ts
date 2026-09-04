@@ -40,9 +40,13 @@ export interface TokenMeta {
  * USDC/WBTC/DAI are testnet faucet tokens (permissionless-mint MockERC20) so they're
  * depositable out of the box. Override any address via `VITE_<CODE>_ADDRESS`.
  *
- * Faucet tokens use 7 decimals, not 18: the Noir circuits assert amounts fit in
- * 64 bits (see assert_64 in iqia_lib), and 18 decimals overflows that for ordinary
- * amounts.
+ * PERINGATAN: `decimals` di sini TIDAK bisa dipercaya untuk perhitungan uang.
+ * Angka 7 itu peninggalan sirkuit Noir, yang mensyaratkan nominal muat di 64
+ * bit (assert_64 di iqia_lib); mock yang benar-benar ter-deploy memakai 6.
+ * Selisih satu desimal berarti kiriman sepuluh kali lipat, tanpa ada yang
+ * gagal saat itu terjadi. Untuk apa pun yang memindahkan token, baca dari
+ * kontraknya lewat `tokenDecimals()` di lib/payments.ts. Nilai di bawah cuma
+ * untuk tampilan kasar.
  *
  * Deploy mock tokens: cd contracts && forge script script/Deploy.s.sol --broadcast
  */

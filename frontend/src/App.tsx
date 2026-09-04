@@ -6,6 +6,7 @@ import { Hub } from './pages/Hub'
 import { PortfolioPage } from './pages/PortfolioPage'
 import { DepositPage } from './pages/DepositPage'
 import { PayPage } from './pages/PayPage'
+import { PaymentLinkPage } from './pages/PaymentLinkPage'
 import { SwapPage } from './pages/SwapPage'
 import { SavingsPage } from './pages/SavingsPage'
 import { ReceivePage } from './pages/ReceivePage'
@@ -25,6 +26,8 @@ export default function App() {
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/deposit" element={<DepositPage />} />
         <Route path="/pay" element={<PayPage />} />
+        <Route path="/pay/:address" element={<PayPage />} />
+        <Route path="/payment-link" element={<PaymentLinkPage />} />
         <Route path="/swap" element={<SwapPage />} />
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/receive" element={<ReceivePage />} />
