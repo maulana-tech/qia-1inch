@@ -136,7 +136,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
 
   const [mode, setMode] = useState<'market' | 'limit'>('market')
   const [side, setSide] = useState<OrderSide>('buy')
-  const [base, setBase] = useState('ETH')
+  const [base, setBase] = useState('WETH')
   const [quote, setQuote] = useState('USDC')
   const [price, setPrice] = useState('')
   const [amount, setAmount] = useState('')

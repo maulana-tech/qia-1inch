@@ -147,7 +147,7 @@
 
 @layer components {
   .card {
-    @apply rounded-none border border-ink-700 bg-ink-850/80 shadow-panel;
+    @apply overflow-hidden rounded-2xl bg-ink-850/80 shadow-panel ring-1 ring-spectral/10;
   }
 
   .panel-title {

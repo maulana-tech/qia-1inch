@@ -18,7 +18,16 @@ import {
   MOCK_WETH_ADDRESS,
   explorerTxUrl,
 } from '../lib/config'
-import { Button, Card, PageIntro, Spinner } from '../components/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  PageIntro,
+  Spinner,
+} from '../components/ui'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
 function fmt(value: bigint, decimals: number): string {
@@ -127,43 +136,55 @@ export function SavingsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          <Card className="p-5">
-            <div className="coord-label mb-4">saldo dompet</div>
-            <div className="flex flex-wrap gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Saldo dompet</CardTitle>
+              <CardDescription>Yang bisa kamu sisihkan sekarang.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-8">
               {TOKENS.map((t, i) => (
                 <div key={t.symbol}>
                   <div className="coord-label">{t.symbol}</div>
                   <div className="font-mono text-lg text-spectral/90">{fmt(wallet[i], t.decimals)}</div>
                 </div>
               ))}
-            </div>
+            </CardContent>
           </Card>
 
           {isOpen ? (
-            <Card className="p-5">
-              <div className="mb-4 flex items-center gap-2">
-                <PiggyBankIcon className="h-4 w-4 text-spectral/70" />
-                <span className="coord-label">posisi aktif</span>
-              </div>
-              <div className="flex flex-wrap gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PiggyBankIcon className="h-4 w-4 text-spectral/70" />
+                  Posisi aktif
+                </CardTitle>
+                <CardDescription>Likuiditas ini melayani swap dan mengumpulkan fee.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-8">
                 {TOKENS.map((t, i) => (
                   <div key={t.symbol}>
                     <div className="coord-label">{t.symbol}</div>
                     <div className="font-mono text-lg text-spectral/90">{fmt(position[i], t.decimals)}</div>
                   </div>
                 ))}
-              </div>
-              <p className="mt-4 text-sm text-spectral/55">
-                Likuiditas ini melayani swap dan mengumpulkan fee. Token tetap di dompetmu — yang
-                tercatat di Aqua cuma izin, jadi saldonya tidak terkunci.
-              </p>
-              <Button className="mt-5" variant="ghost" disabled={busy !== null} onClick={handleClose}>
-                {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Tutup posisi'}
-              </Button>
+              </CardContent>
+              <CardContent className="pt-0">
+                <p className="text-sm text-spectral/55">
+                  Token tetap di dompetmu — yang tercatat di Aqua cuma izin, jadi saldonya tidak
+                  terkunci.
+                </p>
+                <Button className="mt-5" variant="ghost" disabled={busy !== null} onClick={handleClose}>
+                  {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Tutup posisi'}
+                </Button>
+              </CardContent>
             </Card>
           ) : (
-            <Card className="p-5">
-              <div className="coord-label mb-3">berapa yang disisihkan</div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Berapa yang disisihkan</CardTitle>
+                <CardDescription>Sisanya tetap bebas kamu belanjakan.</CardDescription>
+              </CardHeader>
+              <CardContent>
               <div className="flex items-center gap-4">
                 <input
                   type="range"
@@ -194,11 +215,15 @@ export function SavingsPage() {
                   Saldo dompetmu masih nol. Ambil token uji di halaman Deposit lebih dulu.
                 </p>
               ) : null}
+              </CardContent>
             </Card>
           )}
 
-          <Card className="p-5 text-sm text-spectral/55">
-            <div className="coord-label mb-2">yang perlu kamu tahu</div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Yang perlu kamu tahu</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-sm text-spectral/55">
             <p>
               Menabung di sini tidak mengunci apa pun. Membuka posisi nol transfer token, dan
               menutupnya juga. Yang berpindah hanya saat ada orang menukar lewat posisimu.
@@ -208,6 +233,7 @@ export function SavingsPage() {
               saldo menipis — biaya tambahan hingga {Number(DESK_SURCHARGE_BPS) / 1e7}% saat sandaran
               habis. Itu yang membuat posisinya tetap aman meski dompetmu berubah.
             </p>
+            </CardContent>
           </Card>
 
           {error ? <Card className="p-4 text-sm text-rose-300/90">{error}</Card> : null}

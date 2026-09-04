@@ -185,6 +185,39 @@ export function Card({ className, children }: { className?: string; children: Re
   return <div className={cx('card', className)}>{children}</div>
 }
 
+/**
+ * Bagian-bagian kartu, mengikuti susunan shadcn.
+ *
+ * Sumbernya memakai Tailwind v4 — spasi lewat `gap-(--card-spacing)` dan
+ * pemilih `has-data-[slot=…]`. Kita v3.4, jadi jaraknya ditulis langsung.
+ * Bentuk akhirnya sama; cara mencapainya yang berbeda.
+ */
+export function CardHeader({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cx('flex flex-col gap-1 px-5 pt-5', className)}>{children}</div>
+}
+
+export function CardTitle({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <h3 className={cx('text-base font-medium leading-snug text-spectral/90', className)}>{children}</h3>
+  )
+}
+
+export function CardDescription({ className, children }: { className?: string; children: ReactNode }) {
+  return <p className={cx('text-sm text-spectral/55', className)}>{children}</p>
+}
+
+export function CardContent({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cx('px-5 py-5', className)}>{children}</div>
+}
+
+export function CardFooter({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={cx('flex items-center border-t border-spectral/10 bg-spectral/[0.03] px-5 py-4', className)}>
+      {children}
+    </div>
+  )
+}
+
 export function Field({
   label,
   hint,

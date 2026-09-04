@@ -30,7 +30,7 @@ function MarketRow({ market }: { market: Market }) {
   return (
     <Link
       to="/swap"
-      className="block rounded-lg border border-spectral/12 p-4 transition-colors hover:border-spectral/35"
+      className="card block p-4 transition-shadow hover:ring-spectral/30"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
