@@ -82,6 +82,59 @@ function Figure({ value, label, dark }: { value: string; label: string; dark: bo
   )
 }
 
+interface Module {
+  href: string
+  name: string
+  blurb: string
+}
+
+/**
+ * Modul yang benar-benar ada di sidebar aplikasi.
+ *
+ * Daftarnya sengaja menyebut apa yang dilakukan tiap layar, bukan menjualnya —
+ * yang berjanji lebih dari yang dikerjakan aplikasinya akan ketahuan dalam satu
+ * klik.
+ */
+const MODULES: Module[] = [
+  { href: '/app', name: 'Markets', blurb: 'Live Aqua positions, each one a program you can read.' },
+  { href: '/swap', name: 'Swap', blurb: "Trade straight into a maker's wallet. Price comes from the VM." },
+  {
+    href: '/savings',
+    name: 'Savings',
+    blurb: 'Put part of your balance to work as liquidity and take 0.3% of every swap through it.',
+  },
+  { href: '/pay', name: 'Pay', blurb: 'Send any listed token to a plain address.' },
+  { href: '/payment-link', name: 'Payment link', blurb: 'One link and a QR that pre-fills the amount for whoever pays.' },
+  { href: '/faucet', name: 'Faucet', blurb: 'Mint test tokens so every screen above has something to move.' },
+]
+
+function ModuleCell({ dark, href, name, blurb }: Module & { dark: boolean }) {
+  return (
+    <a
+      href={href}
+      className="group relative flex flex-col justify-between overflow-hidden border p-6 transition-colors"
+      style={{
+        borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(25,25,25,0.10)',
+        backgroundColor: dark ? 'rgba(255,255,255,0.022)' : 'rgba(25,25,25,0.018)',
+      }}
+    >
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <Title dark={dark}>{name}</Title>
+          <span
+            aria-hidden
+            className="font-mono text-[13px] transition-transform group-hover:translate-x-0.5"
+            style={{ color: dark ? 'rgba(255,255,255,0.45)' : 'rgba(25,25,25,0.45)' }}
+          >
+            →
+          </span>
+        </div>
+        <Body dark={dark}>{blurb}</Body>
+      </div>
+    </a>
+  )
+}
+
 export function BentoGrid({ onEnter }: { onEnter: () => void }) {
   const dark = useIsDark()
 
@@ -162,7 +215,7 @@ export function BentoGrid({ onEnter }: { onEnter: () => void }) {
             <div className="flex flex-wrap items-end justify-between gap-8">
               <Figure value="0" label="tokens held by any contract" dark={dark} />
               <Figure value="2" label="custom SwapVM opcodes" dark={dark} />
-              <Figure value="32" label="solidity tests" dark={dark} />
+              <Figure value="34" label="solidity tests" dark={dark} />
               <Figure value="x·y=k" label="priced inside the VM" dark={dark} />
             </div>
           </Cell>
@@ -186,6 +239,22 @@ export function BentoGrid({ onEnter }: { onEnter: () => void }) {
               Open app <span aria-hidden>→</span>
             </button>
           </Cell>
+        </div>
+
+        <div className="mt-16">
+          <Eyebrow dark={dark}>what you can open</Eyebrow>
+          <h2
+            className="mt-4 max-w-2xl font-display text-[clamp(1.4rem,3vw,2.1rem)] font-medium lowercase leading-[1.05] tracking-[-0.025em]"
+            style={{ color: dark ? '#f5f5f5' : '#191919' }}
+          >
+            every screen settles against the same registry.
+          </h2>
+
+          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {MODULES.map((m) => (
+              <ModuleCell key={m.href} dark={dark} {...m} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -300,8 +300,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
               links={[
                 { label: 'Markets', href: '/app' },
                 { label: 'Swap', href: '/swap' },
-                { label: 'Deposit', href: '/deposit' },
+                { label: 'Savings', href: '/savings' },
                 { label: 'Portfolio', href: '/portfolio' },
+                { label: 'Deposit', href: '/deposit' },
               ]}
             />
 
@@ -310,7 +311,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
               heading="Wallet"
               links={[
                 { label: 'Pay', href: '/pay' },
+                { label: 'Payment link', href: '/payment-link' },
                 { label: 'Receive', href: '/receive' },
+                { label: 'Faucet', href: '/faucet' },
                 { label: 'Settings', href: '/settings' },
               ]}
             />
