@@ -134,26 +134,47 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       <div className="relative z-10 flex min-h-screen flex-col justify-end">
         {/* Media latar. aria-hidden: murni dekoratif, tidak membawa informasi. */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <video
-            aria-hidden
-            autoPlay
-            loop
-            muted
-            playsInline
-            src="/video.webm"
-            onLoadedMetadata={(e) => {
-              // Diperlambat seperti pada desain aslinya — gerakan lambat membuat
-              // teks di atasnya tetap terbaca.
-              e.currentTarget.playbackRate = 0.5
-            }}
-            className={`h-full w-full object-cover ${dark ? 'opacity-40' : 'opacity-55'}`}
+          {/* Banner Aqua resmi 1inch, dibawa ke repo (public/) supaya demo tidak
+              bergantung pada CDN pihak lain.
+
+              Gambarnya persegi 1080² dengan wordmark "1inch Aqua" tepat di
+              tengah. Dibentang penuh, wordmark itu mendarat persis di belakang
+              judul dan keduanya sama-sama kalah. Jadi ia dipasang sebagai panel
+              persegi di kanan — judul di kiri, banner di kanan, masing-masing
+              punya ruang. Di layar sempit ia melebar menutupi latar, dan scrim
+              di bawahnya yang menjaga teks tetap terbaca.
+
+              Kecepatannya tidak bisa diperlambat seperti video sebelumnya; GIF
+              tidak punya playbackRate. */}
+          {/* Dua mask di dua lapis, bukan satu elemen dengan dua gradient:
+              mask-composite masih berbeda-beda antar mesin, sedangkan mask
+              bersarang selalu berlaku.
+
+              Pembungkusnya berukuran PERSIS sebesar panelnya (persegi, setinggi
+              layar), supaya persen pada mask horizontalnya dihitung terhadap
+              panel — bukan terhadap lebar layar. Versi pertama memakai inset-0
+              dan pudarnya selesai di 32% layar, jauh sebelum tepi panel, jadi
+              garis lurusnya tetap ada. */}
+          <div
+            className="absolute right-0 top-0 h-full w-full sm:aspect-square sm:w-auto"
             style={{
-              maskImage:
-                'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
-              WebkitMaskImage:
-                'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
+              maskImage: 'linear-gradient(to right, transparent 0%, #000 48%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 48%)',
             }}
-          />
+          >
+            <img
+              aria-hidden
+              alt=""
+              src="/aqua-banner.gif"
+              className={`h-full w-full object-cover ${dark ? 'opacity-70' : 'opacity-45'}`}
+              style={{
+                maskImage:
+                  'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 97%)',
+              }}
+            />
+          </div>
           {/* Scrim. Tanpa ini judulnya tenggelam di bagian video yang terang —
               masalah yang baru terlihat setelah dijalankan, bukan dari kode. */}
           <div
