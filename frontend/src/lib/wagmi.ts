@@ -13,7 +13,25 @@ import { CHAIN_ID } from './config'
  * error RPC yang membingungkan, bukan sebagai salah konfigurasi. Pakai
  * `ACTIVE_CHAIN_ID` di bawah.
  */
-export const ACTIVE_CHAIN_ID = CHAIN_ID
+const SUPPORTED_CHAIN_IDS = [baseSepolia.id, base.id, foundry.id] as const
+
+/**
+ * @dev Diberi tipe union, bukan `number`, supaya salah ketik di
+ *   `VITE_CHAIN_ID` ketahuan saat kompilasi di setiap pemanggil — termasuk
+ *   `switchChain`, yang menolak `number` biasa. Nilai di luar daftar dilempar
+ *   di sini, bukan dibiarkan lolos: rantai yang tidak terkonfigurasi muncul
+ *   sebagai error RPC yang membingungkan, jauh dari sebabnya.
+ */
+export const ACTIVE_CHAIN_ID = ((): (typeof SUPPORTED_CHAIN_IDS)[number] => {
+  const found = SUPPORTED_CHAIN_IDS.find((id) => id === CHAIN_ID)
+  if (found === undefined) {
+    throw new Error(
+      `VITE_CHAIN_ID=${CHAIN_ID} tidak ada di daftar chain yang dikonfigurasi ` +
+        `(${SUPPORTED_CHAIN_IDS.join(', ')}).`,
+    )
+  }
+  return found
+})()
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia, base, foundry],

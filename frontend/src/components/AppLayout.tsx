@@ -8,6 +8,7 @@ import {
   PanelLeftIcon,
   PiggyBankIcon,
   QrCodeIcon,
+  DropletsIcon,
   SettingsIcon,
   WalletIcon,
 } from 'lucide-react'
@@ -58,6 +59,7 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
       { to: '/portfolio', label: 'Portfolio', icon: WalletIcon },
       { to: '/deposit', label: 'Deposit', icon: ArrowDownToLineIcon },
       { to: '/receive', label: 'Receive', icon: QrCodeIcon },
+      { to: '/faucet', label: 'Faucet', icon: DropletsIcon },
     ],
   },
 ]

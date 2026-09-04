@@ -1,7 +1,8 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi'
 import { injected } from 'wagmi/connectors'
-import { baseSepolia } from 'wagmi/chains'
+import { CHAIN_NAME } from '../lib/config'
+import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
 
 export type WalletStatus = 'checking' | 'not-installed' | 'disconnected' | 'connecting' | 'connected'
 
@@ -30,8 +31,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       address: address ?? null,
-      network: chainId === baseSepolia.id ? 'BASE_SEPOLIA' : 'UNKNOWN',
-      isTestnet: chainId === baseSepolia.id,
+      // Jaringan yang benar itu yang dikonfigurasi, bukan Base Sepolia. Dulu
+      // ini dipatok ke baseSepolia, jadi di anvil dompet selalu dianggap salah
+      // jaringan dan bannernya tidak pernah hilang.
+      network: chainId === ACTIVE_CHAIN_ID ? CHAIN_NAME : 'Jaringan lain',
+      isTestnet: chainId === ACTIVE_CHAIN_ID,
       installed: true,
       error: connectError?.message ?? null,
       connect: async () => {

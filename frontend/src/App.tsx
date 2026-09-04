@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Landing } from './components/Landing'
-import { BrandCanvas } from './components/BrandCanvas'
 import { AppLayout } from './components/AppLayout'
 import { Faucet } from './components/Faucet'
 import { Hub } from './pages/Hub'
@@ -30,18 +29,10 @@ export default function App() {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/receive" element={<ReceivePage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/faucet" element={<Faucet />} />
 
         <Route path="/bridge" element={<Navigate to="/deposit" replace />} />
       </Route>
-      <Route
-        path="/faucet"
-        element={
-          <>
-            <BrandCanvas />
-            <Faucet />
-          </>
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
