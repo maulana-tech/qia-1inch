@@ -306,7 +306,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
               type="button"
               onClick={() => setShowChart(true)}
               aria-label="Show chart"
-              className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-none border border-ink-700 bg-ink-900/40 py-4 transition hover:border-red-500"
+              className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-none border border-ink-700 bg-ink-900/40 py-4 transition hover:border-spectral/40 hover:bg-ink-800/60"
             >
               <ChartIcon className="h-4 w-4 shrink-0 text-spectral/70" />
               <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 rotate-180 [writing-mode:vertical-rl]">
