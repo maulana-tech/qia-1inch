@@ -1,4 +1,5 @@
-import { PageHeader } from '../components/ui'
+import { ArrowDownToLineIcon, ArrowRightIcon, ArrowUpRightIcon, SendIcon } from 'lucide-react'
+import { Card, CardContent, PageHeader } from '../components/ui'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIqia } from '../hooks/useIqia'
@@ -11,6 +12,12 @@ import { AssetAvatar, ChevronDownIcon, EyeGlyph } from '../components/ui'
 import { ScrambleNumber } from '../components/ScrambleNumber'
 import type { AssetCode } from '../lib/iqia-sdk'
 import { useSettings, formatMoney } from '../lib/settings'
+
+const QUICK_ACTIONS = [
+  { to: '/deposit', icon: ArrowDownToLineIcon, title: 'Deposit', caption: 'Aset ke kolam' },
+  { to: '/pay', icon: SendIcon, title: 'Pay', caption: 'Ke pemegang lain' },
+  { to: '/swap', icon: ArrowUpRightIcon, title: 'Swap', caption: 'Lewat meja Aqua' },
+] as const
 
 const MASK = '••••••'
 
@@ -52,12 +59,13 @@ export function PortfolioPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 pb-20 pt-8">
-      <div className="mb-6">
-        <PageHeader title="Portfolio" caption="Saldo dan riwayatmu di satu tempat." />
-      </div>
+      <section className="space-y-5">
+      <PageHeader title="Portfolio" caption="Saldo dan riwayatmu di satu tempat." />
+
       {/* Total */}
-      <header className="mb-10 flex flex-col items-center border-b border-spectral/10 pb-10 text-center">
-        <div className="coord-label mb-4 tracking-widest text-zinc-400">total shielded balance</div>
+      <Card>
+      <CardContent className="flex flex-col items-center py-8 text-center">
+        <div className="coord-label mb-4 tracking-widest text-spectral/45">total shielded balance</div>
         <div className="flex items-center gap-4">
           {loadingBalances ? (
             <span className="display-hd text-5xl text-spectral/25">{MASK}</span>
@@ -77,34 +85,42 @@ export function PortfolioPage() {
             <EyeGlyph off={!revealed} className="h-6 w-6" />
           </button>
         </div>
-        <div className="coord-label mt-4 text-[10px] text-zinc-500">
+        <div className="coord-label mt-4 text-[10px] text-spectral/40">
           {revealed ? `Value in ${currency.toUpperCase()}` : 'Private by default'}
         </div>
-      </header>
+      </CardContent>
+      </Card>
 
-      {/* Quick Actions */}
-      <div className="mb-10 flex gap-3 sm:gap-4">
-        <Link to="/deposit" className="group flex-1 rounded-none border border-spectral/10 bg-ink-900/40 py-4 text-center backdrop-blur-sm transition hover:border-red-500 hover:bg-spectral/[0.02]">
-          <span className="coord-label text-spectral-soft transition group-hover:text-spectral">Bridge</span>
-        </Link>
-        <Link to="/pay" className="group flex-1 rounded-none border border-spectral/10 bg-ink-900/40 py-4 text-center backdrop-blur-sm transition hover:border-red-500 hover:bg-spectral/[0.02]">
-          <span className="coord-label text-spectral-soft transition group-hover:text-spectral">Transfer</span>
-        </Link>
-        <Link to="/swap" className="group flex-1 rounded-none border border-spectral/10 bg-ink-900/40 py-4 text-center backdrop-blur-sm transition hover:border-red-500 hover:bg-spectral/[0.02]">
-          <span className="coord-label text-spectral-soft transition group-hover:text-spectral">Trade</span>
-        </Link>
+      {/* Aksi cepat */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        {QUICK_ACTIONS.map((a) => (
+          <Link
+            key={a.to}
+            to={a.to}
+            className="card group flex items-center gap-3 p-4 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:ring-spectral/30"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-spectral/[0.07]">
+              <a.icon className="size-4 text-spectral/70" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-spectral/85">{a.title}</span>
+              <span className="block truncate text-xs text-spectral/45">{a.caption}</span>
+            </span>
+            <ArrowRightIcon className="ml-auto size-4 shrink-0 text-spectral/30 transition group-hover:text-spectral/60" />
+          </Link>
+        ))}
       </div>
 
       {/* Holdings */}
       {loadingBalances ? (
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <div key={i} className="h-[68px] animate-pulse rounded-none border border-spectral/10 bg-ink-900/40" />
+            <div key={i} className="card h-[68px] animate-pulse" />
           ))}
         </div>
       ) : balances.length === 0 ? (
-        <div className="rounded-none border border-spectral/10 bg-ink-900/40 px-6 py-14 text-center">
-          <p className="text-sm text-zinc-400">Nothing shielded yet.</p>
+        <div className="card px-6 py-14 text-center">
+          <p className="text-sm text-spectral/55">Nothing shielded yet.</p>
           <Link to="/deposit" className="coord-label mt-3 inline-block text-spectral/70 transition hover:text-spectral">
             deposit assets →
           </Link>
@@ -116,7 +132,7 @@ export function PortfolioPage() {
             const isOpen = open === b.asset
             const meta = assetMeta(b.asset)
             return (
-              <div key={b.asset} className="overflow-hidden rounded-none border border-spectral/10 bg-ink-900/40">
+              <div key={b.asset} className="card">
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : b.asset)}
@@ -140,7 +156,7 @@ export function PortfolioPage() {
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-spectral/10 bg-black/20 px-5 py-4">
+                  <div className="border-t border-spectral/10 bg-spectral/[0.03] px-5 py-4">
                     <div className="coord-label mb-3 text-zinc-500">UTXO Notes Breakdown</div>
                     {notes.length === 0 ? (
                       <p className="text-xs text-zinc-500">No spendable notes.</p>
@@ -167,6 +183,7 @@ export function PortfolioPage() {
           })}
         </div>
       )}
+      </section>
     </div>
   )
 }

@@ -16,29 +16,7 @@ const ROTATING = ['in your wallet', 'unlocked', 'yours', 'never pooled', 'put to
 
 
 
-const GRID_V = 'rgba(255,255,255,0.06)'
-const GRID_H = 'rgba(255,255,255,0.09)'
-const GRID_V_LIGHT = 'rgba(25,25,25,0.06)'
-const GRID_H_LIGHT = 'rgba(25,25,25,0.09)'
 
-
-function ChartBackground() {
-  const fade = 'radial-gradient(125% 105% at 50% 46%, #000 40%, transparent 100%)'
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, var(--grid-v) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-h) 1px, transparent 1px)',
-          backgroundSize: '192px 138px',
-          maskImage: fade,
-          WebkitMaskImage: fade,
-        }}
-      />
-    </div>
-  )
-}
 
 
 interface FooterLink {
@@ -92,10 +70,8 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
     const update = () => {
       raf = 0
       const p = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.6)))
-      const a = 1 - p // grid + labels fade out as the story scrolls up
-      const colorPrefix = dark ? '255,255,255' : '25,25,25'
-      el.style.setProperty('--grid-v', `rgba(${colorPrefix},${(0.06 * a).toFixed(3)})`)
-      el.style.setProperty('--grid-h', `rgba(${colorPrefix},${(0.09 * a).toFixed(3)})`)
+      const a = 1 - p // label memudar saat cerita bergulir naik
+
       el.style.setProperty('--grid-op', a.toFixed(3))
     }
     const onScroll = () => {
@@ -120,10 +96,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       <section
         ref={heroRef}
         className="relative min-h-screen w-full overflow-hidden"
-        style={{ '--grid-v': dark ? GRID_V : GRID_V_LIGHT, '--grid-h': dark ? GRID_H : GRID_H_LIGHT, '--grid-op': 1 } as CSSProperties}
+        style={{ '--grid-op': 1 } as CSSProperties}
       >
       
-      <ChartBackground />
 
       {/* Header — fixed, inverts against whatever scrolls behind it. */}
       <header className="fixed inset-x-0 top-0 z-50">
