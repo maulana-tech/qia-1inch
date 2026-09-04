@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Token registry.
  *
@@ -98,7 +97,7 @@ export function tokenBySac(sac: string): TokenMeta | undefined {
 }
 
 import { readContract } from '@wagmi/core'
-import { wagmiConfig } from './wagmi'
+import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import { erc20Abi } from 'viem'
 
 /**
@@ -111,15 +110,17 @@ export async function resolveCustomToken(sacAddress: string): Promise<TokenMeta>
     throw new Error('Enter a valid ERC20 contract address — starts with "0x".')
   }
   try {
-    const decimals = await readContract(wagmiConfig, {
+    const decimals = await readContract(wagmiConfig as any, {
       address: sac as `0x${string}`,
       abi: erc20Abi,
       functionName: 'decimals',
+      chainId: ACTIVE_CHAIN_ID,
     })
-    const symbol = await readContract(wagmiConfig, {
+    const symbol = await readContract(wagmiConfig as any, {
       address: sac as `0x${string}`,
       abi: erc20Abi,
       functionName: 'symbol',
+      chainId: ACTIVE_CHAIN_ID,
     })
 
     return {

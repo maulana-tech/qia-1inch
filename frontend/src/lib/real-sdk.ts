@@ -1,19 +1,10 @@
-// @ts-nocheck
 import { sendTransaction, waitForTransactionReceipt, getAccount, writeContract, readContract } from '@wagmi/core'
-// @ts-nocheck
-import { Iqia, type EvmOperation, type ProofData, type BalanceNote, createNote, fieldToHex, hash2, hash4 } from '@iqia/sdk'
-// @ts-nocheck
+import { Iqia, type EvmOperation, type BalanceNote } from '@iqia/sdk'
 import { wagmiConfig } from './wagmi'
 import * as desk from './desk'
-// @ts-nocheck
-import { POOL_CONTRACT_ID, TRANSFER_PROCESSOR_ADDRESS } from './config'
-// @ts-nocheck
+import { POOL_CONTRACT_ID } from './config'
 import { getSpendingKey, addNote, loadNotes, markSpent, addOrder, loadOrders, setOrderStatus, loadHistory, addHistoryItem } from './note-store'
 
-// TransferProcessor ABI
-const transferProcessorAbi = parseAbi([
-  'function transfer(bytes calldata proof, bytes32[6] calldata publicInputs) external',
-])
 
 
 
@@ -31,11 +22,9 @@ import type {
   IqiaSdk,
   HistoryItem,
 } from './iqia-sdk'
-// @ts-nocheck
 import { assetIdFor, assetMeta } from './tokens'
-// @ts-nocheck
 import { formatAmount } from './format'
-import { erc20Abi, parseAbi } from 'viem'
+import { erc20Abi } from 'viem'
 
 // Parse decimal to base units
 export function toBaseUnits(input: string, decimals: number): bigint {
@@ -66,7 +55,7 @@ export class RealIqiaSdk implements IqiaSdk {
   }
 
   private async requireAddress(): Promise<string> {
-    const { address } = getAccount(wagmiConfig)
+    const { address } = getAccount(wagmiConfig as any)
     if (!address) throw new Error('Connect an EVM wallet first (e.g. MetaMask).')
     return address
   }
@@ -83,17 +72,17 @@ export class RealIqiaSdk implements IqiaSdk {
   }
 
   async deposit(params: DepositParams): Promise<TxResult> {
+    const from = await this.requireAddress()
     const isNative = params.native ?? assetMeta(params.asset).native ?? false
     const address = params.sac ?? (isNative ? 'native' : '')
     if (!address && !isNative) throw new Error('Need ERC20 contract address for deposit')
     const decimals = params.decimals ?? 18
     const amountBase = toBaseUnits(params.amount, decimals)
 
-    const from = await this.requireAddress()
 
     // For ERC20 tokens, approve the pool to spend first
     if (!isNative && address && address !== 'native') {
-      const allowance = await readContract(wagmiConfig, {
+      const allowance = await readContract(wagmiConfig as any, {
         address: address as `0x${string}`,
         abi: erc20Abi,
         functionName: 'allowance',
@@ -102,7 +91,7 @@ export class RealIqiaSdk implements IqiaSdk {
 
       if (allowance < amountBase) {
         // Need to approve
-        const approveHash = await writeContract(wagmiConfig, {
+        const approveHash = await writeContract(wagmiConfig as any, {
           address: address as `0x${string}`,
           abi: erc20Abi,
           functionName: 'approve',
@@ -114,7 +103,7 @@ export class RealIqiaSdk implements IqiaSdk {
       }
     }
 
-    const { note, operation, commitment } = this.getSdk().deposit({
+    const { note, operation } = this.getSdk().deposit({
       asset: { assetId: assetIdFor({ native: isNative, sac: address }), address },
       amount: amountBase,
       from
@@ -138,7 +127,6 @@ export class RealIqiaSdk implements IqiaSdk {
   }
 
   async withdraw(params: WithdrawParams): Promise<TxResult> {
-    const from = await this.requireAddress()
     
     // Find note
     const notes = loadNotes()
@@ -160,7 +148,7 @@ export class RealIqiaSdk implements IqiaSdk {
       assetAddress: candidate.assetAddress
     }
 
-    const { operation, nullifiers } = await this.getSdk().withdraw({
+    const { operation } = await this.getSdk().withdraw({
       note: balanceNote as BalanceNote,
       recipient: params.recipient
     })
@@ -181,112 +169,33 @@ export class RealIqiaSdk implements IqiaSdk {
     return { hash }
   }
 
-  async transfer(params: TransferParams): Promise<TxResult> {
-    const from = await this.requireAddress()
-    const meta = assetMeta(params.asset)
-    const amountBase = toBaseUnits(params.amount, meta.decimals)
-    
-    // Find source note
-    const notes = loadNotes()
-    const sourceNote = notes.find(n => n.assetCode === params.asset && !n.spent)
-    if (!sourceNote) throw new Error(`No shielded ${params.asset} balance`)
-    
-    const sourceAmount = BigInt(sourceNote.amount)
-    if (sourceAmount < amountBase) throw new Error('Insufficient balance')
-    
-    // Create output note for recipient (using recipient's owner key)
-    const recipientOwnerKey = BigInt(params.recipientKey.startsWith('0x') ? params.recipientKey : '0x' + params.recipientKey)
-    const outputNote = createNote({
-      assetId: BigInt(sourceNote.assetId),
-      amount: amountBase,
-      ownerKey: recipientOwnerKey,
-    })
-    
-    // Create change note if needed
-    let changeNote = undefined
-    if (sourceAmount > amountBase) {
-      changeNote = createNote({
-        assetId: BigInt(sourceNote.assetId),
-        amount: sourceAmount - amountBase,
-        spendingKey: getSpendingKey(),
-      })
-    }
-    
-    // Generate ZK proof (simplified - in production this would use the real prover)
-    // For now, we'll submit a dummy proof that the mock verifier accepts
-    const nullifier0 = hash2(BigInt(sourceNote.commitment), BigInt(sourceNote.spendingKey))
-    const nullifier1 = hash2(0n, 0n) // dummy nullifier for second input
-    
-    const outCommitment0 = outputNote.commitment
-    const outCommitment1 = changeNote ? changeNote.commitment : 0n
-    
-    // Public inputs: [merkle_root, nullifier_0, nullifier_1, out_commitment_0, out_commitment_1, ext_data_hash]
-    const merkleRoot = 0n // In production, this would be the actual Merkle root
-    const extDataHash = 0n // In production, this would hash recipient/fee data
-    
-    const publicInputs = [
-      fieldToHex(merkleRoot),
-      fieldToHex(nullifier0),
-      fieldToHex(nullifier1),
-      fieldToHex(outCommitment0),
-      fieldToHex(outCommitment1),
-      fieldToHex(extDataHash),
-    ] as `0x${string}`[]
-    
-    // Dummy proof (mock verifier accepts anything)
-    const dummyProof = '0x' + '00'.repeat(128) as `0x${string}`
-    
-    try {
-      // Submit transfer on-chain
-      const txHash = await writeContract(wagmiConfig, {
-        address: TRANSFER_PROCESSOR_ADDRESS as `0x${string}`,
-        abi: transferProcessorAbi,
-        functionName: 'transfer',
-        args: [dummyProof, publicInputs],
-        chain: null,
-        account: from as `0x${string}`,
-      })
-      
-      await waitForTransactionReceipt(wagmiConfig as any, { hash: txHash })
-      
-      // Mark source as spent
-      markSpent(sourceNote.commitment)
-      
-      // Store output notes
-      addNote(outputNote, { 
-        assetCode: params.asset, 
-        source: 'received',
-        decimals: meta.decimals,
-        txHash 
-      })
-      
-      if (changeNote) {
-        addNote(changeNote, { 
-          assetCode: params.asset, 
-          source: 'change',
-          decimals: meta.decimals 
-        })
-      }
-      
-      addHistoryItem({
-        id: 'tx_' + Date.now(),
-        type: 'Swap',
-        pairOrAsset: params.asset,
-        amountIn: `${params.amount} ${params.asset}`,
-        txHash,
-        createdAt: Date.now(),
-      })
-      
-      return { hash: txHash }
-      
-    } catch (error) {
-      throw error
-    }
+  /**
+   * Transfer terlindung — sengaja dimatikan, bukan dibiarkan seolah jalan.
+   *
+   * Isinya dulu menyusun catatan keluaran lewat `createNote({ ownerKey })`,
+   * padahal `createNote` MENURUNKAN ownerKey dari spendingKey dan tidak punya
+   * field bernama ownerKey sama sekali. Field itu diabaikan diam-diam, jadi
+   * catatannya lahir tanpa pemilik yang benar dan penerimanya tidak akan pernah
+   * bisa membelanjakannya. Uang masuk, tidak ada yang gagal, dan tidak ada yang
+   * bisa mengambilnya lagi.
+   *
+   * Memperbaikinya bukan soal mengganti nama field: pengirim tidak boleh punya
+   * spending key penerima, jadi SDK-nya butuh pembangun catatan yang menerima
+   * ownerKey langsung. Ditambah proof-nya masih `0x00…` yang cuma lolos karena
+   * MockTransferVerifier selalu mengembalikan true.
+   *
+   * Jalur ini juga sudah tidak dipakai antarmuka mana pun: /pay sekarang
+   * transfer ERC20 biasa. Jadi ia gagal terang-terangan sampai SDK-nya siap.
+   */
+  async transfer(_params: TransferParams): Promise<TxResult> {
+    throw new Error(
+      'Transfer terlindung belum tersedia: SDK-nya belum bisa membuat catatan ' +
+        'untuk penerima tanpa spending key mereka. Pakai halaman Pay untuk ' +
+        'mengirim token biasa.',
+    )
   }
 
   async placeOrder(params: PlaceOrderParams): Promise<PlaceOrderResult> {
-    const amountBase = toBaseUnits(params.amount, 18)
-    const priceBase = toBaseUnits(params.price, 18)
     
     // Find source note
     const notes = loadNotes()
@@ -371,12 +280,6 @@ export class RealIqiaSdk implements IqiaSdk {
     })
 
     return { hash }
-  }
-
-  async swapShielded(_params: SwapShieldedParams): Promise<TxResult> {
-    throw new Error(
-      'Swap belum tersambung: jalur AMM lama sudah dibuang, perakit program SwapVM di sisi TypeScript belum ada.',
-    )
   }
 
   async getShieldedBalances(): Promise<ShieldedBalance[]> {
