@@ -1,5 +1,6 @@
+import { CHAIN_NAME } from '../lib/config'
+import { PageHeader } from '../components/ui'
 import { useState } from 'react'
-import { Act } from '../components/Act'
 import { useSettings, useT, type Locale, type DisplayCurrency } from '../lib/settings'
 import { useTheme } from '../hooks/useTheme'
 import { POOL_CONTRACT_ID } from '../lib/config'
@@ -34,14 +35,10 @@ export function SettingsPage() {
   ]
 
   return (
-    <Act
-      no="Act 05"
-      id="act-settings"
-      title={t('settings.title')}
-      standfirst={t('page.settingsCaption')}
-      coords={['Settings', 'Configuration']}
-    >
-      <div className="space-y-8 rounded-none border border-spectral/10 bg-ink-900/40 p-6 backdrop-blur-sm">
+    <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-8">
+      <section className="space-y-5">
+        <PageHeader title={t('settings.title')} caption={t('page.settingsCaption')} />
+        <div className="card space-y-8 p-6">
         
         {/* Preference settings */}
         <section className="space-y-6">
@@ -139,11 +136,11 @@ export function SettingsPage() {
                 Network
               </span>
               <span className="rounded-none bg-patina-400/10 px-2 py-0.5 font-mono text-xs font-semibold text-patina-400">
-                {t('settings.networkTestnet')}
+                {t('settings.networkTestnet', { network: CHAIN_NAME })}
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-spectral/40">
-              {t('settings.networkTestnetHint')}
+              {t('settings.networkTestnetHint', { network: CHAIN_NAME })}
             </p>
           </div>
 
@@ -195,8 +192,9 @@ export function SettingsPage() {
           </p>
         </section>
 
-      </div>
-    </Act>
+        </div>
+      </section>
+    </div>
   )
 }
 

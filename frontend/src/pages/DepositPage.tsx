@@ -1,7 +1,6 @@
+import { PageHeader } from '../components/ui'
 import { useState } from 'react'
 import { cx } from '../lib/cx'
-import { Act } from '../components/Act'
-import { CHAIN_NAME } from '../lib/config'
 import { Deposit, type DepositProgress } from '../components/Deposit'
 
 /** Act 01 crossing droplet — a rule that fills as the deposit flow advances. */
@@ -37,16 +36,16 @@ function CrossingRule({ progress }: { progress: DepositProgress }) {
 export function DepositPage() {
   const [cross, setCross] = useState<DepositProgress>({ step: 0, total: 2, status: 'idle' })
   return (
-    <Act
-      no="Act 01"
-      id="act-cross"
-      title="Cross the veil"
-      standfirst="Move value across the veil between the public chain and the shielded pool. Every crossing is proven, not trusted — a real ZK proof on the way out."
-      coords={[CHAIN_NAME, 'Iqia · shielded pool']}
-    >
-      <CrossingRule progress={cross} />
-      <Deposit embedded onProgress={setCross} />
-    </Act>
+    <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-8">
+      <section className="space-y-5">
+        <PageHeader
+          title="Deposit"
+          caption="Pindahkan nilai antara dompet publik dan kolam. Setiap penarikan dijaga bukti, bukan kepercayaan."
+        />
+        <CrossingRule progress={cross} />
+        <Deposit embedded onProgress={setCross} />
+      </section>
+    </div>
   )
 }
 

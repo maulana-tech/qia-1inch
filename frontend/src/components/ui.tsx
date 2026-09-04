@@ -210,6 +210,21 @@ export function CardContent({ className, children }: { className?: string; child
   return <div className={cx('px-5 py-5', className)}>{children}</div>
 }
 
+/** Judul halaman ringkas. Lebih kecil dari PageIntro, untuk halaman di dalam app. */
+export function PageHeader({ title, caption }: { title: string; caption: string }) {
+  return (
+    <header>
+      <h2 className="text-lg font-semibold tracking-tight text-spectral/90">{title}</h2>
+      <p className="text-sm text-spectral/55">{caption}</p>
+    </header>
+  )
+}
+
+/** Garis pemisah antar grup di dalam satu kartu. */
+export function Separator({ className }: { className?: string }) {
+  return <div className={cx('h-px w-full bg-spectral/10', className)} role="separator" />
+}
+
 export function CardFooter({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <div className={cx('flex items-center border-t border-spectral/10 bg-spectral/[0.03] px-5 py-4', className)}>

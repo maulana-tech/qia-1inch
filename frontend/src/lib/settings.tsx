@@ -83,9 +83,9 @@ const en = {
   'settings.preferencesHint':
     'Language and currency only change how amounts are displayed. They do not affect your wallet or the blockchain.',
   'settings.network': 'Network',
-  'settings.networkTestnet': 'Base Sepolia',
+  'settings.networkTestnet': '{network}',
   'settings.networkTestnetHint':
-    'This app runs on Base Sepolia. Funds here are for testing only and have no real value.',
+    'This app runs on {network}. Funds here are for testing only and have no real value.',
   'settings.contract': 'Contract',
   'settings.viewExplorer': 'View on explorer',
   'settings.copy': 'Copy',
@@ -126,9 +126,9 @@ const id = {
   'settings.preferencesHint':
     'Bahasa dan mata uang cuma mengubah tampilan angkanya. Dompet dan blockchain-mu tidak terpengaruh.',
   'settings.network': 'Jaringan',
-  'settings.networkTestnet': 'Base Sepolia',
+  'settings.networkTestnet': '{network}',
   'settings.networkTestnetHint':
-    'Aplikasi ini jalan di Base Sepolia. Dana di sini cuma buat uji coba dan tidak bernilai sungguhan.',
+    'Aplikasi ini jalan di {network}. Dana di sini cuma buat uji coba dan tidak bernilai sungguhan.',
   'settings.contract': 'Kontrak',
   'settings.viewExplorer': 'Lihat di explorer',
   'settings.copy': 'Salin',
@@ -169,9 +169,9 @@ const vi = {
   'settings.preferencesHint':
     'Ngôn ngữ và tiền tệ chỉ thay đổi cách hiển thị số tiền. Chúng không ảnh hưởng đến ví hay blockchain của bạn.',
   'settings.network': 'Mạng',
-  'settings.networkTestnet': 'Base Sepolia',
+  'settings.networkTestnet': '{network}',
   'settings.networkTestnetHint':
-    'Ứng dụng này chạy trên Base Sepolia. Số tiền ở đây chỉ dùng để thử nghiệm và không có giá trị thật.',
+    'Ứng dụng này chạy trên {network}. Số tiền ở đây chỉ dùng để thử nghiệm và không có giá trị thật.',
   'settings.contract': 'Hợp đồng',
   'settings.viewExplorer': 'Xem trên explorer',
   'settings.copy': 'Sao chép',
@@ -212,9 +212,9 @@ const fil = {
   'settings.preferencesHint':
     'Ang wika at currency ay nagpapalit lang kung paano ipinapakita ang mga halaga. Hindi ito nakakaapekto sa wallet mo o sa blockchain.',
   'settings.network': 'Network',
-  'settings.networkTestnet': 'Base Sepolia',
+  'settings.networkTestnet': '{network}',
   'settings.networkTestnetHint':
-    'Tumatakbo ang app na ito sa Base Sepolia. Ang mga funds dito ay pantesting lang at walang totoong value.',
+    'Tumatakbo ang app na ito sa {network}. Ang mga funds dito ay pantesting lang at walang totoong value.',
   'settings.contract': 'Contract',
   'settings.viewExplorer': 'Tingnan sa explorer',
   'settings.copy': 'Kopyahin',

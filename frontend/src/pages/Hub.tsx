@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { fetchMarkets, fetchOneInchTokens, type Market, type TokenInfo } from '../lib/markets'
 import { AQUA_CONFIGURED, CHAIN_NAME, SWAP_VM_ROUTER_ADDRESS, explorerContractUrl } from '../lib/config'
 import { cx } from '../lib/cx'
-import { Card, PageIntro, Spinner } from '../components/ui'
+import { Card, PageHeader, Spinner } from '../components/ui'
 
 /** Jumlah dalam satuan dasar token, ditampilkan ringkas. */
 function formatUnits(value: bigint, decimals: number): string {
@@ -90,11 +90,12 @@ export function Hub() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-12">
-      <PageIntro
-        title="Markets"
-        subtitle={`Likuiditas dari 1inch Aqua di ${CHAIN_NAME}. Setiap market ditopang dompet market maker — dananya tidak pernah terkunci di kontrak mana pun.`}
-      />
+    <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-8">
+      <section className="space-y-5">
+        <PageHeader
+          title="Markets"
+          caption={`Likuiditas dari 1inch Aqua di ${CHAIN_NAME}. Setiap market ditopang dompet market maker.`}
+        />
 
       <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-2">
         <div>
@@ -168,6 +169,7 @@ export function Hub() {
           </div>
         </section>
       ) : null}
+      </section>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/ui'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIqia } from '../hooks/useIqia'
@@ -50,7 +51,10 @@ export function PortfolioPage() {
   const notesByAsset = groupUnspentNotes()
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 pb-20 pt-12">
+    <div className="mx-auto w-full max-w-3xl px-5 pb-20 pt-8">
+      <div className="mb-6">
+        <PageHeader title="Portfolio" caption="Saldo dan riwayatmu di satu tempat." />
+      </div>
       {/* Total */}
       <header className="mb-10 flex flex-col items-center border-b border-spectral/10 pb-10 text-center">
         <div className="coord-label mb-4 tracking-widest text-zinc-400">total shielded balance</div>

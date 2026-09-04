@@ -1,17 +1,17 @@
-import { Act } from '../components/Act'
+import { PageHeader } from '../components/ui'
 import { Pay } from '../components/Pay'
 
 export function PayPage() {
   return (
-    <Act
-      no="Act 02"
-      id="act-send"
-      title="Send into the dark"
-      standfirst="A 2-in / 2-out shielded transfer. Amounts and both parties stay hidden; on-chain, observers see only two opaque commitments and a valid proof."
-      coords={['Poseidon · Merkle', '2-in · 2-out']}
-    >
-      <Pay embedded />
-    </Act>
+    <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-8">
+      <section className="space-y-5">
+        <PageHeader
+          title="Pay"
+          caption="Kirim ke pemegang lain di dalam kolam. Jumlah dan kedua pihak tetap tertutup."
+        />
+        <Pay embedded />
+      </section>
+    </div>
   )
 }
 
