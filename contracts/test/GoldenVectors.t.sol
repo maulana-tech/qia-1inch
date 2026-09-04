@@ -99,5 +99,17 @@ contract GoldenVectorsTest is Test, IqiaOpcodes {
         }));
         console.log("takerData");
         console.logBytes(takerData);
+
+        // Bentuk program tabungan: tanpa gerbang eksklusif, tapi fee tetap ada
+        // dan tetap SEBELUM kurva. Dicetak terpisah supaya urutannya ikut
+        // terkunci di sisi TypeScript, bukan cuma disimpulkan dari potongan
+        // vektor di atas.
+        console.log("savingsProgram");
+        console.logBytes(bytes.concat(
+            p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
+            p.build(Fee._flatFeeAmountInXD, FeeArgsBuilder.buildFlatFee(FEE_BPS)),
+            p.build(XYCSwap._xycSwapXD),
+            p.build(Controls._salt, abi.encodePacked(uint64(SALT)))
+        ));
     }
 }

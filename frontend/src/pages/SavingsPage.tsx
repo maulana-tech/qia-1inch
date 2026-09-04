@@ -14,6 +14,7 @@ import {
 import {
   AQUA_CONFIGURED,
   DESK_SURCHARGE_BPS,
+  SAVINGS_FEE_BPS,
   MOCK_USDC_ADDRESS,
   MOCK_WETH_ADDRESS,
   explorerTxUrl,
@@ -232,7 +233,7 @@ export function SavingsPage() {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-spectral/55">
-                        Likuiditas ini melayani swap dan mengumpulkan fee.
+                        Tiap swap lewat posisimu memungut {Number(SAVINGS_FEE_BPS) / 1e7}% untukmu.
                       </p>
                       <Button size="sm" variant="ghost" disabled={anyBusy} onClick={handleClose}>
                         {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Tutup'}

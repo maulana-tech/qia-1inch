@@ -86,6 +86,15 @@ export const DESK_FEE_BPS = BigInt(env('VITE_DESK_FEE_BPS', '0'))
 /** Biaya tambahan maksimum SolvencyGuard, basis 1e9. 0 mematikan opcode-nya. */
 export const DESK_SURCHARGE_BPS = BigInt(env('VITE_DESK_SURCHARGE_BPS', '0'))
 
+/**
+ * Fee yang dipungut posisi tabungan, basis 1e9. Default 0,3%.
+ *
+ * Tanpa fee, posisi market making tidak menghasilkan apa pun: penukar mendapat
+ * harga kurva murni dan maker hanya menanggung pergerakan inventarisnya. Fee
+ * inilah yang membuat "menabung" benar-benar berarti sesuatu.
+ */
+export const SAVINGS_FEE_BPS = BigInt(env('VITE_SAVINGS_FEE_BPS', '3000000'))
+
 /** Kalau diisi, hanya alamat ini yang boleh mengisi order meja. */
 export const DESK_EXCLUSIVE_TAKER = env('VITE_DESK_EXCLUSIVE_TAKER', '')
 

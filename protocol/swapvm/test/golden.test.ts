@@ -19,6 +19,10 @@ const GOLDEN_PROGRAM =
   '0x1614f39fd6e51aad88f6f4ce6ab8827279cfffb92266170402faf0801504002dc6c011001408000000000000002a'
 const GOLDEN_ORDER_TRAITS =
   '0x4000000000000000000000000000000000000000000000000000000000000000'
+/** Bentuk program tabungan (frontend/src/lib/savings.ts). */
+const GOLDEN_SAVINGS_PROGRAM =
+  '0x170402faf0801504002dc6c011001408000000000000002a'
+
 const GOLDEN_TAKER_DATA =
   '0x002000200020002000200020002000200020002000050000000000000000000000000000000000000000000000000de0b6b3a7640000'
 
@@ -32,6 +36,20 @@ describe('perakit program', () => {
       salt(0x2an),
     )
     expect(built).toBe(GOLDEN_PROGRAM)
+  })
+
+  it('menyusun program tabungan dengan fee sebelum kurva', () => {
+    // Ini bukan sekadar cek encoding — urutannya yang dikunci. Versi pertama
+    // fitur Savings tidak memungut fee sama sekali, dan tidak ada yang gagal
+    // karenanya: posisinya tetap melayani swap, cuma pemiliknya tidak dapat
+    // apa-apa. Perilakunya diuji di contracts/test/SavingsProgram.t.sol.
+    const built = program(
+      solvencyGuard(50_000_000n),
+      flatFeeIn(3_000_000n),
+      xycSwap(),
+      salt(0x2an),
+    )
+    expect(built).toBe(GOLDEN_SAVINGS_PROGRAM)
   })
 
   it('mengkodekan opcode, panjang, lalu argumen', () => {

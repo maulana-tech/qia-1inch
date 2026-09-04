@@ -25,6 +25,7 @@ import { erc20Abi, keccak256, type Address } from 'viem'
 import {
   buildOrder,
   encodeOrder,
+  flatFeeIn,
   program,
   salt,
   solvencyGuard,
@@ -33,7 +34,13 @@ import {
 } from '@iqia/swapvm'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
-import { AQUA_ADDRESS, SWAP_VM_ROUTER_ADDRESS, DESK_SURCHARGE_BPS, AQUA_CONFIGURED } from './config'
+import {
+  AQUA_ADDRESS,
+  SWAP_VM_ROUTER_ADDRESS,
+  DESK_SURCHARGE_BPS,
+  SAVINGS_FEE_BPS,
+  AQUA_CONFIGURED,
+} from './config'
 
 export const aquaAbi = [
   {
@@ -97,10 +104,16 @@ export interface SavingsRule {
  * naik-turun karena pemiliknya membelanjakannya — persis keadaan yang membuat
  * `pull()` gagal mentah tanpa penjaga. Dengan penjaga, harga memburuk bertahap
  * saat saldo menipis, dan swap berukuran wajar tetap terlayani.
+ *
+ * `flatFeeIn` adalah sumber penghasilannya, dan tanpa itu fiturnya kehilangan
+ * seluruh maknanya: pada kurva murni tanpa fee, penukar mendapat harga adil dan
+ * maker hanya menanggung pergerakan inventaris. Urutan penting — fee harus
+ * SEBELUM instruksi kurva, sama seperti pada program meja.
  */
 export function savingsProgram(saltValue: bigint): Hex {
   return program(
     ...(DESK_SURCHARGE_BPS > 0n ? [solvencyGuard(DESK_SURCHARGE_BPS)] : []),
+    ...(SAVINGS_FEE_BPS > 0n ? [flatFeeIn(SAVINGS_FEE_BPS)] : []),
     xycSwap(),
     salt(saltValue),
   )
