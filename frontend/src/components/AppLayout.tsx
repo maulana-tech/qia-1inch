@@ -1,24 +1,160 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import {
+  ArrowDownToLineIcon,
+  ArrowUpRightIcon,
+  ExternalLinkIcon,
+  LayersIcon,
+  PanelLeftIcon,
+  PiggyBankIcon,
+  QrCodeIcon,
+  SettingsIcon,
+  WalletIcon,
+} from 'lucide-react'
+
 import { useIqia } from '../hooks/useIqia'
 import { useReveal } from '../hooks/useReveal'
-
-import { clearAllNotes } from '../lib/note-store'
 import { cx } from '../lib/cx'
 import { BrandCanvas } from './BrandCanvas'
 import { ConnectWallet } from './ConnectWallet'
-import { EyeGlyph, SettingsIcon, FaucetIcon } from './ui'
+import { EyeGlyph } from './ui'
 import { Logo, LogoMark } from './Logo'
 import { ScrambleNumber } from './ScrambleNumber'
 import { ThemeToggle } from './ThemeToggle'
 import { useT, useSettings, formatMoney } from '../lib/settings'
+import { SWAP_VM_ROUTER_ADDRESS, AQUA_CONFIGURED, explorerContractUrl } from '../lib/config'
 
-const NAV = [
-  ['nav.deposit', '/deposit'],
-  ['nav.pay', '/pay'],
-  ['nav.swap', '/swap'],
-  ['nav.receive', '/receive'],
-  ['nav.portfolio', '/portfolio'],
-] as const
+/**
+ * Kerangka aplikasi: sidebar yang bisa diciutkan jadi rail, konten di kanan.
+ *
+ * Menggantikan bilah navigasi atas. Dengan bertambahnya halaman, deretan
+ * horizontal kehabisan ruang dan kehilangan pengelompokan — sidebar memberi
+ * seksi bernama, dan rail menyimpannya tanpa membuang konteks.
+ *
+ * Lebar sidebar disimpan di localStorage supaya pilihan pengguna bertahan.
+ */
+
+const SIDEBAR_KEY = 'iqia.sidebar.rail'
+
+interface NavItem {
+  to: string
+  label: string
+  icon: typeof LayersIcon
+  end?: boolean
+}
+
+const SECTIONS: { heading: string; items: NavItem[] }[] = [
+  {
+    heading: 'markets',
+    items: [
+      { to: '/app', label: 'Markets', icon: LayersIcon, end: true },
+      { to: '/swap', label: 'Swap', icon: ArrowUpRightIcon },
+      { to: '/savings', label: 'Savings', icon: PiggyBankIcon },
+    ],
+  },
+  {
+    heading: 'wallet',
+    items: [
+      { to: '/portfolio', label: 'Portfolio', icon: WalletIcon },
+      { to: '/deposit', label: 'Deposit', icon: ArrowDownToLineIcon },
+      { to: '/receive', label: 'Receive', icon: QrCodeIcon },
+    ],
+  },
+]
+
+const ITEM =
+  'flex items-center gap-3 rounded-md px-3 py-2 text-[13.5px] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-spectral/40'
+
+function SectionLabel({ rail, children }: { rail: boolean; children: string }) {
+  if (rail) return <div className="pt-4" />
+  return (
+    <p className="px-3 pb-1.5 pt-5 font-mono text-[10px] uppercase tracking-[0.18em] text-spectral/38">
+      {children}
+    </p>
+  )
+}
+
+function SidebarContent({
+  rail,
+  onToggle,
+  onNavigate,
+}: {
+  rail: boolean
+  onToggle?: () => void
+  onNavigate?: () => void
+}) {
+  const label = rail ? 'sr-only' : ''
+
+  const itemClass = ({ isActive }: { isActive: boolean }) =>
+    cx(
+      ITEM,
+      rail && 'justify-center px-0',
+      isActive
+        ? 'bg-spectral/10 text-spectral'
+        : 'text-spectral/62 hover:bg-spectral/[0.06] hover:text-spectral/90',
+    )
+
+  return (
+    <div className="flex h-full flex-col p-3">
+      <div className={cx('flex items-center pb-2 pt-1', rail ? 'justify-center' : 'justify-between px-2')}>
+        <NavLink to="/app" onClick={onNavigate} className={cx('flex items-center', rail && 'hidden')}>
+          <Logo markClassName="h-6 w-6" />
+        </NavLink>
+        {onToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={rail ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+            className="rounded-md p-2 text-spectral/45 transition hover:bg-spectral/[0.06] hover:text-spectral"
+          >
+            <PanelLeftIcon className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+
+      <nav className="min-h-0 flex-1 overflow-y-auto">
+        {SECTIONS.map((section) => (
+          <div key={section.heading}>
+            <SectionLabel rail={rail}>{section.heading}</SectionLabel>
+            {section.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onNavigate}
+                className={itemClass}
+                title={rail ? item.label : undefined}
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                <span className={label}>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      <div className="mt-2 border-t border-spectral/10 pt-2">
+        <SectionLabel rail={rail}>protocol</SectionLabel>
+        <NavLink to="/settings" onClick={onNavigate} className={itemClass} title={rail ? 'Settings' : undefined}>
+          <SettingsIcon className="h-[18px] w-[18px] shrink-0" />
+          <span className={label}>Settings</span>
+        </NavLink>
+        {AQUA_CONFIGURED ? (
+          <a
+            href={explorerContractUrl(SWAP_VM_ROUTER_ADDRESS)}
+            target="_blank"
+            rel="noreferrer"
+            className={cx(ITEM, rail && 'justify-center px-0', 'text-spectral/62 hover:bg-spectral/[0.06] hover:text-spectral/90')}
+            title={rail ? 'Router' : undefined}
+          >
+            <ExternalLinkIcon className="h-[18px] w-[18px] shrink-0" />
+            <span className={label}>Router</span>
+          </a>
+        ) : null}
+      </div>
+    </div>
+  )
+}
 
 function ShieldedChip() {
   const { balances, loadingBalances } = useIqia()
@@ -28,12 +164,16 @@ function ShieldedChip() {
   const total = balances.reduce((sum, b) => sum + b.usdEstimate, 0)
   return (
     <div className="hidden items-center gap-2 md:flex">
-      <span className="coord-label">shielded</span>
-      <ScrambleNumber value={formatMoney(total, currency, locale)} revealed={revealed} className="font-mono text-sm text-spectral-soft" />
+      <span className="coord-label">balance</span>
+      <ScrambleNumber
+        value={formatMoney(total, currency, locale)}
+        revealed={revealed}
+        className="font-mono text-sm text-spectral-soft"
+      />
       <button
         type="button"
         onClick={toggle}
-        aria-label={revealed ? 'Hide balance' : 'Reveal balance'}
+        aria-label={revealed ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
         className="text-spectral/50 transition hover:text-spectral"
       >
         <EyeGlyph off={!revealed} className="h-4 w-4" />
@@ -42,143 +182,93 @@ function ShieldedChip() {
   )
 }
 
-function AppNav() {
-  const t = useT()
-  return (
-    <header className="sticky top-0 z-40 px-4 pt-4">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-none bg-ink-900/75 px-5 py-2.5 shadow-[0_12px_34px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-        <NavLink to="/app" className="flex items-center gap-2.5">
-          <Logo markClassName="h-7 w-7" />
-          <span className="font-display text-base font-semibold tracking-tight text-spectral-soft">
-            iqia
-          </span>
-        </NavLink>
-        <nav className="hidden items-center gap-5 font-mono text-[12px] font-semibold uppercase tracking-[0.12em] md:flex">
-          {NAV.map(([key, to]) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cx(
-                  'transition hover:text-spectral-soft',
-                  isActive
-                    ? 'text-spectral-soft underline decoration-patina-400 decoration-2 underline-offset-[7px]'
-                    : 'text-spectral/80',
-                )
-              }
-            >
-              {t(key)}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          <ShieldedChip />
-          <NavLink
-            to="/faucet"
-            title={t('nav.faucet')}
-            aria-label={t('nav.faucet')}
-            className={({ isActive }) =>
-              cx(
-                'inline-flex h-8 w-8 items-center justify-center rounded-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-spectral/40',
-                isActive
-                  ? 'bg-zinc-200/50 text-zinc-950 dark:bg-ink-800 dark:text-spectral-soft'
-                  : 'text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-950 dark:text-spectral/60 dark:hover:bg-ink-800 dark:hover:text-spectral-soft',
-              )
-            }
-          >
-            <FaucetIcon className="h-4 w-4" />
-          </NavLink>
-          <ThemeToggle />
-          <NavLink
-            to="/settings"
-            title={t('nav.settings')}
-            aria-label={t('nav.settings')}
-            className={({ isActive }) =>
-              cx(
-                'inline-flex h-8 w-8 items-center justify-center rounded-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-spectral/40',
-                isActive
-                  ? 'bg-zinc-200/50 text-zinc-950 dark:bg-ink-800 dark:text-spectral-soft'
-                  : 'text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-950 dark:text-spectral/60 dark:hover:bg-ink-800 dark:hover:text-spectral-soft',
-              )
-            }
-          >
-            <SettingsIcon className="h-4 w-4" />
-          </NavLink>
-          <ConnectWallet />
-        </div>
-      </div>
-    </header>
-  )
-}
-
-function AppFooter() {
-  const { refreshBalances } = useIqia()
-
-  async function clearLocalData() {
-    const ok = window.confirm(
-      'Clear locally-cached shielded notes on this device?\n\nYour wallet stays connected — this only removes the notes/balance stored in this browser. Any on-chain funds tied to older notes stay on-chain.',
-    )
-    if (!ok) return
-    clearAllNotes()
-    await refreshBalances()
-  }
-  return (
-    <footer className="cream-panel relative mt-auto">
-      {/* Grain eases in over the top edge so it settles into the wash above
-          instead of popping at the boundary. */}
-      <div
-        aria-hidden
-        className="wr-grain absolute inset-0 opacity-40"
-        style={{
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent, #000 4rem)',
-          maskImage: 'linear-gradient(to bottom, transparent, #000 4rem)',
-        }}
-      />
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-5 px-8 py-8 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <NavLink to="/" className="transition hover:opacity-75 flex items-center gap-3">
-            <LogoMark className="h-[120px] w-[120px] opacity-25" />
-            <span className="font-display text-xl font-semibold tracking-tight text-zinc-950/80 dark:text-zinc-100">
-              iqia
-            </span>
-          </NavLink>
-          <p className="max-w-[18rem] text-[12.5px] font-normal leading-relaxed text-[#1f1f1f]/70 dark:text-zinc-400">
-            Private money on Base. Bridge in, hold, pay and trade — proven on-chain, never revealed.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#141414]/55 dark:text-zinc-500">
-          <NavLink to="/faucet" className="transition hover:text-[#1f1f1f] dark:hover:text-zinc-200">
-            Faucet
-          </NavLink>
-          <button type="button" onClick={() => void clearLocalData()} className="uppercase transition hover:text-[#1f1f1f] dark:hover:text-zinc-200">
-            Clear data
-          </button>
-            <span className="text-[#1f1f1f]/40 dark:text-zinc-600">© Iqia 2026</span>
-        </div>
-      </div>
-    </footer>
-  )
-}
-
-/** Persistent app shell: the BrandCanvas world, router nav and cream footer wrap
- *  every routed surface (hub, bridge, pay, swap, receive, faucet). */
 export function AppLayout() {
+  const t = useT()
+  const [rail, setRail] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_KEY, rail ? '1' : '0')
+    } catch {
+      // Penyimpanan bisa ditolak di mode privat. Lebar sidebar bukan hal yang
+      // pantas menggagalkan render.
+    }
+  }, [rail])
+
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative min-h-screen">
       <BrandCanvas />
-      <AppNav />
-      <main className="relative flex-1">
-        <Outlet />
-      </main>
-      {/* Long, eased wash so the fixed dark canvas dissolves into the footer
-          over a tall multi-stop ramp — the section change reads as one surface.
-          No grain of its own: the fixed canvas grain shows through the transparent
-          top and is naturally covered as the wash turns opaque. */}
-      <div
-        aria-hidden
-        className="pointer-events-none relative h-[30rem] footer-gradient-wash"
-      />
-      <AppFooter />
+
+      {/* Sidebar tetap, layar besar */}
+      <aside
+        className={cx(
+          'fixed inset-y-0 left-0 z-40 hidden border-r border-spectral/10 bg-ink-900/80 backdrop-blur-xl transition-[width] duration-200 lg:block',
+          rail ? 'w-[68px]' : 'w-60',
+        )}
+      >
+        <SidebarContent rail={rail} onToggle={() => setRail((v) => !v)} />
+      </aside>
+
+      {/* Laci, layar kecil */}
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Tutup menu"
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-64 border-r border-spectral/10 bg-ink-900">
+            <SidebarContent rail={false} onNavigate={() => setMobileOpen(false)} />
+          </div>
+        </div>
+      ) : null}
+
+      <div className={cx('transition-[padding] duration-200', rail ? 'lg:pl-[68px]' : 'lg:pl-60')}>
+        <header className="sticky top-0 z-30 border-b border-spectral/10 bg-ink-900/70 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Buka menu"
+                className="rounded-md p-2 text-spectral/60 transition hover:bg-spectral/[0.06] hover:text-spectral lg:hidden"
+              >
+                <PanelLeftIcon className="h-4 w-4" />
+              </button>
+              <NavLink to="/app" className="flex items-center lg:hidden">
+                <LogoMark className="h-6 w-6" />
+              </NavLink>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <ShieldedChip />
+              <ThemeToggle />
+              <ConnectWallet />
+            </div>
+          </div>
+        </header>
+
+        <main className="min-h-[calc(100vh-3.5rem)]">
+          <Outlet />
+        </main>
+
+        <footer className="border-t border-spectral/10 px-4 py-5 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-spectral/40">
+            <span>{t('nav.portfolio') ? 'iqia · 1inch aqua' : 'iqia'}</span>
+            <NavLink to="/" className="transition hover:text-spectral/70">
+              ← landing
+            </NavLink>
+          </div>
+        </footer>
+      </div>
     </div>
   )
 }

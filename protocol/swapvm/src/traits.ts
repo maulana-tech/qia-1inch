@@ -129,3 +129,24 @@ export function buildTakerData(args: BuildTakerDataArgs): Hex {
     instructionsArgs,
   ])
 }
+
+/**
+ * `abi.encode(Order)` — bentuk yang dipakai Aqua saat `ship()`.
+ *
+ * Ditulis manual, tanpa pustaka ABI, supaya paket ini tetap tanpa dependensi.
+ * Tuple statis-dinamis campuran: `maker` dan `traits` inline, `data` sebagai
+ * offset yang menunjuk ke ekor.
+ */
+export function encodeOrder(order: Order): Hex {
+  const dataBytes = byteLength(order.data)
+  const padded = Math.ceil(dataBytes / 32) * 32
+
+  return concatHex([
+    toBytes(32n, 32), // offset ke tuple
+    toBytes(BigInt(order.maker), 32),
+    order.traits,
+    toBytes(96n, 32), // offset `data`, relatif terhadap awal tuple
+    toBytes(BigInt(dataBytes), 32),
+    `0x${order.data.slice(2).padEnd(padded * 2, '0')}` as Hex,
+  ])
+}

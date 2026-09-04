@@ -104,3 +104,22 @@ describe('TakerTraits', () => {
     expect(sameAsTaker).toBe(omitted)
   })
 })
+
+describe('pengkodean order', () => {
+  it('menghasilkan strategyHash yang sama dengan rantai', async () => {
+    const { keccak256 } = await import('viem')
+    const { encodeOrder } = await import('../src/traits.js')
+
+    // Nilai ini diambil dari rantai sungguhan: order dengan program
+    // solvencyGuard(0.05e9) + xycSwap + salt(2) dari maker di bawah menghasilkan
+    // strategyHash ini, dan Aqua memang mencatat saldo 10 WETH untuknya.
+    const order = buildOrder({
+      maker: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      program: program(solvencyGuard(50_000_000n), xycSwap(), salt(2n)),
+    })
+
+    expect(keccak256(encodeOrder(order))).toBe(
+      '0xab8fe078986f0e6012469a83d4cd15e4a91e77db47c5e9b9e4b16de35604ed1d',
+    )
+  })
+})
