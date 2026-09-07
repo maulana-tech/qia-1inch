@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useIsDark } from '../hooks/useTheme'
 
-/* Shared cream-section tokens (match StoryShielded): ink #f5f5f5, body #c4c4c4,
+/* Shared cream-section tokens: ink #f5f5f5, body #c4c4c4,
    labels #d6d6d6 / #8a8a8a / #858585, gold #bfbfbf / #a6a6a6, card border
    #f2f2f2/10, card bg rgba(242,242,242,0.045). */
 
@@ -118,18 +118,18 @@ export function SystemArchitecture() {
             title="Aqua pull / push"
             items={['pull tokenOut from maker wallet', 'push tokenIn back to it', 'Aqua holds nothing']}
           />
-          <Connector note="every exit from the pool still gated by a zero-knowledge proof" />
+          <Connector note="the maker's real wallet balance is readable, so pricing can react to it" />
           <Layer
-            eyebrow="Base EVM · UltraHonk verifiers"
-            title="deposit · withdraw · transfer"
-            items={['Poseidon2 commitment notes', 'append-only Merkle · depth 20', 'nullifier set · 100-root ring']}
+            eyebrow="Base EVM · opcode 22 · opcode 23"
+            title="two instructions of our own"
+            items={['ExclusiveFill — one named filler', 'SolvencyGuard — price follows real backing', 'reserved slots, no renumbering']}
           />
         </div>
 
         {/* off-chain rail */}
         <aside className="flex flex-col gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a7a7a] dark:text-[#8a8a8a]">off-chain · no authority</span>
-          <RailCard title="SDK" lines={['notes · Merkle · Poseidon2', 'UltraHonk proofs (bb.js)', 'Base EVM tx building']} />
+          <RailCard title="Aqua SDK" lines={['official @1inch/aqua-sdk', 'ship / dock calldata', 'event signatures from its ABI']} />
           <RailCard title="SwapVM builder" lines={['program bytecode', 'MakerTraits / TakerTraits', 'byte-identical to Solidity']} />
           <RailCard title="Market reader" lines={['Aqua ship / push / dock logs', '1inch token metadata', 'live balances on chain']} />
         </aside>
