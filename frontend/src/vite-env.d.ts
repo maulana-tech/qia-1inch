@@ -16,9 +16,7 @@ interface ImportMetaEnv {
 
   // --- Core contracts ---
   /** IqiaPool address (0x…). */
-  readonly VITE_IQIA_POOL?: string
   /** TransferProcessor address (0x…). */
-  readonly VITE_TRANSFER_PROCESSOR?: string
   /** Block the pool was deployed at — the indexer's cold-start floor. */
   readonly VITE_POOL_DEPLOY_BLOCK?: string
 
