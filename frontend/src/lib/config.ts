@@ -9,8 +9,6 @@ import { AQUA_CONTRACT_ADDRESSES, NetworkEnum } from '@1inch/aqua-sdk'
  * Target jaringan: Base Sepolia untuk aplikasi, Base mainnet saat menguji
  * terhadap SwapVM resmi lewat fork lokal. Lihat docs/RESOURCES.md.
  */
-import { NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
-import type { AssetCode } from './iqia-sdk'
 
 // Toleransi kalau `import.meta.env` tidak ada (konteks Node/SSR/test).
 const META_ENV = (import.meta.env ?? {}) as Partial<ImportMetaEnv>
@@ -132,8 +130,9 @@ export const DESK_CONFIGURED = AQUA_CONFIGURED && isValidAddress(SWAP_VM_ROUTER_
 // ---------------------------------------------------------------------------
 // Token faucet
 //
-// Memakai 7 desimal, bukan 18. Sirkuit Noir memaksakan `assert_64` pada besaran,
-// dan 18 desimal membuat jumlah wajar melampaui rentang 64-bit.
+// Angka desimal di sini warisan aplikasi asal dan TIDAK cocok dengan mock yang
+// ter-deploy. Untuk apa pun yang memindahkan token, baca dari kontraknya lewat
+// `tokenDecimals()` di lib/payments.ts.
 // ---------------------------------------------------------------------------
 
 export const MOCK_WETH_ADDRESS = env('VITE_WETH_ADDRESS', '')
@@ -197,34 +196,3 @@ export const USE_MOCK = flag('VITE_USE_MOCK')
 // Aset
 // ---------------------------------------------------------------------------
 
-/** Konfigurasi per aset. `assetId` adalah field id di dalam sirkuit (native = 0). */
-export interface AssetConfig {
-  code: AssetCode
-  /** Pengenal field yang dipakai di note dan commitment. */
-  assetId: Field
-  /** Alamat kontrak ERC20, atau undefined kalau belum ada di jaringan ini. */
-  sac: string | undefined
-  /** Desimal fixed-point on-chain. */
-  decimals: number
-  /** Perkiraan harga tampilan (USD), hanya untuk portofolio. */
-  priceUsd: number
-}
-
-function erc20Asset(code: AssetCode, address: string, decimals: number, priceUsd: number): AssetConfig {
-  const valid = /^0x[0-9a-fA-F]{40}$/.test(address)
-  return {
-    code,
-    assetId: valid ? toField(BigInt(address)) : 0n,
-    sac: valid ? address : undefined,
-    decimals,
-    priceUsd,
-  }
-}
-
-export const ASSET_CONFIG: Record<AssetCode, AssetConfig> = {
-  ETH: { code: 'ETH', assetId: NATIVE_ASSET_ID, sac: undefined, decimals: 18, priceUsd: 3500 },
-  WETH: erc20Asset('WETH', MOCK_WETH_ADDRESS, 18, 3500),
-  USDC: erc20Asset('USDC', MOCK_USDC_ADDRESS, 7, 1),
-  WBTC: erc20Asset('WBTC', MOCK_WBTC_ADDRESS, 7, 65000),
-  DAI: erc20Asset('DAI', MOCK_DAI_ADDRESS, 7, 1),
-}
