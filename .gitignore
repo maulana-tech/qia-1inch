@@ -41,3 +41,6 @@ deployments.json
 bridge/deploy/committee.json
 .vercel
 .env*.local
+
+# Ditulis ulang tiap kali contracts/script/fork-demo.sh jalan.
+frontend/.env.fork
