@@ -138,6 +138,14 @@ export interface ActiveStrategy {
   hash: `0x${string}`
   maker: string
   tokens: Set<string>
+  /**
+   * Byte strategi apa adanya, dari event `Shipped`.
+   *
+   * Ini yang membuat posisi orang lain bisa dikutip harganya: `quote()` menuntut
+   * `Order` utuh, bukan `strategyHash`. Aqua memancarkannya di event, jadi
+   * strategi siapa pun bisa dibaca dan dihargai tanpa izin apa pun.
+   */
+  strategy: `0x${string}`
   /** Aqua app yang menaungi posisi ini. */
   app: string
   /** True kalau app-nya router SwapVM resmi 1inch, bukan router kita. */
@@ -276,6 +284,7 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
       tokens: new Set(),
       app: appAddr,
       official: known.official,
+      strategy: log.args.strategy as `0x${string}`,
     })
   }
   for (const log of pushed as any[]) {
