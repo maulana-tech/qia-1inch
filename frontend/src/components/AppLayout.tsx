@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
-  ArrowDownToLineIcon,
   ArrowUpRightIcon,
   ExternalLinkIcon,
   LayersIcon,
@@ -16,16 +15,12 @@ import {
   WalletIcon,
 } from 'lucide-react'
 
-import { useIqia } from '../hooks/useIqia'
-import { useReveal } from '../hooks/useReveal'
 import { cx } from '../lib/cx'
 import { BrandCanvas } from './BrandCanvas'
 import { ConnectWallet } from './ConnectWallet'
-import { EyeGlyph } from './ui'
 import { Logo, LogoMark } from './Logo'
-import { ScrambleNumber } from './ScrambleNumber'
 import { ThemeToggle } from './ThemeToggle'
-import { useT, useSettings, formatMoney } from '../lib/settings'
+import { useT } from '../lib/settings'
 import { SWAP_VM_ROUTER_ADDRESS, AQUA_CONFIGURED, explorerContractUrl } from '../lib/config'
 
 /**
@@ -61,7 +56,6 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
     heading: 'wallet',
     items: [
       { to: '/portfolio', label: 'Portfolio', icon: WalletIcon },
-      { to: '/deposit', label: 'Deposit', icon: ArrowDownToLineIcon },
       { to: '/pay', label: 'Pay', icon: SendIcon },
       { to: '/payment-link', label: 'Payment link', icon: QrCodeIcon },
       { to: '/receive', label: 'Receive', icon: ArrowDownLeftIcon },
@@ -164,32 +158,6 @@ function SidebarContent({
   )
 }
 
-function ShieldedChip() {
-  const { balances, loadingBalances } = useIqia()
-  const { revealed, toggle } = useReveal()
-  const { currency, locale } = useSettings()
-  if (loadingBalances || balances.length === 0) return null
-  const total = balances.reduce((sum, b) => sum + b.usdEstimate, 0)
-  return (
-    <div className="hidden items-center gap-2 md:flex">
-      <span className="coord-label">balance</span>
-      <ScrambleNumber
-        value={formatMoney(total, currency, locale)}
-        revealed={revealed}
-        className="font-mono text-sm text-spectral-soft"
-      />
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={revealed ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
-        className="text-spectral/50 transition hover:text-spectral"
-      >
-        <EyeGlyph off={!revealed} className="h-4 w-4" />
-      </button>
-    </div>
-  )
-}
-
 export function AppLayout() {
   const t = useT()
   const [rail, setRail] = useState(() => {
@@ -257,7 +225,6 @@ export function AppLayout() {
             </div>
 
             <div className="flex items-center gap-4">
-              <ShieldedChip />
               <ThemeToggle />
               <ConnectWallet />
             </div>
