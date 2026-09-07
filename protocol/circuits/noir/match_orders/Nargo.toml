@@ -1,7 +1,0 @@
-[package]
-name = "match_orders"
-type = "bin"
-authors = ["Iqia"]
-
-[dependencies]
-iqia_lib = { path = "../iqia_lib" }
