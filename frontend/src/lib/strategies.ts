@@ -48,7 +48,7 @@ import { MOCK_USDC_ADDRESS, MOCK_WETH_ADDRESS } from './config'
  * Pasangan yang dilayani meja ini.
  *
  * Desimalnya ditulis di sini karena `lib/tokens.ts` menyimpan angka yang salah
- * (peninggalan sirkuit Noir), dan salah satu desimal berarti nominal sepuluh
+ * (angka warisan aplikasi asal), dan salah satu desimal berarti nominal sepuluh
  * kali lipat. Yang benar-benar aman tetap `tokenDecimals()` yang membaca dari
  * kontrak; ini untuk tampilan dan pembagian saldo.
  */
