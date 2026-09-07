@@ -1,5 +1,3 @@
 packages:
-  - "protocol/sdk"
-  - "protocol/matcher"
   - "protocol/swapvm"
   - "frontend"
