@@ -62,7 +62,7 @@ contract IqiaPoolRebalanceTest is Test, IqiaOpcodes {
         tokenB = new TokenMock("Token B", "TKB");
 
         pool = new IqiaPool(address(new PoseidonStub()), address(new VerifierStub()));
-        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
+        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this));
         desk = new IqiaAquaTaker(IAqua(address(AQUA)), ISwapVM(address(router)), address(pool));
 
         pool.setDesk(address(desk));
