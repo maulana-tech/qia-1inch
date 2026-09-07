@@ -29,7 +29,7 @@ function TokenGlyph({ token }: { token: TokenInfo }) {
 function MarketRow({ market }: { market: Market }) {
   return (
     <Link
-      to="/swap"
+      to={market.official ? '/app' : '/swap'}
       className="card block p-4 transition-shadow hover:ring-spectral/30"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -58,6 +58,18 @@ function MarketRow({ market }: { market: Market }) {
               >
                 {market.official ? '1inch SwapVM' : 'iqia'}
               </span>
+              {/* Posisi di router resmi bisa DIBACA tapi tidak bisa diisi dari
+                  sini: programnya memuat instruksi yang panggilan dari dompet
+                  biasa tidak bisa penuhi — `quote` pun ditolak. Menautkannya ke
+                  halaman Swap akan menjanjikan sesuatu yang pasti gagal. */}
+              {market.official && (
+                <span
+                  className="rounded-full bg-ink-700/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-zinc-400"
+                  title="Posisi milik maker lain di router resmi. Bisa dilihat, tidak bisa diisi dari aplikasi ini."
+                >
+                  baca saja
+                </span>
+              )}
             </div>
             <div className="coord-label mt-0.5">
               maker {market.maker.slice(0, 6)}…{market.maker.slice(-4)}
