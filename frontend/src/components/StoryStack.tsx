@@ -74,18 +74,17 @@ function FigureBytecode() {
 }
 
 /** Kolam terlindung: keluar hanya lewat bukti. */
-function FigureProof() {
+function FigureBand() {
   return (
     <svg viewBox="0 0 200 140" className="w-full" aria-hidden>
-      <circle cx="100" cy="34" r="7" {...S} />
-      <path d="M100 41v10M100 51H64M100 51h36M64 51v9M136 51v9" {...S} />
-      <circle cx="64" cy="67" r="7" {...S} />
-      <circle cx="136" cy="67" r="7" {...S} />
-      <path d="M64 74v9M64 83H46M64 83h18M46 83v8M82 83v8" {...S} opacity="0.55" />
-      <circle cx="46" cy="98" r="6" {...S} opacity="0.55" />
-      <circle cx="82" cy="98" r="6" {...S} opacity="0.55" />
-      <text x="100" y="128" textAnchor="middle" fontSize="8" fill="currentColor" opacity="0.6">
-        only the root is public
+      {/* kurva rentang penuh, tipis dan melebar */}
+      <path d="M24 108C60 108 74 40 176 34" {...S} opacity="0.35" />
+      {/* pita tempat likuiditas dipusatkan */}
+      <path d="M78 26v92M126 26v92" {...S} opacity="0.5" strokeDasharray="3 4" />
+      <path d="M78 84C92 84 96 56 126 52" {...S} />
+      <circle cx="102" cy="66" r="4" {...S} />
+      <text x="102" y="132" textAnchor="middle" fontSize="8" fill="currentColor" opacity="0.6">
+        modal yang sama, di pita yang dipilih
       </text>
     </svg>
   )
@@ -129,11 +128,11 @@ const STACK: {
   },
   {
     n: '04',
-    label: 'shielded pool',
-    coord: '[ Poseidon2 · UltraHonk ]',
-    title: 'the pool still proves every exit.',
-    body: 'deposits become Poseidon2 commitments in a Merkle tree. amount and owner stay inside the hash; only the root is ever public. every withdrawal is a zero-knowledge proof verified on-chain — no valid proof, no funds move.',
-    figure: <FigureProof />,
+    label: 'strategies',
+    coord: '[ pick one · ship it ]',
+    title: 'four programs, one wizard.',
+    body: 'the same balance can quote across the whole range, concentrate into a price band, decay its quote after a move so arbitrage takes less, or answer to a single named filler. each is a different bytecode program, and the last step of the wizard shows you the bytes before you send them.',
+    figure: <FigureBand />,
     flip: true,
   },
 ]
