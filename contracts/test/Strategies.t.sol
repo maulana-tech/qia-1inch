@@ -6,6 +6,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 import { TokenMock } from "@1inch/solidity-utils/contracts/mocks/TokenMock.sol";
+import { TokenMockDecimals } from "@1inch/swap-vm/test/mocks/TokenMockDecimals.sol";
 
 import { ISwapVM } from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
 import { XYCSwap } from "@1inch/swap-vm/src/instructions/XYCSwap.sol";
@@ -291,5 +292,159 @@ contract StrategiesTest is Test, IqiaOpcodes {
         ISwapVM.Order memory privat = _order(_mejaPrivat(taker, 23));
         _ship(privat);
         assertLt(_swap(privat, taker), outTanpaFee, "meja privat harus memungut");
+    }
+}
+
+/// @notice Pita terkonsentrasi seperti yang benar-benar dihitung antarmuka.
+///
+/// @dev `StrategiesTest` memakai saldo seimbang dan pita ±2x tetap. Yang dikirim
+///   antarmuka tidak begitu: saldonya timpang, desimalnya berbeda (18 lawan 6),
+///   dan pitanya diturunkan dari harga tersirat saldo itu sendiri. Kalau
+///   matematikanya meleset, posisinya lahir di luar pitanya sendiri dan berhenti
+///   menghasilkan sejak detik pertama — tanpa ada yang gagal.
+///
+///   Perhitungan di sini menyalin `impliedSpotE18` dan `priceBand` di
+///   `frontend/src/lib/strategies.ts` persis, termasuk memakai unit MENTAH tanpa
+///   penyesuaian desimal — karena itu yang dilihat VM.
+contract ConcentratedBandTest is Test, IqiaOpcodes {
+    using ProgramBuilder for Program;
+
+    Aqua public immutable AQUA = new Aqua();
+
+    IqiaSwapVMRouter public router;
+    TokenMockDecimals public weth;
+    TokenMockDecimals public usdc;
+
+    address public maker;
+    address public taker;
+
+    uint256 constant WETH_AMOUNT = 2e18;
+    uint256 constant USDC_AMOUNT = 7000e6;
+    uint256 constant SWAP_USDC = 100e6;
+
+    constructor() IqiaOpcodes(address(AQUA)) { }
+
+    function setUp() public {
+        maker = vm.addr(0xD1);
+        taker = vm.addr(0xD2);
+        weth = new TokenMockDecimals("Wrapped Ether", "WETH", 18);
+        usdc = new TokenMockDecimals("USD Coin", "USDC", 6);
+        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
+    }
+
+    /// @dev Salinan `impliedSpotE18`: P = tokenGt/tokenLt, unit mentah.
+    function _spotE18() internal view returns (uint256) {
+        (uint256 lt, uint256 gt) = address(weth) < address(usdc)
+            ? (WETH_AMOUNT, USDC_AMOUNT)
+            : (USDC_AMOUNT, WETH_AMOUNT);
+        return (gt * 1e18) / lt;
+    }
+
+    /// @dev Salinan `priceBand`: lebar satu sisi dalam basis-point 1e4.
+    function _band(uint256 widthBps) internal view returns (uint256 min, uint256 max) {
+        uint256 spot = _spotE18();
+        min = Math.sqrt(((spot * (10_000 - widthBps)) / 10_000) * 1e18);
+        max = Math.sqrt(((spot * (10_000 + widthBps)) / 10_000) * 1e18);
+    }
+
+    function _program(bool concentrate, uint256 widthBps, uint64 s) internal view returns (bytes memory) {
+        Program memory p = ProgramBuilder.init(_opcodes());
+        bytes memory band;
+        if (concentrate) {
+            (uint256 min, uint256 max) = _band(widthBps);
+            band = p.build(XYCConcentrate._xycConcentrateGrowLiquidity2D,
+                XYCConcentrateArgsBuilder.build2D(min, max));
+        }
+        return bytes.concat(
+            p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(0.05e9)),
+            band,
+            p.build(Fee._flatFeeAmountInXD, FeeArgsBuilder.buildFlatFee(0.003e9)),
+            p.build(XYCSwap._xycSwapXD),
+            p.build(Controls._salt, abi.encodePacked(s))
+        );
+    }
+
+    function _run(bytes memory prog) internal returns (uint256 amountOut) {
+        ISwapVM.Order memory o = MakerTraitsLib.build(MakerTraitsLib.Args({
+            maker: maker, receiver: address(0), shouldUnwrapWeth: false,
+            useAquaInsteadOfSignature: true, allowZeroAmountIn: false,
+            hasPreTransferInHook: false, hasPostTransferInHook: false,
+            hasPreTransferOutHook: false, hasPostTransferOutHook: false,
+            preTransferInTarget: address(0), preTransferInData: "",
+            postTransferInTarget: address(0), postTransferInData: "",
+            preTransferOutTarget: address(0), preTransferOutData: "",
+            postTransferOutTarget: address(0), postTransferOutData: "",
+            program: prog
+        }));
+
+        deal(address(weth), maker, WETH_AMOUNT);
+        deal(address(usdc), maker, USDC_AMOUNT);
+        vm.startPrank(maker);
+        weth.approve(address(AQUA), type(uint256).max);
+        usdc.approve(address(AQUA), type(uint256).max);
+        AQUA.ship(address(router), abi.encode(o),
+            dynamic([address(weth), address(usdc)]), dynamic([WETH_AMOUNT, USDC_AMOUNT]));
+        vm.stopPrank();
+
+        deal(address(usdc), taker, SWAP_USDC);
+        vm.startPrank(taker);
+        usdc.approve(address(router), type(uint256).max);
+        bytes memory td = TakerTraitsLib.build(TakerTraitsLib.Args({
+            taker: taker, isExactIn: true, shouldUnwrapWeth: false,
+            isStrictThresholdAmount: false, isFirstTransferFromTaker: false,
+            useTransferFromAndAquaPush: true,
+            threshold: "", to: address(0), deadline: 0,
+            hasPreTransferInCallback: false, hasPreTransferOutCallback: false,
+            preTransferInHookData: "", postTransferInHookData: "",
+            preTransferOutHookData: "", postTransferOutHookData: "",
+            preTransferInCallbackData: "", preTransferOutCallbackData: "",
+            instructionsArgs: "", signature: ""
+        }));
+        (, amountOut,) = router.swap(o, address(usdc), address(weth), SWAP_USDC, td);
+        vm.stopPrank();
+    }
+
+    /// @notice Konsentrasi tetap menang atas rentang penuh, berapa pun lebarnya.
+    function test_PitaDariSaldoNyataMenguntungkan() public {
+        uint256 penuh = _run(_program(false, 0, 1));
+        assertGt(_run(_program(true, 1000, 2)), penuh, "pita 10% harus mengalahkan rentang penuh");
+        assertGt(_run(_program(true, 2500, 3)), penuh, "pita 25% harus mengalahkan rentang penuh");
+    }
+
+    /// @notice Pita lebih sempit TIDAK otomatis lebih baik. Ini disengaja diuji.
+    ///
+    /// @dev Dengan saldo seimbang, makin sempit makin baik — itu yang diukur di
+    ///   `StrategiesTest`. Dengan saldo timpang tidak begitu, dan di sinilah
+    ///   antarmuka bisa berbohong tanpa sadar.
+    ///
+    ///   Sebabnya: pita dipusatkan pada harga tersirat `gt/lt`, sedangkan
+    ///   `XYCConcentrate` menurunkan harga spot-nya dari saldo DAN batas pita.
+    ///   Keduanya tidak sama, jadi posisinya lahir condong ke satu sisi pita.
+    ///   Makin sempit pitanya, makin tajam kecondongan itu terasa — pada 2 WETH
+    ///   lawan 7000 USDC, pita 10% memberi 0,02860 sementara pita 25% memberi
+    ///   0,02926 untuk arah swap yang sama.
+    ///
+    ///   Karena itu antarmuka tidak boleh menjanjikan "makin sempit makin
+    ///   banyak", dan salinan teks presetnya menyebut kecondongan ini.
+    function test_PitaSempitTidakOtomatisLebihBaik() public {
+        uint256 pita10 = _run(_program(true, 1000, 10));
+        uint256 pita25 = _run(_program(true, 2500, 11));
+        assertLt(pita10, pita25, "kecondongan pita sempit harus terlihat pada saldo timpang");
+    }
+
+    /// @notice Desimal berbeda tidak boleh membuat pitanya meleset.
+    ///
+    /// @dev Harga mentah WETH/USDC di sini sekitar 3500e6/1e18 — beda 12 orde
+    ///   besaran dari 1. Kalau ada penyesuaian desimal yang tanpa sengaja ikut
+    ///   masuk, pitanya akan berada jauh dari harga sebenarnya dan swap ini gagal
+    ///   atau memberi keluaran yang tak masuk akal.
+    function test_DesimalBerbedaTidakMenggeserPita() public {
+        uint256 keluaran = _run(_program(true, 1000, 4));
+        assertGt(keluaran, 0, "swap harus terlayani");
+
+        // 100 USDC pada harga ~3500 USDC/WETH sekitar 0,0285 WETH. Batasnya
+        // longgar; yang dijaga cuma ordenya, bukan angkanya.
+        assertGt(keluaran, 0.02e18, "keluaran terlalu kecil, pitanya kemungkinan meleset");
+        assertLt(keluaran, 0.04e18, "keluaran terlalu besar, pitanya kemungkinan meleset");
     }
 }

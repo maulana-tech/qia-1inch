@@ -39,6 +39,76 @@ export function xycSwap(): Hex {
   return instruction(OPCODE.XYC_SWAP)
 }
 
+/**
+ * Likuiditas terkonsentrasi pada satu pita harga.
+ *
+ * Ia BUKAN instruksi swap — ia menggelembungkan saldo virtual, lalu `xycSwap`
+ * yang mengayun kurvanya. Jadi `xycSwap` tetap wajib ada sesudahnya.
+ *
+ * @param sqrtPriceMin akar P_min, titik-tetap 1e18, dengan P = tokenGt/tokenLt
+ * @param sqrtPriceMax akar P_max, titik-tetap 1e18
+ */
+export function xycConcentrate(sqrtPriceMin: bigint, sqrtPriceMax: bigint): Hex {
+  if (sqrtPriceMin >= sqrtPriceMax) throw new Error('sqrtPriceMin harus di bawah sqrtPriceMax')
+  if (sqrtPriceMin <= 0n) throw new Error('sqrtPriceMin harus di atas nol')
+  return concatHex([
+    instruction(OPCODE.XYC_CONCENTRATE, concatHex([toBytes(sqrtPriceMin, 32), toBytes(sqrtPriceMax, 32)])),
+  ])
+}
+
+/**
+ * Penyesuaian saldo virtual berdasar waktu sejak transaksi terakhir.
+ *
+ * Gaya Mooniswap: sesudah harga bergerak, kuotasi menyusul bertahap sepanjang
+ * `period`, jadi arbitrase tidak bisa menyapu selisihnya dalam satu transaksi.
+ *
+ * @param period detik, muat di uint16 (maksimum 65535, sekitar 18 jam)
+ */
+export function decay(period: number): Hex {
+  if (!Number.isInteger(period) || period <= 0 || period > 65535) {
+    throw new Error(`period harus bilangan bulat 1..65535, diterima ${period}`)
+  }
+  return instruction(OPCODE.DECAY, toBytes(period, 2))
+}
+
+/** Akar bilangan bulat, metode Newton. */
+function isqrt(n: bigint): bigint {
+  if (n < 0n) throw new Error('akar dari bilangan negatif')
+  if (n < 2n) return n
+  let x = n
+  let y = (x + 1n) / 2n
+  while (y < x) {
+    x = y
+    y = (x + n / x) / 2n
+  }
+  return x
+}
+
+/**
+ * Ubah harga jadi akar-harga titik-tetap 1e18, seperti `Math.sqrt(P * 1e36)`
+ * di Solidity.
+ *
+ * @param priceE18 harga dalam titik-tetap 1e18
+ */
+export function sqrtPriceX18(priceE18: bigint): bigint {
+  return isqrt(priceE18 * 10n ** 18n)
+}
+
+/**
+ * Pita harga di sekitar satu titik, dinyatakan sebagai lebar relatif.
+ *
+ * @param spotE18 harga acuan, titik-tetap 1e18
+ * @param widthBps lebar satu sisi dalam basis-point 1e4 (1000 = ±10%)
+ */
+export function priceBand(spotE18: bigint, widthBps: number): { min: bigint; max: bigint } {
+  if (widthBps <= 0 || widthBps >= 10_000) throw new Error('widthBps harus di antara 1 dan 9999')
+  const w = BigInt(widthBps)
+  return {
+    min: sqrtPriceX18((spotE18 * (10_000n - w)) / 10_000n),
+    max: sqrtPriceX18((spotE18 * (10_000n + w)) / 10_000n),
+  }
+}
+
 /** Pembeda agar strategyHash unik. Tidak mempengaruhi perhitungan. */
 export function salt(value: bigint): Hex {
   return instruction(OPCODE.SALT, toBytes(value, 8))

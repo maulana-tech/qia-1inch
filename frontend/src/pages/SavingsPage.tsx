@@ -30,6 +30,7 @@ import {
   Spinner,
 } from '../components/ui'
 import { cx } from '../lib/cx'
+import { DESK_PAIR } from '../lib/strategies'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
 function fmt(value: bigint, decimals: number): string {
@@ -39,10 +40,7 @@ function fmt(value: bigint, decimals: number): string {
   return frac ? `${whole}.${frac}` : whole
 }
 
-const TOKENS = [
-  { symbol: 'WETH', address: MOCK_WETH_ADDRESS, decimals: 18 },
-  { symbol: 'USDC', address: MOCK_USDC_ADDRESS, decimals: 6 },
-] as const
+const TOKENS = DESK_PAIR
 
 const SALT = 1_000n
 const PRESETS = [10, 20, 35, 50] as const
@@ -135,7 +133,7 @@ export function SavingsPage() {
     setBusy('open'); setError(null); setTxHash(null)
     try {
       const { hash } = await openPosition(
-        address, TOKENS[0].address, TOKENS[1].address, split[0], split[1], SALT,
+        address, TOKENS[0].address, TOKENS[1].address, split[0], split[1], savingsOrder(address, SALT),
       )
       setTxHash(hash)
       await refresh()

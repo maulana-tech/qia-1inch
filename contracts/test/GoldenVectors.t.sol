@@ -2,10 +2,13 @@
 pragma solidity 0.8.30;
 
 import { Test, console } from "forge-std/Test.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 import { ISwapVM } from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
 import { XYCSwap } from "@1inch/swap-vm/src/instructions/XYCSwap.sol";
+import { XYCConcentrate, XYCConcentrateArgsBuilder } from "@1inch/swap-vm/src/instructions/XYCConcentrate.sol";
+import { Decay, DecayArgsBuilder } from "@1inch/swap-vm/src/instructions/Decay.sol";
 import { Controls } from "@1inch/swap-vm/src/instructions/Controls.sol";
 import { Fee, FeeArgsBuilder } from "@1inch/swap-vm/src/instructions/Fee.sol";
 import { MakerTraits, MakerTraitsLib } from "@1inch/swap-vm/src/libs/MakerTraits.sol";
@@ -104,6 +107,43 @@ contract GoldenVectorsTest is Test, IqiaOpcodes {
         // dan tetap SEBELUM kurva. Dicetak terpisah supaya urutannya ikut
         // terkunci di sisi TypeScript, bukan cuma disimpulkan dari potongan
         // vektor di atas.
+        // Empat strategi onboarding. Urutannya yang dikunci, bukan cuma byte-nya:
+        // solvencyGuard WAJIB sebelum decay/concentrate — lihat SolvencyGuard.sol.
+        bytes memory guard = p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS));
+        bytes memory fee = p.build(Fee._flatFeeAmountInXD, FeeArgsBuilder.buildFlatFee(FEE_BPS));
+        bytes memory swapAndSalt = bytes.concat(
+            p.build(XYCSwap._xycSwapXD),
+            p.build(Controls._salt, abi.encodePacked(uint64(SALT)))
+        );
+
+        console.log("strategySantai");
+        console.logBytes(bytes.concat(guard, fee, swapAndSalt));
+
+        console.log("strategyTerkonsentrasi");
+        console.logBytes(bytes.concat(
+            guard,
+            p.build(XYCConcentrate._xycConcentrateGrowLiquidity2D,
+                XYCConcentrateArgsBuilder.build2D(Math.sqrt(0.5e36), Math.sqrt(2.0e36))),
+            fee,
+            swapAndSalt
+        ));
+
+        console.log("strategyAntiArbitrase");
+        console.logBytes(bytes.concat(
+            guard,
+            p.build(Decay._decayXD, DecayArgsBuilder.build(300)),
+            fee,
+            swapAndSalt
+        ));
+
+        console.log("strategyMejaPrivat");
+        console.logBytes(bytes.concat(
+            p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(TAKER)),
+            guard,
+            fee,
+            swapAndSalt
+        ));
+
         console.log("savingsProgram");
         console.logBytes(bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),

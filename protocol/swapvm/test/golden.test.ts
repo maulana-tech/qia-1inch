@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { buildOrder, buildTakerData } from '../src/traits.js'
-import { exclusiveFill, flatFeeIn, program, salt, solvencyGuard, xycSwap } from '../src/program.js'
+import {
+  decay,
+  exclusiveFill,
+  flatFeeIn,
+  priceBand,
+  program,
+  salt,
+  solvencyGuard,
+  sqrtPriceX18,
+  xycConcentrate,
+  xycSwap,
+} from '../src/program.js'
 
 /**
  * Vektor golden dihasilkan Solidity oleh
@@ -22,6 +33,25 @@ const GOLDEN_ORDER_TRAITS =
 /** Bentuk program tabungan (frontend/src/lib/savings.ts). */
 const GOLDEN_SAVINGS_PROGRAM =
   '0x170402faf0801504002dc6c011001408000000000000002a'
+
+/**
+ * Empat strategi onboarding.
+ *
+ * Yang dikunci di sini bukan cuma byte-nya, tapi URUTANNYA. `solvencyGuard`
+ * wajib mendahului `decay` dan `xycConcentrate`: ia membandingkan jaminan nyata
+ * dengan `ctx.swap.balanceOut`, dan sesudah concentrate angka itu saldo virtual
+ * yang sudah digelembungkan, sehingga maker yang terjamin penuh pun kena
+ * surcharge palsu yang menghapus seluruh keuntungan konsentrasi — tanpa ada
+ * yang gagal. Diukur dan dikunci di contracts/test/Strategies.t.sol.
+ */
+const GOLDEN_STRATEGIES = {
+  santai: '0x170402faf0801504002dc6c011001408000000000000002a',
+  terkonsentrasi:
+    '0x170402faf080124000000000000000000000000000000000000000000000000009d025defee4df4400000000000000000000000000000000000000000000000013a04bbdfdc9be881504002dc6c011001408000000000000002a',
+  antiArbitrase: '0x170402faf0801302012c1504002dc6c011001408000000000000002a',
+  mejaPrivat:
+    '0x1614f39fd6e51aad88f6f4ce6ab8827279cfffb92266170402faf0801504002dc6c011001408000000000000002a',
+} as const
 
 const GOLDEN_TAKER_DATA =
   '0x002000200020002000200020002000200020002000050000000000000000000000000000000000000000000000000de0b6b3a7640000'
@@ -50,6 +80,35 @@ describe('perakit program', () => {
       salt(0x2an),
     )
     expect(built).toBe(GOLDEN_SAVINGS_PROGRAM)
+  })
+
+  it('menyusun keempat strategi onboarding identik dengan Solidity', () => {
+    const guard = solvencyGuard(50_000_000n)
+    const fee = flatFeeIn(3_000_000n)
+    const tail = [xycSwap(), salt(0x2an)] as const
+
+    expect(program(guard, fee, ...tail)).toBe(GOLDEN_STRATEGIES.santai)
+    expect(
+      program(guard, xycConcentrate(sqrtPriceX18(5n * 10n ** 17n), sqrtPriceX18(2n * 10n ** 18n)), fee, ...tail),
+    ).toBe(GOLDEN_STRATEGIES.terkonsentrasi)
+    expect(program(guard, decay(300), fee, ...tail)).toBe(GOLDEN_STRATEGIES.antiArbitrase)
+    expect(program(exclusiveFill(TAKER), guard, fee, ...tail)).toBe(GOLDEN_STRATEGIES.mejaPrivat)
+  })
+
+  it('menolak pita dan periode yang tidak masuk akal', () => {
+    expect(() => xycConcentrate(2n, 1n)).toThrow(/di bawah/)
+    expect(() => decay(0)).toThrow(/1\.\.65535/)
+    expect(() => decay(70_000)).toThrow(/1\.\.65535/)
+    expect(() => priceBand(10n ** 18n, 0)).toThrow(/1 dan 9999/)
+  })
+
+  it('membentuk pita simetris di sekitar harga acuan', () => {
+    const spot = 10n ** 18n
+    const { min, max } = priceBand(spot, 1000) // ±10%
+    expect(min).toBe(sqrtPriceX18((spot * 9000n) / 10_000n))
+    expect(max).toBe(sqrtPriceX18((spot * 11_000n) / 10_000n))
+    expect(min).toBeLessThan(sqrtPriceX18(spot))
+    expect(max).toBeGreaterThan(sqrtPriceX18(spot))
   })
 
   it('mengkodekan opcode, panjang, lalu argumen', () => {

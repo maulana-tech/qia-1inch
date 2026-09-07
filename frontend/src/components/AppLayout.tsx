@@ -9,6 +9,7 @@ import {
   PiggyBankIcon,
   QrCodeIcon,
   ArrowDownLeftIcon,
+  SlidersHorizontalIcon,
   DropletsIcon,
   SendIcon,
   SettingsIcon,
@@ -53,6 +54,7 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
       { to: '/app', label: 'Markets', icon: LayersIcon, end: true },
       { to: '/swap', label: 'Swap', icon: ArrowUpRightIcon },
       { to: '/savings', label: 'Savings', icon: PiggyBankIcon },
+      { to: '/strategy', label: 'Open position', icon: SlidersHorizontalIcon },
     ],
   },
   {

@@ -9,6 +9,7 @@ import { PayPage } from './pages/PayPage'
 import { PaymentLinkPage } from './pages/PaymentLinkPage'
 import { SwapPage } from './pages/SwapPage'
 import { SavingsPage } from './pages/SavingsPage'
+import { StrategyPage } from './pages/StrategyPage'
 import { ReceivePage } from './pages/ReceivePage'
 import { SettingsPage } from './pages/SettingsPage'
 
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/payment-link" element={<PaymentLinkPage />} />
         <Route path="/swap" element={<SwapPage />} />
         <Route path="/savings" element={<SavingsPage />} />
+        <Route path="/strategy" element={<StrategyPage />} />
         <Route path="/receive" element={<ReceivePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/faucet" element={<Faucet />} />

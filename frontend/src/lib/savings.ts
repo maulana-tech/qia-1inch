@@ -22,16 +22,9 @@
  */
 import { readContract, readContracts, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { erc20Abi, keccak256, type Address } from 'viem'
-import {
-  buildOrder,
-  encodeOrder,
-  flatFeeIn,
-  program,
-  salt,
-  solvencyGuard,
-  xycSwap,
-  type Hex,
-} from '@iqia/swapvm'
+import { buildOrder, encodeOrder, type Hex } from '@iqia/swapvm'
+
+import { strategyProgram } from './strategies'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import {
@@ -105,18 +98,16 @@ export interface SavingsRule {
  * `pull()` gagal mentah tanpa penjaga. Dengan penjaga, harga memburuk bertahap
  * saat saldo menipis, dan swap berukuran wajar tetap terlayani.
  *
- * `flatFeeIn` adalah sumber penghasilannya, dan tanpa itu fiturnya kehilangan
- * seluruh maknanya: pada kurva murni tanpa fee, penukar mendapat harga adil dan
- * maker hanya menanggung pergerakan inventaris. Urutan penting — fee harus
- * SEBELUM instruksi kurva, sama seperti pada program meja.
+ * Savings adalah strategi "Santai". Definisinya tinggal satu di
+ * `lib/strategies.ts` supaya keduanya tidak bisa menyimpang — dulu program ini
+ * berdiri sendiri dan sempat kehilangan `flatFeeIn` tanpa ada yang sadar.
  */
 export function savingsProgram(saltValue: bigint): Hex {
-  return program(
-    ...(DESK_SURCHARGE_BPS > 0n ? [solvencyGuard(DESK_SURCHARGE_BPS)] : []),
-    ...(SAVINGS_FEE_BPS > 0n ? [flatFeeIn(SAVINGS_FEE_BPS)] : []),
-    xycSwap(),
-    salt(saltValue),
-  )
+  return strategyProgram('santai', {
+    salt: saltValue,
+    feeBps: SAVINGS_FEE_BPS,
+    surchargeBps: DESK_SURCHARGE_BPS,
+  })
 }
 
 export function savingsOrder(maker: string, saltValue: bigint) {
@@ -196,7 +187,8 @@ export async function openPosition(
   tokenB: string,
   amountA: bigint,
   amountB: bigint,
-  saltValue: bigint,
+  /** Order yang mau dikirim — `savingsOrder` atau `strategyOrder`. */
+  order: ReturnType<typeof savingsOrder>,
 ): Promise<{ hash: `0x${string}`; strategyHash: Hex }> {
   requireConfigured()
 
@@ -222,7 +214,6 @@ export async function openPosition(
     }
   }
 
-  const order = savingsOrder(account, saltValue)
   const hash = await writeContract(wagmiConfig as any, {
     address: AQUA_ADDRESS as Address,
     abi: aquaAbi,
