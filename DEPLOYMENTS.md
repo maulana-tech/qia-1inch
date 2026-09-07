@@ -6,16 +6,6 @@
 
 Belum dideploy. Isi tabel ini setelah menjalankan skrip deploy.
 
-### Kontrak inti
-
-| Kontrak | Alamat | Keterangan |
-|---|---|---|
-| IqiaPool | `0x…` | Kolam terlindung: deposit, withdraw, Merkle tree |
-| WithdrawVerifier | `0x…` | Verifier UltraHonk untuk withdraw privat |
-| MockPoseidon | `0x…` | Hasher Poseidon2 sementara |
-| TransferProcessor | `0x…` | Transfer privat berbasis ZK |
-| MockTransferVerifier | `0x…` | Verifier tiruan — **selalu true**, hanya untuk uji |
-
 ### Aqua / SwapVM
 
 | Kontrak | Alamat | Keterangan |
