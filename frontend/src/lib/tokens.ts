@@ -9,13 +9,20 @@
  * available on the active network) and resolves arbitrary custom tokens from a pasted
  * contract address.
  */
-import { NATIVE_ASSET_ID, toField, type Field } from '@iqia/sdk'
 import {
   MOCK_WETH_ADDRESS,
   MOCK_USDC_ADDRESS,
   MOCK_WBTC_ADDRESS,
   MOCK_DAI_ADDRESS,
 } from './config'
+
+/**
+ * Kode aset untuk tampilan, mis. "WETH".
+ *
+ * Dulu tinggal di `lib/iqia-sdk.ts` bersama antarmuka kolam terlindung. Kolam
+ * itu sudah dibuang; tipenya cuma alias string dan tempatnya memang di sini.
+ */
+export type AssetCode = string
 
 export interface TokenMeta {
   code: string
@@ -40,8 +47,8 @@ export interface TokenMeta {
  * depositable out of the box. Override any address via `VITE_<CODE>_ADDRESS`.
  *
  * PERINGATAN: `decimals` di sini TIDAK bisa dipercaya untuk perhitungan uang.
- * Angka 7 itu peninggalan sirkuit Noir, yang mensyaratkan nominal muat di 64
- * bit (assert_64 di iqia_lib); mock yang benar-benar ter-deploy memakai 6.
+ * Angka 7 itu warisan dari aplikasi asal; mock yang benar-benar ter-deploy
+ * memakai 6.
  * Selisih satu desimal berarti kiriman sepuluh kali lipat, tanpa ada yang
  * gagal saat itu terjadi. Untuk apa pun yang memindahkan token, baca dari
  * kontraknya lewat `tokenDecimals()` di lib/payments.ts. Nilai di bawah cuma
@@ -74,13 +81,6 @@ export const TOKEN_OPTIONS = ALL_TOKENS.map((t) => ({ value: t.code, label: `${t
 /** Metadata for a code — falls back to a plain text badge for unknown/custom tokens. */
 export function assetMeta(code: string): TokenMeta {
   return REGISTRY.get(code) ?? { code, name: code, icon: code, decimals: 7, priceUsd: 0 }
-}
-
-/** The `asset_id` field for a token: native = 0; else Poseidon2 of its ERC20 address. */
-export function assetIdFor(token: Pick<TokenMeta, 'native' | 'sac'>): Field {
-  if (token.native) return NATIVE_ASSET_ID
-  if (!token.sac) throw new Error('Token has no ERC20 address to derive its asset id.')
-  return toField(BigInt(token.sac))
 }
 
 /** Curated tokens depositable on the active network (their ERC20 address exists here). */
