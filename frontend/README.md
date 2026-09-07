@@ -53,7 +53,7 @@ Lihat [`../docs/migrasi.md`](../docs/migrasi.md).
 
 ## Catatan
 
-Token faucet memakai 7 desimal, bukan 18. Sirkuit Noir memaksakan `assert_64`
+Angka desimal di `lib/tokens.ts` warisan aplikasi asal dan tidak selalu cocok
 pada besaran, dan 18 desimal membuat jumlah wajar melampaui rentang 64-bit.
 
 Bukti dibuat di dalam browser lewat `@aztec/bb.js`. Berat — komponen
