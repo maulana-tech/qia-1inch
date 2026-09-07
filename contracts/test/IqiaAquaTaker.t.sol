@@ -33,7 +33,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
     TokenMock public tokenA;
     TokenMock public tokenB;
 
-    /// @dev Berdiri mewakili IqiaPool: alamat yang memegang dana pengguna.
+    /// @dev Berdiri mewakili kontrak apa pun yang memegang dana pengguna.
     address public pool;
     address public maker;
     address public outsider;
