@@ -21,7 +21,7 @@
  * kendali pengguna, yang memang inti Aqua.
  */
 import { readContract, readContracts, writeContract, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
-import { erc20Abi, keccak256, type Address } from 'viem'
+import { erc20Abi, type Address } from 'viem'
 import { buildOrder, encodeOrder, type Hex } from '@iqia/swapvm'
 import {
   ABI,
@@ -137,22 +137,22 @@ export async function positionBalances(
   tokenA: string,
   tokenB: string,
 ): Promise<[bigint, bigint]> {
-  const res = await readContracts(wagmiConfig as any, {
-    contracts: [tokenA, tokenB].map((token) => ({
+  // `safeBalances` membaca kedua kaki sekaligus DAN menolak kalau strateginya
+  // tidak aktif — dua hal yang sebelumnya dikerjakan dua panggilan `rawBalances`
+  // plus pemeriksaan `tokensCount` tulisan tangan.
+  try {
+    const res = (await readContract(wagmiConfig as any, {
       address: AQUA_ADDRESS as Address,
       abi: aquaAbi,
-      functionName: 'rawBalances' as const,
-      args: [maker, SWAP_VM_ROUTER_ADDRESS as Address, strategyHash, token as Address],
+      functionName: 'safeBalances',
+      args: [maker, SWAP_VM_ROUTER_ADDRESS as Address, strategyHash, tokenA as Address, tokenB as Address],
       chainId: ACTIVE_CHAIN_ID,
-    })),
-  })
-  const read = (i: number) => (res[i].result as readonly [bigint, number] | undefined)
-  // tokensCount 0xff berarti sudah di-dock; saldonya nol tapi hash-nya terkunci.
-  const val = (i: number) => {
-    const r = read(i)
-    return r && r[1] !== 0 && r[1] !== 255 ? r[0] : 0n
+    })) as readonly [bigint, bigint]
+    return [res[0], res[1]]
+  } catch {
+    // Strategi belum dibuka atau sudah di-dock. Nol, bukan galat.
+    return [0n, 0n]
   }
-  return [val(0), val(1)]
 }
 
 /**
@@ -246,5 +246,9 @@ export async function closePosition(
 
 /** keccak256(abi.encode(Order)) — nomor identitas posisi di Aqua. */
 export function strategyHashOf(order: ReturnType<typeof savingsOrder>): Hex {
-  return keccak256(encodeOrder(order.encoded)) as Hex
+  // Lewat SDK resmi, bukan keccak256 sendiri. Hasilnya sama — tapi kalau Aqua
+  // suatu saat mengubah cara menurunkan hash-nya, yang ikut cuma satu tempat.
+  return AquaProtocolContract.calculateStrategyHash(
+    new HexString(encodeOrder(order.encoded)),
+  ).toString() as Hex
 }
