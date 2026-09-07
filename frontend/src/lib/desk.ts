@@ -15,7 +15,7 @@
 // wagmiConfig di-cast saat dipakai: tipe Config generiknya tidak menyatu antar
 // salinan @wagmi/core yang ter-hoist. Pola yang sama dipakai real-sdk.ts.
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
-import { erc20Abi, parseAbi } from 'viem'
+import { erc20Abi, parseAbi, decodeAbiParameters } from 'viem'
 import {
   buildOrder,
   buildTakerData,
@@ -170,4 +170,49 @@ export async function swap(
   await waitForTransactionReceipt(wagmiConfig as any, { hash })
 
   return { hash, amountIn: quotedIn, amountOut: quotedOut }
+}
+
+/** Bentuk `Order` seperti yang dikodekan `abi.encode` di Solidity. */
+const ORDER_TUPLE = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'maker', type: 'address' },
+      { name: 'traits', type: 'uint256' },
+      { name: 'data', type: 'bytes' },
+    ],
+  },
+] as const
+
+/**
+ * Mengutip harga sebuah posisi milik siapa pun.
+ *
+ * Byte strateginya diambil dari event `Shipped` — Aqua memancarkannya utuh, jadi
+ * posisi orang lain bisa dihargai tanpa izin dan tanpa API. Ini yang membuat
+ * papan "modal bersama" mungkin: lima posisi dikutip serentak, dan semuanya
+ * membaca dompet maker yang sama.
+ */
+export async function quotePosition(
+  app: string,
+  strategy: `0x${string}`,
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  taker: string,
+): Promise<bigint> {
+  const [order] = decodeAbiParameters(ORDER_TUPLE, strategy)
+  const [, amountOut] = await readContract(wagmiConfig as any, {
+    address: app as `0x${string}`,
+    abi: swapVmAbi,
+    functionName: 'quote',
+    chainId: ACTIVE_CHAIN_ID,
+    args: [
+      { maker: order.maker, traits: order.traits, data: order.data },
+      tokenIn as `0x${string}`,
+      tokenOut as `0x${string}`,
+      amountIn,
+      buildTakerData({ taker, isExactIn: true, useTransferFromAndAquaPush: true }),
+    ],
+  })
+  return amountOut
 }
