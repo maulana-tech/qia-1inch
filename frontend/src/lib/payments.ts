@@ -5,7 +5,13 @@
  * pra-mengisi formulir kirim di sisi penerima tautan. Pembayarannya sendiri
  * transfer ERC20 biasa dari dompet pembayar ke alamat penerima.
  */
-import { readContract, sendTransaction, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import {
+  readContract,
+  sendTransaction,
+  simulateContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from '@wagmi/core'
 import { erc20Abi, getAddress, isAddress, type Address } from 'viem'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
@@ -124,4 +130,75 @@ export async function tokenDecimals(token?: Address): Promise<number> {
   )
   decimalsCache.set(key, value)
   return value
+}
+
+const WETH_ABI = [
+  { type: 'function', name: 'deposit', stateMutability: 'payable', inputs: [], outputs: [] },
+  {
+    type: 'function',
+    name: 'withdraw',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'wad', type: 'uint256' }],
+    outputs: [],
+  },
+] as const
+
+/**
+ * Apakah token ini WETH sungguhan yang bisa dibungkus.
+ *
+ * Di anvil, "WETH" adalah MockERC20 tanpa `deposit()` — mencetaknya lewat faucet.
+ * Di Base (atau fork-nya) ia WETH9 asli. Membedakannya dengan menyimulasikan
+ * `deposit()`, bukan menebak dari alamat, supaya jawabannya benar di rantai mana
+ * pun.
+ */
+export async function canWrapNative(weth: Address): Promise<boolean> {
+  try {
+    await simulateContract(wagmiConfig as any, {
+      address: weth,
+      abi: WETH_ABI,
+      functionName: 'deposit',
+      chainId: ACTIVE_CHAIN_ID,
+      value: 0n,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Membungkus ETH jadi WETH.
+ *
+ * Ini satu-satunya jalan "menaruh dana" yang sungguhan di aplikasi ini — bukan
+ * karena ada kontrak yang menampung, tapi karena posisi Aqua dan swap bekerja
+ * dengan ERC20, sementara orang memegang ETH. Tanpa langkah ini, pemegang ETH
+ * di rantai sungguhan tidak bisa berbuat apa-apa.
+ */
+export async function wrapNative(account: Address, weth: Address, amount: bigint): Promise<`0x${string}`> {
+  const hash = await writeContract(wagmiConfig as any, {
+    address: weth,
+    abi: WETH_ABI,
+    functionName: 'deposit',
+    chainId: ACTIVE_CHAIN_ID,
+    value: amount,
+    chain: null,
+    account,
+  })
+  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  return hash
+}
+
+/** Membuka bungkus WETH kembali jadi ETH. */
+export async function unwrapNative(account: Address, weth: Address, amount: bigint): Promise<`0x${string}`> {
+  const hash = await writeContract(wagmiConfig as any, {
+    address: weth,
+    abi: WETH_ABI,
+    functionName: 'withdraw',
+    chainId: ACTIVE_CHAIN_ID,
+    args: [amount],
+    chain: null,
+    account,
+  })
+  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  return hash
 }
