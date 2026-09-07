@@ -226,6 +226,53 @@ dikirim skrip demo.
 
 ---
 
+## Satu kantong modal, banyak pasar
+
+Ini yang tidak bisa dilakukan AMM mana pun, dan alasan utama aplikasi ini ada.
+
+`ship()` tidak memindahkan token **dan tidak memeriksa saldo**. Jadi 10 WETH yang
+sama bisa terdaftar sebagai likuiditas di beberapa pasar sekaligus. Di Uniswap,
+10 WETH-mu ada di SATU pool.
+
+Yang membuatnya tidak sembrono: `SolvencyGuard` membaca dompet yang sama di
+setiap pasar. Begitu satu pasar menghabiskan sebagian modal bersama, pasar LAIN
+ikut memburuk harganya — tanpa keeper, tanpa oracle, tanpa transaksi yang
+menyentuh mereka.
+
+```bash
+anvil &
+cd contracts && ./script/shared-capital.sh
+```
+
+Keluarannya, diukur di rantai:
+
+```
+WETH nyata di dompet      10.0
+WETH terdaftar (3 pasar)  30.0        efisiensi modal 3x
+
+kutipan SEBELUM ada yang menukar
+  pasar B (WETH/DAI)      0.276968
+  pasar C (WETH/WBTC)     0.276968
+
+sesudah satu swap di pasar A, tanpa menyentuh B dan C
+  WETH tersisa            8.144
+  pasar B jadi            0.274468
+  pasar C jadi            0.274468
+```
+
+Dua pasar yang tidak disentuh siapa pun ikut bergerak.
+
+Modal bersama tidak dibagi rata — ia **direbut**. Penukar yang datang belakangan
+membayar lebih mahal karena jaminannya sudah menipis, dan swap yang terlalu besar
+tetap gagal. Batas kerasnya ada; yang berubah cuma cara ia diberitahukan.
+
+Halaman `/desk` menampilkan ini secara langsung: efisiensi modal, kutipan hidup
+tiap pasar, dan tombol muat ulang untuk melihatnya bergerak setelah ada swap.
+
+Diukur juga di `contracts/test/SharedCapital.t.sol`.
+
+---
+
 ## Demo di atas fork Base mainnet — kontrak Aqua RESMI
 
 Ini cara yang dipakai untuk demo, dan ia menjawab dua syarat kualifikasi
