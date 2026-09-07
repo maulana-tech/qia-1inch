@@ -180,6 +180,16 @@ export const MARKETS_LOOKBACK_BLOCKS = Number(
 /** Batas rentang satu panggilan `eth_getLogs`. RPC publik umumnya 10.000. */
 export const LOGS_CHUNK_BLOCKS = Number(env('VITE_LOGS_CHUNK_BLOCKS', '9500'))
 
+/**
+ * RPC yang dipakai untuk rantai aktif. Kosong berarti bawaan viem.
+ *
+ * Ada supaya fork lokal bisa dipakai: `anvil --fork-url … --chain-id 8453`
+ * menyajikan chain 8453 di `localhost:8546`, dan tanpa ini wagmi tetap menembak
+ * RPC publik Base — jadi kontrak yang baru saja di-deploy ke fork tidak akan
+ * pernah terlihat.
+ */
+export const RPC_URL = env('VITE_RPC_URL', '')
+
 /** Kalau true, aplikasi memakai MockIqiaSdk offline alih-alih klien live. */
 export const USE_MOCK = flag('VITE_USE_MOCK')
 
