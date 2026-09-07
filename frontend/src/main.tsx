@@ -6,8 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import App from './App'
 import { WalletProvider } from './hooks/useWallet'
-import { IqiaProvider } from './hooks/useIqia'
-import { RevealProvider } from './hooks/useReveal'
 import { SettingsProvider } from './lib/settings'
 import { wagmiConfig } from './lib/wagmi'
 import './index.css'
@@ -28,13 +26,9 @@ createRoot(rootElement).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <WalletProvider>
-            <IqiaProvider>
-              <RevealProvider>
                 <SettingsProvider>
                   <App />
                 </SettingsProvider>
-              </RevealProvider>
-            </IqiaProvider>
           </WalletProvider>
         </BrowserRouter>
       </QueryClientProvider>
