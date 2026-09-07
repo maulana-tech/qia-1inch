@@ -102,8 +102,8 @@ const decimalsCache = new Map<string, number>()
  * Desimal token, dibaca dari kontraknya.
  *
  * Angka di `lib/tokens.ts` tidak bisa dipercaya untuk ini: di sana USDC
- * ditulis 7 desimal — sisa dari sirkuit Noir yang mensyaratkan nominal muat di
- * 64 bit — sementara mock yang benar-benar ter-deploy memakai 6. Selisih satu
+ * ditulis 7 desimal — angka warisan dari aplikasi asal — sementara mock yang
+ * benar-benar ter-deploy memakai 6. Selisih satu
  * desimal berarti kiriman sepuluh kali lipat dari yang diketik, dan tidak ada
  * yang gagal saat itu terjadi.
  *
