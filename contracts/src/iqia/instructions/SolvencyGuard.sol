@@ -98,6 +98,27 @@ contract SolvencyGuard {
     }
 
     /// @dev Biaya tambahan berdasarkan kekurangan sandaran. Nol saat tertutup penuh.
+    ///
+    /// @dev PENEMPATANNYA MENGIKAT: instruksi ini harus berjalan SEBELUM
+    ///   instruksi apa pun yang membentuk saldo — `XYCConcentrate`, `Decay`, dan
+    ///   sejenisnya.
+    ///
+    ///   Alasannya ada di baris pertama fungsi ini: pembandingnya
+    ///   `ctx.swap.balanceOut`, yang dimaksudkan sebagai saldo yang dicatat Aqua.
+    ///   Sesudah `XYCConcentrate`, angka itu berubah jadi saldo VIRTUAL yang
+    ///   sudah digelembungkan jauh di atas jaminan nyata mana pun. Maker yang
+    ///   sepenuhnya terjamin pun lalu terbaca kekurangan jaminan, dan surcharge
+    ///   palsu memakan habis seluruh keuntungan konsentrasi.
+    ///
+    ///   Kegagalannya sunyi: tidak ada revert, angkanya wajar, posisinya tetap
+    ///   melayani swap. Terukur pada pita ±2x, modal 100/100, swap 5 — guard di
+    ///   belakang memberi 4,742 sedangkan di depan memberi 4,913, sama persis
+    ///   dengan tanpa guard. Dikunci di `test/Strategies.t.sol`
+    ///   (`test_GuardHarusSebelumInstruksiPembentukSaldo`).
+    ///
+    ///   Tidak bisa ditegakkan di kontrak: instruksi tidak punya cara mengetahui
+    ///   apa yang sudah berjalan sebelumnya. Perakit program di sisi TypeScript
+    ///   (`frontend/src/lib/strategies.ts`) yang menjamin urutannya.
     function _surchargeBps(Context memory ctx, uint32 maxSurchargeBps) internal view returns (uint256) {
         uint256 virtualBalance = ctx.swap.balanceOut;
         if (virtualBalance == 0) return 0;
