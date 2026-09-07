@@ -5,7 +5,7 @@ import { erc20Abi, formatUnits, type Address } from 'viem'
 
 import { CURATED_TOKENS } from '../lib/tokens'
 import { tokenDecimals } from '../lib/payments'
-import { fetchActiveStrategies, type ActiveStrategy } from '../lib/markets'
+import { fetchActiveStrategies, fetchPositionTrades, type ActiveStrategy, type PositionTrade } from '../lib/markets'
 import { closePosition, positionBalances } from '../lib/savings'
 import { DESK_CONFIGURED, explorerContractUrl, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
@@ -33,6 +33,8 @@ interface Position extends ActiveStrategy {
   legs: { code: string; decimals: number; balance: bigint }[]
   /** Alamat token per kaki, dibutuhkan `dock()`. */
   tokenAddresses: [string, string]
+  /** Swap yang benar-benar lewat posisi ini. */
+  trades: PositionTrade[]
 }
 
 export function PortfolioPage() {
@@ -88,6 +90,7 @@ export function PortfolioPage() {
         withLegs.push({
           ...s,
           tokenAddresses: [tokens[0], tokens[1]],
+          trades: await fetchPositionTrades(s.hash),
           legs: [
             { code: codeOf(tokens[0]), decimals: await tokenDecimals(tokens[0] as `0x${string}`), balance: a },
             { code: codeOf(tokens[1]), decimals: await tokenDecimals(tokens[1] as `0x${string}`), balance: b },
@@ -222,6 +225,47 @@ export function PortfolioPage() {
                           ))}
                         </div>
                       </div>
+                      {/* Pertanyaan pertama setiap market maker: ada yang menukar
+                          lewat posisiku belum? Direkonstruksi dari event Pulled
+                          dan Pushed milik Aqua. */}
+                      <div className="mt-2 border-t border-ink-800 pt-2">
+                        {p.trades.length === 0 ? (
+                          <p className="text-xs text-zinc-600">
+                            Belum ada yang menukar lewat posisi ini.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-[10px] uppercase tracking-[0.14em] text-spectral/60">
+                              {p.trades.length} swap lewat posisi ini
+                            </p>
+                            <div className="mt-1 space-y-1">
+                              {p.trades.slice(0, 3).map((t) => (
+                                <div
+                                  key={t.txHash}
+                                  className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-zinc-400"
+                                >
+                                  <span>
+                                    +{formatUnits(t.amountIn, decimalsOf(p, t.tokenIn))}{' '}
+                                    {codeOf(t.tokenIn)}
+                                    <span className="text-zinc-600"> / </span>
+                                    −{formatUnits(t.amountOut, decimalsOf(p, t.tokenOut))}{' '}
+                                    {codeOf(t.tokenOut)}
+                                  </span>
+                                  <a
+                                    href={explorerTxUrl(t.txHash as `0x${string}`)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[10px] text-zinc-600 hover:text-zinc-400"
+                                  >
+                                    blok {String(t.blockNumber)}
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
                       <p className="mt-1.5 break-all font-mono text-[10px] text-zinc-600">
                         {p.hash}
                       </p>
@@ -258,6 +302,12 @@ export function PortfolioPage() {
       </section>
     </div>
   )
+}
+
+/** Desimal kaki posisi yang alamatnya cocok — sudah dibaca dari kontraknya. */
+function decimalsOf(p: Position, token: string): number {
+  const i = p.tokenAddresses.findIndex((a) => a.toLowerCase() === token.toLowerCase())
+  return i >= 0 ? p.legs[i].decimals : 18
 }
 
 /** Simbol token dari registry, atau alamat pendek kalau tidak dikenal. */
