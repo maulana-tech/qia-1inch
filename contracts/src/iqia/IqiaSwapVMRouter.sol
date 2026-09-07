@@ -21,13 +21,24 @@ import { IqiaOpcodes } from "./IqiaOpcodes.sol";
 ///   Menambah opcode memang menuntut itu — set instruksi ditentukan saat
 ///   kompilasi lewat `_instructions()`.
 contract IqiaSwapVMRouter is Simulator, SwapVM, IqiaOpcodes {
+    /// @dev Nama dan versi domain EIP-712 ditanam, bukan jadi argumen.
+    ///
+    ///   Alasannya dua. Yang benar: domain EIP-712 adalah identitas kontrak,
+    ///   bukan sesuatu yang pantas berbeda antar deployment.
+    ///
+    ///   Yang memaksa: dengan dua argumen `string`, `forge script` GAGAL
+    ///   menguraikan argumen konstruktor saat menulis artefak broadcast
+    ///   ("type check failed for offset"), dan kegagalan itu membatalkan
+    ///   SELURUH broadcast — termasuk transaksi yang sudah berhasil. Ia sempat
+    ///   lolos beberapa kali, lalu berhenti lolos setelah perubahan komentar
+    ///   yang menggeser metadata bytecode. Ketergantungan pada kebetulan itu
+    ///   dihapus dengan membuat konstruktornya panjang-tetap.
+    ///
     /// @param aqua Registry saldo virtual Aqua
     /// @param weth WETH, untuk dukungan unwrap. Boleh address(0) kalau tidak dipakai
     /// @param owner Hanya owner yang bisa menyelamatkan dana yang nyangkut
-    /// @param name Nama domain EIP-712
-    /// @param version Versi domain EIP-712
-    constructor(address aqua, address weth, address owner, string memory name, string memory version)
-        SwapVM(aqua, weth, owner, name, version)
+    constructor(address aqua, address weth, address owner)
+        SwapVM(aqua, weth, owner, "IqiaSwapVM", "1.0.0")
         IqiaOpcodes(aqua)
     { }
 
