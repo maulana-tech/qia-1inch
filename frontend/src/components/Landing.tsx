@@ -10,7 +10,7 @@ import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
 
-const STACK_MARKS = ['1inch Aqua', 'SwapVM', 'Base', 'Noir · UltraHonk', 'Foundry']
+const STACK_MARKS = ['1inch Aqua', 'SwapVM', 'Base', 'viem · wagmi', 'Foundry']
 
 const ROTATING = ['in your wallet', 'unlocked', 'yours', 'never pooled', 'put to work']
 
