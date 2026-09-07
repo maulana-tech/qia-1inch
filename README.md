@@ -247,6 +247,70 @@ dikirim skrip demo.
 
 ---
 
+## Demo di atas fork Base mainnet — kontrak Aqua RESMI
+
+Ini cara yang dipakai untuk demo, dan ia menjawab dua syarat kualifikasi
+sekaligus:
+
+> Official Aqua/SwapVM contracts must be used (redeployments of a modified
+> SwapVM contract is allowed)
+>
+> Onchain execution of token transfers should be presented during the final demo
+> (**local forks are ok**)
+
+Aqua ter-deploy di 16 jaringan dan **semuanya mainnet** — tidak ada satu pun
+testnet. Di Base Sepolia kita terpaksa men-deploy Aqua sendiri, padahal kurung
+syaratnya cuma mengizinkan **SwapVM** yang di-deploy ulang, bukan Aqua. Fork
+memberi kontrak resmi yang asli tanpa uang sungguhan, dan syaratnya menyebutnya
+secara eksplisit.
+
+```bash
+# 1. fork Base mainnet
+anvil --fork-url https://mainnet.base.org --port 8546 --chain-id 8453
+
+# 2. danai, deploy router, kirim posisi, dan tukar
+cd contracts && ./script/fork-demo.sh
+
+# 3. arahkan frontend ke fork
+cp frontend/.env.fork frontend/.env.local
+pnpm --filter frontend dev
+```
+
+Yang dipakai:
+
+| | |
+|---|---|
+| Aqua | `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` — kontrak RESMI, tidak di-deploy ulang |
+| Router | `IqiaSwapVMRouter` — SwapVM yang diperluas opcode 22 dan 23 |
+| Token | WETH dan USDC Base yang asli, bukan mock |
+
+`fork-demo.sh` menulis `frontend/.env.fork` sendiri. Router-nya di-deploy ulang
+tiap kali skrip jalan, jadi alamat yang ditulis tangan akan basi tanpa gejala
+apa pun selain halaman market yang kosong.
+
+Keluarannya menegaskan yang penting lewat `require`, bukan lewat cetakan:
+`ship()` tidak memindahkan token sepeser pun, swap memindahkannya langsung dari
+**dompet** maker, dan Aqua tidak pernah menahan token.
+
+---
+
+## Melihat likuiditas nyata di Base
+
+Halaman Markets juga membaca posisi di router SwapVM resmi, tempat market maker
+sungguhan berada. Ini murni pembacaan — tanpa dompet, tanpa transaksi, tanpa
+biaya.
+
+```bash
+cp frontend/.env.base.example frontend/.env.local
+pnpm --filter frontend dev
+```
+
+RPC publik Base menolak `eth_getLogs` di atas 10.000 blok, jadi sapuannya
+dipotong dan jendelanya dibatasi lewat `VITE_MARKETS_LOOKBACK_BLOCKS`. Dengan
+RPC berbayar, naikkan angkanya.
+
+---
+
 ## Deploy ke testnet
 
 ```bash
@@ -260,10 +324,8 @@ forge script script/Deploy.s.sol --rpc-url "$RPC_URL" --broadcast
 Isi `frontend/.env.local` dengan alamat hasil deploy, dan setel
 `VITE_CHAIN_ID=84532`.
 
-SwapVM resmi ada di `0x111111338c5091E8440b67B168bAe16a668AC0De` pada Base
-mainnet dan 14 chain lain, **tapi tidak di Base Sepolia**. Untuk testnet, router
-custom dideploy sendiri. Menambah opcode memang menuntut itu — set instruksi
-ditentukan saat kompilasi.
+Perlu diketahui: di Base Sepolia **tidak ada Aqua maupun SwapVM resmi**, jadi
+keduanya di-deploy sendiri. Untuk demo kualifikasi, pakai jalur fork di atas.
 
 ---
 
