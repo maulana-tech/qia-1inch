@@ -44,22 +44,11 @@ export const explorerTxUrl = (hash: string) => `${EXPLORER_URL}/tx/${hash}`
 export const explorerContractUrl = (address: string) => `${EXPLORER_URL}/address/${address}`
 
 // ---------------------------------------------------------------------------
-// Kontrak inti
-// ---------------------------------------------------------------------------
-
-/** Kontrak IqiaPool — kolam terlindung. */
-export const POOL_CONTRACT_ID = env('VITE_IQIA_POOL', ZERO)
-
-/** TransferProcessor — transfer privat berbasis ZK. */
-export const TRANSFER_PROCESSOR_ADDRESS = env('VITE_TRANSFER_PROCESSOR', ZERO)
-
-// ---------------------------------------------------------------------------
 // Aqua / SwapVM
 //
-// Diisi setelah router dideploy — lihat DEPLOYMENTS.md. Kontraknya sudah jalan
-// dan terbukti memindahkan token on-chain lewat
-// contracts/script/DemoIqiaDesk.s.sol; yang belum ada adalah perakit program
-// SwapVM di sisi TypeScript.
+// Diisi oleh contracts/script/deploy.sh. Terbukti memindahkan token on-chain
+// lewat contracts/script/DemoIqiaDesk.s.sol, dan programnya dirakit
+// @iqia/swapvm dengan byte yang identik dengan Solidity.
 // ---------------------------------------------------------------------------
 
 /**
