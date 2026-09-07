@@ -21,17 +21,9 @@ fs_permissions = [{ access = "read", path = "./" }]
 name = "legacy-pipeline"
 via_ir = false
 
-# Verifier hasil-generate Noir justru PECAH dengan via_ir — pipeline barunya
+# Catatan sejarah: verifier hasil-generate dulu PECAH dengan via_ir — pipeline barunya
 # kehabisan stack di sekitar PAIRING_POINTS_SIZE. Keduanya kompilasi mulus
 # dengan pipeline lama, jadi dikecualikan per-file.
-[[profile.default.compilation_restrictions]]
-paths = "src/HonkVerifier.sol"
-via_ir = false
-
-[[profile.default.compilation_restrictions]]
-paths = "src/TransferVerifier.sol"
-via_ir = false
-
 [fmt]
 line_length = 100
 tab_width = 4
