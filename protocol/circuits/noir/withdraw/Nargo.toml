@@ -1,7 +1,0 @@
-[package]
-name = "withdraw"
-type = "bin"
-authors = ["Iqia"]
-
-[dependencies]
-iqia_lib = { path = "../iqia_lib" }
