@@ -1,7 +1,3 @@
-# Noir
-protocol/circuits/noir/*/target/
-protocol/circuits/noir/*/proofs/
-protocol/circuits/noir/*/Verifier.toml
 
 # Foundry
 contracts/out/
