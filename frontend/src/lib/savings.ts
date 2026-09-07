@@ -40,7 +40,7 @@ import {
   SWAP_VM_ROUTER_ADDRESS,
   DESK_SURCHARGE_BPS,
   SAVINGS_FEE_BPS,
-  AQUA_CONFIGURED,
+  DESK_CONFIGURED,
 } from './config'
 
 /**
@@ -103,7 +103,7 @@ export class SavingsNotConfiguredError extends Error {
 }
 
 function requireConfigured() {
-  if (!AQUA_CONFIGURED) throw new SavingsNotConfiguredError()
+  if (!DESK_CONFIGURED) throw new SavingsNotConfiguredError()
 }
 
 /** Saldo dompet untuk sepasang token. */

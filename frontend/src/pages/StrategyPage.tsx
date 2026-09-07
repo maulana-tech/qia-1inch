@@ -13,7 +13,7 @@ import {
   type StrategyParams,
 } from '../lib/strategies'
 import { openPosition, splitAmounts, strategyHashOf, walletBalances } from '../lib/savings'
-import { AQUA_CONFIGURED, DESK_SURCHARGE_BPS, explorerTxUrl } from '../lib/config'
+import { DESK_CONFIGURED, DESK_SURCHARGE_BPS, explorerTxUrl } from '../lib/config'
 import { cx } from '../lib/cx'
 import { Button, Card, CardContent, PageHeader, TextInput } from '../components/ui'
 
@@ -129,7 +129,7 @@ export function StrategyPage() {
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!address || !AQUA_CONFIGURED) return
+    if (!address || !DESK_CONFIGURED) return
     try {
       setBalances(await walletBalances(address, DESK_PAIR[0].address, DESK_PAIR[1].address))
     } catch {
@@ -226,7 +226,7 @@ export function StrategyPage() {
     }
   }
 
-  if (!AQUA_CONFIGURED) {
+  if (!DESK_CONFIGURED) {
     return (
       <div className="mx-auto w-full max-w-3xl px-5 pb-16 pt-8">
         <PageHeader title="Buka posisi" caption="Pilih strategi untuk modal yang kamu sisihkan." />

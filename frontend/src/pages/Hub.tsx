@@ -40,7 +40,25 @@ function MarketRow({ market }: { market: Market }) {
             ))}
           </div>
           <div>
-            <div className="text-sm text-spectral/90">{market.pair}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-spectral/90">{market.pair}</span>
+              {/* Asal likuiditasnya disebut terang-terangan. Menampilkan posisi
+                  maker lain sebagai seolah milik meja kita akan menyesatkan. */}
+              <span
+                className={
+                  market.official
+                    ? 'rounded-full bg-spectral/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-spectral-soft'
+                    : 'rounded-full bg-patina-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-patina-300'
+                }
+                title={
+                  market.official
+                    ? 'Likuiditas di router SwapVM resmi 1inch'
+                    : 'Likuiditas di router Iqia'
+                }
+              >
+                {market.official ? '1inch SwapVM' : 'iqia'}
+              </span>
+            </div>
             <div className="coord-label mt-0.5">
               maker {market.maker.slice(0, 6)}…{market.maker.slice(-4)}
             </div>

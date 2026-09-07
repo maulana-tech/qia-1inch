@@ -36,7 +36,7 @@ import {
   DESK_FEE_BPS,
   DESK_SURCHARGE_BPS,
   DESK_EXCLUSIVE_TAKER,
-  AQUA_CONFIGURED,
+  DESK_CONFIGURED,
 } from './config'
 
 export const swapVmAbi = parseAbi([
@@ -68,7 +68,7 @@ export class DeskNotConfiguredError extends Error {
 }
 
 function requireConfigured() {
-  if (!AQUA_CONFIGURED || !DESK_MAKER) throw new DeskNotConfiguredError()
+  if (!DESK_CONFIGURED || !DESK_MAKER) throw new DeskNotConfiguredError()
 }
 
 /** Harga di muka. Tanpa gas, dan angkanya sama persis dengan hasil swap. */

@@ -11,7 +11,7 @@ import {
   walletBalances,
 } from '../lib/savings'
 import {
-  AQUA_CONFIGURED,
+  DESK_CONFIGURED,
   DESK_SURCHARGE_BPS,
   SAVINGS_FEE_BPS,
   MOCK_USDC_ADDRESS,
@@ -99,7 +99,7 @@ export function SavingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const configured = AQUA_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
+  const configured = DESK_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
   /**
    * `strategyHash` posisi yang sedang terbuka, dicari dari event.

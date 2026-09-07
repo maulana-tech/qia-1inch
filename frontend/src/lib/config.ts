@@ -114,9 +114,20 @@ export const SAVINGS_FEE_BPS = BigInt(env('VITE_SAVINGS_FEE_BPS', '3000000'))
 /** Kalau diisi, hanya alamat ini yang boleh mengisi order meja. */
 export const DESK_EXCLUSIVE_TAKER = env('VITE_DESK_EXCLUSIVE_TAKER', '')
 
-/** True kalau lapisan Aqua/SwapVM sudah dikonfigurasi. */
-export const AQUA_CONFIGURED =
-  isValidAddress(AQUA_ADDRESS) && isValidAddress(SWAP_VM_ROUTER_ADDRESS)
+/**
+ * True kalau Aqua bisa dibaca.
+ *
+ * Sengaja TIDAK menuntut router kita ada. Membaca posisi market maker lain di
+ * router SwapVM resmi tidak butuh apa pun milik kita, dan di Base mainnet
+ * memang begitu keadaannya — Aqua ada di sana, router kita belum.
+ */
+export const AQUA_CONFIGURED = isValidAddress(AQUA_ADDRESS)
+
+/**
+ * True kalau meja kita sendiri bisa dipakai: mengirim posisi dengan opcode 22
+ * dan 23 menuntut router Iqia yang sudah ter-deploy di rantai ini.
+ */
+export const DESK_CONFIGURED = AQUA_CONFIGURED && isValidAddress(SWAP_VM_ROUTER_ADDRESS)
 
 // ---------------------------------------------------------------------------
 // Token faucet
@@ -142,6 +153,32 @@ export const MATCHER_URL = env('VITE_MATCHER_URL', '')
 
 /** Blok saat kolam dideploy — lantai awal untuk indexer di sisi klien. */
 export const POOL_DEPLOY_BLOCK = Number(env('VITE_POOL_DEPLOY_BLOCK', '0'))
+
+/**
+ * Router SwapVM resmi 1inch — alamat yang sama di Base mainnet dan 14 chain lain.
+ *
+ * Ini "Aqua app" yang dipakai market maker sungguhan. Posisinya memakai format
+ * `Order` SwapVM yang persis sama dengan yang dirakit `@iqia/swapvm`, jadi kita
+ * bisa membacanya. Yang tidak bisa cuma mengirim strategi ke sana: opcode 22 dan
+ * 23 milik kita tidak ada di set instruksinya.
+ */
+export const OFFICIAL_SWAP_VM_ROUTER = '0x111111338c5091E8440b67B168bAe16a668AC0De'
+
+/**
+ * Seberapa jauh ke belakang event Aqua disapu, dalam blok.
+ *
+ * Nol berarti dari `POOL_DEPLOY_BLOCK` — masuk akal di anvil yang riwayatnya
+ * pendek. Di rantai publik itu mustahil: RPC menolak rentang di atas 10.000
+ * blok, dan menyapu sejuta blok akan makan ratusan panggilan. Bawaannya kira-kira
+ * sehari di Base (blok 2 detik) — dipilih supaya muat di jatah RPC publik.
+ * Dengan RPC berbayar, naikkan lewat env ini.
+ */
+export const MARKETS_LOOKBACK_BLOCKS = Number(
+  env('VITE_MARKETS_LOOKBACK_BLOCKS', CHAIN_ID === 31337 ? '0' : '45000'),
+)
+
+/** Batas rentang satu panggilan `eth_getLogs`. RPC publik umumnya 10.000. */
+export const LOGS_CHUNK_BLOCKS = Number(env('VITE_LOGS_CHUNK_BLOCKS', '9500'))
 
 /** Kalau true, aplikasi memakai MockIqiaSdk offline alih-alih klien live. */
 export const USE_MOCK = flag('VITE_USE_MOCK')
