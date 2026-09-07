@@ -1,9 +1,9 @@
-import { CHAIN_NAME } from '../lib/config'
+import { CHAIN_ID, CHAIN_NAME } from '../lib/config'
 import { PageHeader } from '../components/ui'
 import { useState } from 'react'
 import { useSettings, useT, type Locale, type DisplayCurrency } from '../lib/settings'
 import { useTheme } from '../hooks/useTheme'
-import { POOL_CONTRACT_ID } from '../lib/config'
+import { AQUA_ADDRESS, SWAP_VM_ROUTER_ADDRESS } from '../lib/config'
 import { cx } from '../lib/cx'
 
 export function SettingsPage() {
@@ -144,21 +144,35 @@ export function SettingsPage() {
             </p>
           </div>
 
+          {/* Kolam terlindung sudah dibuang. Yang relevan sekarang dua alamat:
+              registry Aqua dan router SwapVM kita. Menampilkan alamat kontrak
+              yang sudah tidak ada cuma membingungkan. */}
           <div className="space-y-2">
             <label className="block text-xs font-mono uppercase tracking-wider text-spectral/50">
-              {t('settings.contract')} (Iqia Pool)
+              {t('settings.contract')} (Aqua)
             </label>
             <div className="flex items-center gap-2 rounded-none border border-spectral/8 bg-ink-950/30 px-3 py-2">
               <span className="font-mono text-xs text-spectral/75 select-all truncate flex-1">
-                {POOL_CONTRACT_ID}
+                {AQUA_ADDRESS}
               </span>
               <button
                 type="button"
-                onClick={() => copyToClipboard(POOL_CONTRACT_ID, setCopiedPool)}
+                onClick={() => copyToClipboard(AQUA_ADDRESS, setCopiedPool)}
                 className="text-[11px] font-mono uppercase tracking-wider text-patina-400/80 hover:text-patina-400 px-2 py-1 hover:bg-patina-400/5 rounded-none transition shrink-0"
               >
                 {copiedPool ? t('settings.copied') : t('settings.copy')}
               </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-mono uppercase tracking-wider text-spectral/50">
+              {t('settings.contract')} (SwapVM router)
+            </label>
+            <div className="flex items-center gap-2 rounded-none border border-spectral/8 bg-ink-950/30 px-3 py-2">
+              <span className="font-mono text-xs text-spectral/75 select-all truncate flex-1">
+                {SWAP_VM_ROUTER_ADDRESS}
+              </span>
             </div>
           </div>
 
@@ -167,12 +181,14 @@ export function SettingsPage() {
               <span className="text-xs font-mono uppercase tracking-wider text-spectral/50">
                 Chain
               </span>
+              {/* Dari konfigurasi, bukan ditulis mati. Dulu selalu berbunyi
+                  "Base Sepolia" bahkan saat aplikasinya jalan di anvil. */}
               <span className="rounded-none bg-patina-400/10 px-2 py-0.5 font-mono text-xs font-semibold text-patina-400">
-                Base Sepolia
+                {CHAIN_NAME} · {CHAIN_ID}
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-spectral/40">
-              EVM testnet. Native token: ETH.
+              EVM. Native token: ETH.
             </p>
           </div>
         </section>
