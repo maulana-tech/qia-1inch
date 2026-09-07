@@ -1,191 +1,220 @@
-import { ArrowDownToLineIcon, ArrowRightIcon, ArrowUpRightIcon, SendIcon } from 'lucide-react'
-import { Card, CardContent, PageHeader } from '../components/ui'
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useIqia } from '../hooks/useIqia'
-import { useReveal } from '../hooks/useReveal'
-import { loadNotes, type StoredNote } from '../lib/note-store'
-import { assetMeta } from '../lib/tokens'
-import { formatAmount, formatUsd } from '../lib/format'
-import { cx } from '../lib/cx'
-import { AssetAvatar, ChevronDownIcon, EyeGlyph } from '../components/ui'
-import { ScrambleNumber } from '../components/ScrambleNumber'
-import type { AssetCode } from '../lib/iqia-sdk'
-import { useSettings, formatMoney } from '../lib/settings'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAccount } from 'wagmi'
+import { readContracts } from '@wagmi/core'
+import { erc20Abi, formatUnits, type Address } from 'viem'
 
-const QUICK_ACTIONS = [
-  { to: '/deposit', icon: ArrowDownToLineIcon, title: 'Deposit', caption: 'Aset ke kolam' },
-  { to: '/pay', icon: SendIcon, title: 'Pay', caption: 'Ke pemegang lain' },
-  { to: '/swap', icon: ArrowUpRightIcon, title: 'Swap', caption: 'Lewat meja Aqua' },
-] as const
+import { CURATED_TOKENS } from '../lib/tokens'
+import { tokenDecimals } from '../lib/payments'
+import { fetchActiveStrategies, type ActiveStrategy } from '../lib/markets'
+import { positionBalances } from '../lib/savings'
+import { DESK_CONFIGURED, explorerContractUrl } from '../lib/config'
+import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
+import { Card, CardContent, CardHeader, CardTitle, PageHeader } from '../components/ui'
+import { CoinBadge } from '../components/BrandIcons'
 
-const MASK = '••••••'
+/**
+ * Apa yang kamu punya: saldo dompet, dan posisi yang sedang bekerja di Aqua.
+ *
+ * Dulu halaman ini menampilkan catatan kolam terlindung. Kolam itu sudah
+ * dibuang, dan angka-angka di sini sekarang dibaca langsung dari rantai —
+ * saldo ERC20 dari kontrak tokennya, posisi dari registry Aqua.
+ */
+const HOLDINGS = CURATED_TOKENS.filter((t) => t.sac)
 
-const SOURCE_LABEL: Record<NonNullable<StoredNote['source']>, string> = {
-  deposit: 'Deposit',
-  received: 'Received',
-  change: 'Change',
+interface Holding {
+  code: string
+  icon: string
+  address: string
+  decimals: number
+  balance: bigint
 }
 
-/** A stored note's amount as a human number, using its own decimals (falls back to the token's). */
-function noteHuman(note: StoredNote): number {
-  const decimals = note.decimals ?? assetMeta(note.assetCode).decimals
-  return Number(BigInt(note.amount)) / 10 ** decimals
-}
-
-/** The wallet's unspent notes grouped by asset, largest first — the per-asset breakdown. */
-function groupUnspentNotes(): Map<AssetCode, StoredNote[]> {
-  const map = new Map<AssetCode, StoredNote[]>()
-  for (const n of loadNotes()) {
-    if (n.spent) continue
-    const arr = map.get(n.assetCode) ?? []
-    arr.push(n)
-    map.set(n.assetCode, arr)
-  }
-  for (const arr of map.values()) arr.sort((a, b) => noteHuman(b) - noteHuman(a))
-  return map
+interface Position extends ActiveStrategy {
+  legs: { code: string; decimals: number; balance: bigint }[]
 }
 
 export function PortfolioPage() {
-  const { balances, loadingBalances } = useIqia()
-  const { revealed, toggle } = useReveal()
-  const { currency, locale } = useSettings()
-  const [open, setOpen] = useState<AssetCode | null>(null)
+  const { address } = useAccount()
+  const [holdings, setHoldings] = useState<Holding[] | null>(null)
+  const [positions, setPositions] = useState<Position[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const total = balances.reduce((sum, b) => sum + b.usdEstimate, 0)
-  // Recomputed each render; the page re-renders whenever balances refresh (which is when the
-  // spent flags used below are reconciled), so the breakdown stays in sync with the totals.
-  const notesByAsset = groupUnspentNotes()
+  const load = useCallback(async () => {
+    if (!address) {
+      setHoldings(null)
+      setPositions(null)
+      return
+    }
+    setError(null)
+    try {
+      const results = await readContracts(wagmiConfig as any, {
+        contracts: HOLDINGS.map((t) => ({
+          address: t.sac as Address,
+          abi: erc20Abi,
+          functionName: 'balanceOf' as const,
+          args: [address],
+          chainId: ACTIVE_CHAIN_ID,
+        })),
+      })
+      const rows: Holding[] = []
+      for (const [i, t] of HOLDINGS.entries()) {
+        const r = results[i]
+        if (r.status !== 'success') continue
+        rows.push({
+          code: t.code,
+          icon: t.icon,
+          address: t.sac as string,
+          // Desimal dari kontrak, bukan dari registry — lihat `tokenDecimals`.
+          decimals: await tokenDecimals(t.sac as `0x${string}`),
+          balance: r.result as bigint,
+        })
+      }
+      setHoldings(rows)
+
+      if (!DESK_CONFIGURED) {
+        setPositions([])
+        return
+      }
+      const mine = await fetchActiveStrategies(address)
+      const withLegs: Position[] = []
+      for (const s of mine) {
+        const tokens = [...s.tokens]
+        if (tokens.length < 2) continue
+        const [a, b] = await positionBalances(address, s.hash, tokens[0], tokens[1])
+        withLegs.push({
+          ...s,
+          legs: [
+            { code: codeOf(tokens[0]), decimals: await tokenDecimals(tokens[0] as `0x${string}`), balance: a },
+            { code: codeOf(tokens[1]), decimals: await tokenDecimals(tokens[1] as `0x${string}`), balance: b },
+          ],
+        })
+      }
+      setPositions(withLegs)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal membaca portofolio.')
+    }
+  }, [address])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const totalPositions = useMemo(() => positions?.length ?? 0, [positions])
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 pb-20 pt-8">
+    <div className="mx-auto w-full max-w-3xl px-5 pb-16 pt-8">
       <section className="space-y-5">
-      <PageHeader title="Portfolio" caption="Saldo dan riwayatmu di satu tempat." />
+        <PageHeader
+          title="Portfolio"
+          caption="Saldo dompetmu, dan modal yang sedang bekerja sebagai likuiditas di Aqua. Token yang bekerja TIDAK pindah ke mana pun — ia tetap terhitung di saldo dompetmu."
+        />
 
-      {/* Total */}
-      <Card>
-      <CardContent className="flex flex-col items-center py-8 text-center">
-        <div className="coord-label mb-4 tracking-widest text-spectral/45">total shielded balance</div>
-        <div className="flex items-center gap-4">
-          {loadingBalances ? (
-            <span className="display-hd text-5xl text-spectral/25">{MASK}</span>
-          ) : (
-            <ScrambleNumber
-              value={formatMoney(total, currency, locale)}
-              revealed={revealed}
-              className="display-hd text-[clamp(2.5rem,8vw,4rem)] tracking-tight text-spectral"
-            />
-          )}
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={revealed ? 'Hide balances' : 'Show balances'}
-            className="mt-2 text-spectral/40 transition hover:text-spectral"
-          >
-            <EyeGlyph off={!revealed} className="h-6 w-6" />
-          </button>
-        </div>
-        <div className="coord-label mt-4 text-[10px] text-spectral/40">
-          {revealed ? `Value in ${currency.toUpperCase()}` : 'Private by default'}
-        </div>
-      </CardContent>
-      </Card>
+        {!address && (
+          <Card>
+            <CardContent>
+              <p className="py-6 text-center text-sm text-zinc-500">
+                Hubungkan dompetmu untuk melihat portofolio.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Aksi cepat */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {QUICK_ACTIONS.map((a) => (
-          <Link
-            key={a.to}
-            to={a.to}
-            className="card group flex items-center gap-3 p-4 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:ring-spectral/30"
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-spectral/[0.07]">
-              <a.icon className="size-4 text-spectral/70" />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium text-spectral/85">{a.title}</span>
-              <span className="block truncate text-xs text-spectral/45">{a.caption}</span>
-            </span>
-            <ArrowRightIcon className="ml-auto size-4 shrink-0 text-spectral/30 transition group-hover:text-spectral/60" />
-          </Link>
-        ))}
-      </div>
+        {error && (
+          <Card>
+            <CardContent>
+              <p className="py-4 text-center text-xs text-yellow-300">{error}</p>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Holdings */}
-      {loadingBalances ? (
-        <div className="space-y-2">
-          {[0, 1].map((i) => (
-            <div key={i} className="card h-[68px] animate-pulse" />
-          ))}
-        </div>
-      ) : balances.length === 0 ? (
-        <div className="card px-6 py-14 text-center">
-          <p className="text-sm text-spectral/55">Nothing shielded yet.</p>
-          <Link to="/deposit" className="coord-label mt-3 inline-block text-spectral/70 transition hover:text-spectral">
-            deposit assets →
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {balances.map((b) => {
-            const notes = notesByAsset.get(b.asset) ?? []
-            const isOpen = open === b.asset
-            const meta = assetMeta(b.asset)
-            return (
-              <div key={b.asset} className="card">
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? null : b.asset)}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center gap-4 p-5 text-left transition hover:bg-spectral/[0.04]"
-                >
-                  <AssetAvatar code={b.asset} className="h-11 w-11" />
-                  <div className="min-w-0">
-                    <div className="font-display text-base font-semibold text-spectral-soft">{b.asset}</div>
-                    <div className="truncate text-xs text-zinc-500 mt-0.5">
-                      {meta.name} · {notes.length} note{notes.length === 1 ? '' : 's'}
+        {address && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Saldo dompet</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {holdings === null ? (
+                  <p className="py-3 text-center text-xs text-zinc-500">Membaca…</p>
+                ) : holdings.length === 0 ? (
+                  <p className="py-3 text-center text-xs text-zinc-500">
+                    Belum ada token. Ambil token uji di halaman Faucet.
+                  </p>
+                ) : (
+                  holdings.map((h) => (
+                    <div
+                      key={h.address}
+                      className="flex items-center gap-3 rounded-xl border border-ink-800 bg-ink-900/40 p-3"
+                    >
+                      <CoinBadge name={h.icon} size="lg" />
+                      <span className="text-sm font-semibold text-zinc-100">{h.code}</span>
+                      <a
+                        href={explorerContractUrl(h.address)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+                      >
+                        {h.address}
+                      </a>
+                      <span className="ml-auto font-mono text-sm tabular-nums text-zinc-200">
+                        {formatUnits(h.balance, h.decimals)}
+                      </span>
                     </div>
-                  </div>
-                  <div className="ml-auto text-right">
-                    <div className="font-mono text-base tabular-nums text-spectral-soft">{revealed ? b.amount : MASK}</div>
-                    <div className="text-xs text-zinc-500 mt-0.5">{revealed ? `≈ ${formatUsd(b.usdEstimate)}` : ''}</div>
-                  </div>
-                  <ChevronDownIcon
-                    className={cx('ml-2 h-4 w-4 shrink-0 text-zinc-500 transition-transform', isOpen && 'rotate-180')}
-                  />
-                </button>
-
-                {isOpen && (
-                  <div className="border-t border-spectral/10 bg-spectral/[0.03] px-5 py-4">
-                    <div className="coord-label mb-3 text-zinc-500">UTXO Notes Breakdown</div>
-                    {notes.length === 0 ? (
-                      <p className="text-xs text-zinc-500">No spendable notes.</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {notes.map((n) => (
-                          <li key={n.commitment} className="flex items-center gap-3 text-xs rounded border border-spectral/5 bg-ink-900/20 px-3 py-2">
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-spectral/40" />
-                            <span className="w-16 font-medium text-zinc-400">{SOURCE_LABEL[n.source ?? 'received']}</span>
-                            {n.leafIndex !== undefined && (
-                              <span className="font-mono text-[10px] text-zinc-600 bg-black/30 px-1.5 py-0.5 rounded">#{n.leafIndex}</span>
-                            )}
-                            <span className="ml-auto font-mono tabular-nums text-zinc-300">
-                              {revealed ? `${formatAmount(noteHuman(n))} ${n.assetCode}` : MASK}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  ))
                 )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Posisi di Aqua ({totalPositions})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {positions === null ? (
+                  <p className="py-3 text-center text-xs text-zinc-500">Membaca…</p>
+                ) : positions.length === 0 ? (
+                  <p className="py-3 text-center text-xs text-zinc-500">
+                    Belum ada posisi terbuka. Mulai dari halaman Open position.
+                  </p>
+                ) : (
+                  positions.map((p) => (
+                    <div key={p.hash} className="rounded-xl border border-ink-800 bg-ink-900/40 p-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-zinc-100">
+                          {p.legs.map((l) => l.code).join(' / ')}
+                        </span>
+                        <div className="flex gap-5">
+                          {p.legs.map((l) => (
+                            <span key={l.code} className="text-right">
+                              <span className="block text-[10px] uppercase tracking-[0.14em] text-spectral/60">
+                                {l.code}
+                              </span>
+                              <span className="font-mono text-sm tabular-nums text-zinc-200">
+                                {formatUnits(l.balance, l.decimals)}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-1.5 break-all font-mono text-[10px] text-zinc-600">
+                        {p.hash}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </section>
     </div>
   )
+}
+
+/** Simbol token dari registry, atau alamat pendek kalau tidak dikenal. */
+function codeOf(address: string): string {
+  const found = CURATED_TOKENS.find((t) => t.sac?.toLowerCase() === address.toLowerCase())
+  return found?.code ?? `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
 export default PortfolioPage
