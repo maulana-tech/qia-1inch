@@ -38,7 +38,7 @@ import {
  * viem sudah mengurai sendiri begitu diberi item event-nya, jadi memakainya
  * cuma menambah lapisan tanpa menambah kepastian.
  */
-function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked') {
+function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked' | 'Pulled') {
   const found = ABI.AQUA_ABI.find((x) => x.type === 'event' && x.name === name)
   if (!found) throw new Error(`Event ${name} tidak ada di ABI Aqua resmi`)
   return found
@@ -47,6 +47,7 @@ function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked') {
 const SHIPPED = aquaEvent('Shipped')
 const PUSHED = aquaEvent('Pushed')
 const DOCKED = aquaEvent('Docked')
+const PULLED = aquaEvent('Pulled')
 
 /** ABI Aqua resmi, dipakai juga untuk pembacaan saldo. */
 const aquaBalancesAbi = ABI.AQUA_ABI
@@ -282,6 +283,77 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
     if (entry) entry.tokens.add((log.args.token as string).toLowerCase())
   }
   return [...strategies.values()]
+}
+
+/** Satu swap yang benar-benar lewat sebuah posisi. */
+export interface PositionTrade {
+  txHash: string
+  blockNumber: bigint
+  /** Token yang MASUK ke posisi — dibayar penukar. */
+  tokenIn: string
+  amountIn: bigint
+  /** Token yang KELUAR dari dompet maker. */
+  tokenOut: string
+  amountOut: bigint
+}
+
+/**
+ * Riwayat swap sebuah posisi, direkonstruksi dari `Pulled` dan `Pushed`.
+ *
+ * Ini pertanyaan pertama setiap market maker — "ada yang menukar lewat posisiku
+ * belum?" — dan sampai sekarang aplikasinya tidak bisa menjawabnya sama sekali.
+ *
+ * `Pulled` menandai token yang keluar dari dompet maker; `Pushed` menandai yang
+ * masuk. Keduanya dipasangkan lewat hash transaksi. `ship()` juga memancarkan
+ * `Pushed` untuk tiap token, jadi transaksi tanpa `Pulled` dibuang — itu
+ * pembukaan posisi, bukan swap.
+ */
+export async function fetchPositionTrades(strategyHash: string): Promise<PositionTrade[]> {
+  if (!AQUA_CONFIGURED) return []
+  const client = getPublicClient(wagmiConfig as any, { chainId: ACTIVE_CHAIN_ID as any })
+  if (!client) return []
+
+  const latest = await client.getBlockNumber()
+  const fromBlock =
+    MARKETS_LOOKBACK_BLOCKS > 0
+      ? latest > BigInt(MARKETS_LOOKBACK_BLOCKS)
+        ? latest - BigInt(MARKETS_LOOKBACK_BLOCKS)
+        : 0n
+      : BigInt(POOL_DEPLOY_BLOCK)
+
+  const pulled = await scanLogs(client, PULLED, fromBlock, latest)
+  const pushed = await scanLogs(client, PUSHED, fromBlock, latest)
+
+  const mine = (l: any) => (l.args.strategyHash as string)?.toLowerCase() === strategyHash.toLowerCase()
+
+  const byTx = new Map<string, { block: bigint; out?: [string, bigint]; in?: [string, bigint] }>()
+  for (const l of (pulled as any[]).filter(mine)) {
+    byTx.set(l.transactionHash, {
+      block: l.blockNumber as bigint,
+      out: [(l.args.token as string).toLowerCase(), l.args.amount as bigint],
+    })
+  }
+  for (const l of (pushed as any[]).filter(mine)) {
+    const entry = byTx.get(l.transactionHash)
+    // Tanpa `Pulled` di transaksi yang sama, ini `ship()` — bukan swap.
+    if (!entry) continue
+    entry.in = [(l.args.token as string).toLowerCase(), l.args.amount as bigint]
+  }
+
+  const trades: PositionTrade[] = []
+  for (const [txHash, v] of byTx) {
+    if (!v.out || !v.in) continue
+    trades.push({
+      txHash,
+      blockNumber: v.block,
+      tokenIn: v.in[0],
+      amountIn: v.in[1],
+      tokenOut: v.out[0],
+      amountOut: v.out[1],
+    })
+  }
+  trades.sort((a, b) => Number(b.blockNumber - a.blockNumber))
+  return trades
 }
 
 export async function fetchMarkets(): Promise<Market[]> {
