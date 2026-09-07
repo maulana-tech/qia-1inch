@@ -71,7 +71,7 @@ contract DemoIqiaDeskScript is Script, IqiaOpcodes {
         MockERC20 weth = new MockERC20("Wrapped Ether", "WETH", 18);
         MockERC20 usdc = new MockERC20("USD Coin", "USDC", 6);
         IqiaSwapVMRouter router =
-            new IqiaSwapVMRouter(address(aqua), address(0), desk, "IqiaSwapVM", "1.0.0");
+            new IqiaSwapVMRouter(address(aqua), address(0), desk);
         IqiaAquaTaker adapter = new IqiaAquaTaker(IAqua(address(aqua)), ISwapVM(address(router)), desk);
         vm.stopBroadcast();
 
@@ -197,8 +197,16 @@ contract DemoIqiaDeskScript is Script, IqiaOpcodes {
 
         console.log("");
         console.log("=== Salin ke frontend/.env.local ===");
-        console.log(string.concat("VITE_CHAIN_ID=31337"));
-        console.log(string.concat("VITE_CHAIN_NAME=Anvil"));
+        // Rantainya dibaca, bukan diasumsikan. Dulu tertulis 31337 mati, jadi
+        // deploy ke testnet mencetak env yang salah dan frontend-nya menembak
+        // rantai lain tanpa satu pun tanda bahwa itu sebabnya.
+        console.log(string.concat("VITE_CHAIN_ID=", vm.toString(block.chainid)));
+        console.log(
+            string.concat(
+                "VITE_CHAIN_NAME=",
+                block.chainid == 31337 ? "Anvil" : block.chainid == 84532 ? "Base Sepolia" : "Chain"
+            )
+        );
         console.log(string.concat("VITE_SWAP_VM_ROUTER=", vm.toString(address(router))));
         console.log(string.concat("VITE_AQUA=", vm.toString(address(aqua))));
         console.log(string.concat("VITE_DESK_MAKER=", vm.toString(maker)));
