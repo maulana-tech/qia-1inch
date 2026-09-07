@@ -2,7 +2,7 @@ import { createConfig, http } from 'wagmi'
 import { base, baseSepolia, foundry } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
-import { CHAIN_ID } from './config'
+import { CHAIN_ID, RPC_URL } from './config'
 
 /**
  * Chain yang didukung.
@@ -36,10 +36,12 @@ export const ACTIVE_CHAIN_ID = ((): (typeof SUPPORTED_CHAIN_IDS)[number] => {
 export const wagmiConfig = createConfig({
   chains: [baseSepolia, base, foundry],
   connectors: [injected()],
+  // `VITE_RPC_URL` menang untuk rantai yang sedang aktif. Itu yang membuat fork
+  // lokal Base (chain 8453 di localhost:8546) bisa dipakai apa adanya.
   transports: {
-    [baseSepolia.id]: http(),
-    [base.id]: http(),
-    [foundry.id]: http('http://localhost:8545'),
+    [baseSepolia.id]: baseSepolia.id === CHAIN_ID && RPC_URL ? http(RPC_URL) : http(),
+    [base.id]: base.id === CHAIN_ID && RPC_URL ? http(RPC_URL) : http(),
+    [foundry.id]: http(RPC_URL || 'http://localhost:8545'),
   },
 })
 
