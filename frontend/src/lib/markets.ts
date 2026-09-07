@@ -317,12 +317,26 @@ export async function fetchMarkets(): Promise<Market[]> {
           chainId: ACTIVE_CHAIN_ID,
         }],
       }))
-      const result = balance.result as readonly [bigint, number] | undefined
-      if (result?.[1] === DOCKED_MARKER) {
+      // Pembacaan yang GAGAL tidak boleh menjadi nol. Nol yang sungguhan dan
+      // nol karena panggilan gagal terlihat sama persis di layar, dan yang
+      // kedua membuat orang menyimpulkan likuiditasnya habis padahal tidak.
+      //
+      // Kasus nyatanya: di rantai yang mengaku Base Sepolia tapi tidak punya
+      // Multicall3, viem tetap memakai multicall karena definisi rantainya
+      // menyatakan ada — seluruh pembacaan gagal, dan halamannya menampilkan
+      // market dengan saldo nol tanpa satu pun tanda ada yang salah.
+      if (balance.status !== 'success') {
+        throw new Error(
+          `Gagal membaca saldo ${meta.symbol} untuk posisi ${strategyHash.slice(0, 10)}: ` +
+            String(balance.error).slice(0, 120),
+        )
+      }
+      const result = balance.result as readonly [bigint, number]
+      if (result[1] === DOCKED_MARKER) {
         dockedOnChain = true
         break
       }
-      legs.push({ ...meta, address: token, balance: result?.[0] ?? 0n })
+      legs.push({ ...meta, address: token, balance: result[0] })
     }
     if (dockedOnChain || legs.length === 0) continue
     legs.sort((a, b) => a.symbol.localeCompare(b.symbol))
