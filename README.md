@@ -5,15 +5,13 @@
 <h1 align="center">Iqia</h1>
 
 <p align="center">
-  A shielded trading layer where balances hide behind zero-knowledge proofs and
-  liquidity never leaves the market maker's wallet.
+  A market-making desk on 1inch Aqua, where liquidity never leaves the maker's
+  wallet and the pricing strategy is a SwapVM program you can read before you ship it.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Base-Sepolia-1b1b1b" alt="Base Sepolia" />
   <img src="https://img.shields.io/badge/1inch-Aqua%20%C2%B7%20SwapVM-1b1b1b" alt="Aqua / SwapVM" />
-  <img src="https://img.shields.io/badge/ZK-UltraHonk%20%C2%B7%20BN254-1b1b1b" alt="UltraHonk / BN254" />
-  <img src="https://img.shields.io/badge/Noir-1.0.0--beta.9-1b1b1b" alt="Noir" />
   <img src="https://img.shields.io/badge/License-MIT-1b1b1b" alt="MIT" />
 </p>
 
@@ -21,20 +19,17 @@
 
 ## Status
 
-**Migrasi sedang berjalan.** Aplikasi ini sebelumnya berjalan di chain lain,
-dengan mesin pencocokan di dalam enclave tepercaya. Lapisan itu sudah dibuang,
-dan likuiditasnya sedang dipindahkan ke **1inch Aqua + SwapVM**.
+Aplikasi ini sebelumnya berjalan di chain lain sebagai dark pool ZK. Lapisan itu
+sudah dibuang seluruhnya — sirkuit, kolam, verifier, dan SDK-nya — dan yang
+tersisa adalah meja market making di atas **1inch Aqua + SwapVM**.
 
 | Bagian | Keadaan |
 |---|---|
-| Kolam terlindung (ZK) | ✅ Jalan |
-| Sirkuit Noir | ✅ Jalan |
-| Transfer privat | ✅ Jalan |
-| Mesin pencocokan off-chain | ✅ Jalan |
 | Likuiditas lewat Aqua/SwapVM | ✅ Jalan, terbukti on-chain |
-| Dua opcode SwapVM custom | ✅ 29 test |
+| Dua opcode SwapVM custom | ✅ 37 test |
+| Empat strategi + wizard | ✅ Jalan, byte-nya terlihat sebelum dikirim |
 | Swap dari UI | ✅ Jalan, lewat `@iqia/swapvm` |
-| Penempatan order | 🚧 Butuh sirkuit yang belum ada |
+| Baca likuiditas nyata di Base | ✅ Jalan, dari router SwapVM resmi |
 
 Peta migrasinya di [`docs/migrasi.md`](docs/migrasi.md).
 Rujukan teknis Aqua/SwapVM di [`docs/RESOURCES.md`](docs/RESOURCES.md).
@@ -43,49 +38,43 @@ Rujukan teknis Aqua/SwapVM di [`docs/RESOURCES.md`](docs/RESOURCES.md).
 
 ## Masalah
 
-Rantai publik menyiarkan niatmu sebelum niat itu dieksekusi. Di order book
-on-chain mana pun, ukuran, arah, dan harga yang kamu terima terlihat begitu
-transaksi disiarkan — cukup lama untuk didahului, dan cukup permanen untuk
-direkonstruksi pesaing setelahnya.
+Untuk menyediakan likuiditas on-chain, dananya harus dititipkan ke kolam lebih
+dulu. Modal terkunci di kontrak, tidak bisa dipakai untuk hal lain, dan
+menariknya kembali butuh transaksi tersendiri. Itu ongkos yang ditagih setiap
+AMM sebelum kamu memperoleh satu sen fee pun.
 
-Sisi penyedia likuiditas punya masalah cermin: untuk menyediakan likuiditas,
-dananya harus dititipkan ke kolam. Modal terkunci, tidak bisa dipakai untuk
-hal lain, dan menariknya kembali butuh transaksi tersendiri.
-
-Selama ini salah satu harus dikorbankan.
+Buat pemilik dompet biasa, ongkos itu terlalu mahal untuk imbalan yang tidak
+seberapa. Jadi mereka tidak ikut, dan likuiditas terkumpul di segelintir pihak.
 
 ## Jawaban Iqia
 
-**Pembeli tersembunyi. Penjual tidak kehilangan kendali atas dananya.**
+**Token tidak pernah pindah dari dompetmu.**
 
-Sisi pembeli memakai kolam terlindung: saldo menjadi *note commitment* di dalam
-Merkle tree, dengan jumlah dan pemilik tersegel di dalam hash. Setiap transisi
-keluar dari kolam dijaga bukti UltraHonk yang dibuat di sisi klien.
+Aqua mencatat *izin*, bukan setoran. Membuka posisi tidak memindahkan apa pun —
+bandingkan saldo dompet sebelum dan sesudah, angkanya sama persis. Token bergerak
+tepat sekali, pada detik sebuah swap terjadi, langsung dari maker ke taker.
+Modal yang sama bisa menopang beberapa strategi sekaligus.
 
-Sisi penyedia likuiditas memakai **Aqua**. Token tidak pernah pindah dari dompet
-market maker — Aqua hanya mencatat izin, dan menariknya saat swap benar-benar
-terjadi. Modal yang sama bisa menopang beberapa strategi sekaligus.
+**Strateginya program, bukan label.** Aturan hargamu dijalankan sebagai bytecode
+di dalam SwapVM. Iqia mendeploy ulang SwapVM dengan dua instruksi buatan sendiri:
+satu membatasi siapa yang boleh mengisi, satu lagi menggerakkan harga saat
+jaminan nyata maker menipis — memburuk bertahap alih-alih gagal mentah.
 
-Aturan eksekusi yang dulu dijaga enclave secara rahasia menjadi program bytecode
-**SwapVM** yang dijalankan on-chain. Enclave tepercaya diganti mesin virtual.
+Instruksi kedua itu hanya punya arti di Aqua. Di kolam biasa pertanyaannya tidak
+ada, sebab dananya sudah disetor.
 
 ---
 
 ## Arsitektur
 
 ```
-Pengguna
-   │ deposit — token pindah ke kolam
-   ▼
-IqiaPool  (kolam terlindung, ZK)
-   │
-   │ swap
-   ▼
-Router SwapVM custom  ──── program bytecode dijalankan on-chain
-   │
-   ▼
-Aqua  ──pull / push──►  dompet market maker
-                         token tidak pernah terkunci
+Maker                              Taker
+   │ ship() — nol transfer            │ swap
+   ▼                                  ▼
+Aqua  (registry izin)  ◄──── Router SwapVM custom
+   │                          program bytecode dijalankan on-chain
+   └── pull / push ──►  token pindah LANGSUNG dari dompet maker
+                        ke dompet taker, tepat saat swap terjadi
 ```
 
 Di mode Aqua, argumen `app` pada `aqua.ship()` adalah alamat router SwapVM.
@@ -97,16 +86,13 @@ Jadi router custom kita **sekaligus** menjadi Aqua app-nya — satu kontrak.
 
 ```
 contracts/          Kontrak Solidity (Foundry)
-  src/IqiaPool.sol              Kolam, deposit/withdraw, rebalance via Aqua
+  src/iqia/IqiaSwapVMRouter     SwapVM + dua opcode custom (Aqua app)
   src/TransferProcessor.sol     Transfer berbasis ZK
   src/iqia/IqiaSwapVMRouter     Router SwapVM custom, sekaligus Aqua app
-  src/iqia/IqiaAquaTaker        Perantara kolam menuju SwapVM
+  src/iqia/IqiaAquaTaker        Adapter taker untuk SwapVM
   src/iqia/instructions/        Dua opcode custom
 protocol/
-  circuits/noir/           5 sirkuit ZK + library bersama
-  sdk/                     SDK TypeScript
   swapvm/                  Perakit program SwapVM + pengkode traits
-  matcher/                 Mesin pencocokan off-chain
 frontend/                  React + Vite + wagmi
 docs/                      Peta migrasi dan rujukan Aqua/SwapVM
 ```
@@ -122,10 +108,9 @@ docs/                      Peta migrasi dan rujukan Aqua/SwapVM
 
 | Alat | Versi yang dipakai | Untuk apa |
 |---|---|---|
-| Node.js | 24.x | SDK, matcher, frontend |
+| Node.js | 24.x | Perakit program dan frontend |
 | pnpm | 10.x | Workspace monorepo |
 | Foundry | 1.8.x | Kontrak, test, skrip deploy |
-| Nargo | 1.0.0-beta.9 | Sirkuit Noir — **opsional**, hanya kalau mau mengubah sirkuit |
 
 **Foundry wajib, dan tidak ada jalan memutar.** Aqua dan SwapVM tidak
 dipublikasikan ke npm — `@1inch/aqua` dan `@1inch/swap-vm` dua-duanya 404 di
@@ -168,20 +153,14 @@ cd contracts && forge build && cd ..
 workspace, jadi tanpa `dist/` yang terisi, `pnpm dev` gagal.
 
 Build kontrak memakan waktu karena `via_ir` menyala. Itu tidak bisa dimatikan —
-tanpanya compiler kehabisan stack saat mengompilasi SwapVM. Tapi verifier
-UltraHonk hasil-generate Noir justru PECAH dengan `via_ir`, jadi keduanya
-dikecualikan per-file lewat `compilation_restrictions` di `foundry.toml`.
+tanpanya compiler kehabisan stack saat mengompilasi SwapVM.
 
 ### 3. Verifikasi
 
 ```bash
-cd contracts && forge test && cd ..     # 32 test
-pnpm --filter @iqia/swapvm test         # 10 test
-pnpm --filter @iqia/sdk test            # 41 test
-pnpm --filter @iqia/matcher test        # 25 test
+cd contracts && forge test && cd ..     # 37 test
+pnpm --filter @iqia/swapvm test         # 15 test
 pnpm --filter frontend typecheck
-
-cd protocol/circuits/noir/place_order && nargo test && cd -   # 5 test, butuh nargo
 ```
 
 ---
@@ -417,15 +396,14 @@ cast call <WETH> 'balanceOf(address)(uint256)' <MAKER> --rpc-url http://localhos
 
 ## Catatan teknis
 
-**Desimal.** Token faucet memakai 7 desimal, bukan 18. Sirkuit Noir memaksakan
-`assert_64` pada besaran, dan 18 desimal membuat jumlah wajar melampaui rentang
-64-bit.
+**Desimal.** Angka desimal di `lib/tokens.ts` warisan aplikasi asal dan tidak
+selalu cocok dengan mock yang ter-deploy. Apa pun yang memindahkan token membaca
+`decimals()` dari kontraknya lewat `tokenDecimals()`, bukan dari daftar itu.
 
-**`IqiaPool.settle()` tidak aktif.** Jalur itu dulu menerima hasil pencocokan
-dari enclave tepercaya. Penggantinya SwapVM.
-
-**Belum ada test Solidity.** Menyusul bersama integrasi Aqua/SwapVM, memakai
-harness Foundry dari repo SwapVM.
+**Urutan instruksi mengikat.** `solvencyGuard` harus mendahului `decay` dan
+`xycConcentrate`, dan `flatFeeIn` harus menyusul `xycConcentrate`. Salah urutan
+tidak menimbulkan error apa pun — posisinya tetap melayani swap, hanya
+keuntungan strateginya yang hilang. Dikunci di `contracts/test/Strategies.t.sol`.
 
 ---
 
