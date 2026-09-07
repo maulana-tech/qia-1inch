@@ -6,10 +6,10 @@ import { erc20Abi, formatUnits, type Address } from 'viem'
 import { CURATED_TOKENS } from '../lib/tokens'
 import { tokenDecimals } from '../lib/payments'
 import { fetchActiveStrategies, type ActiveStrategy } from '../lib/markets'
-import { positionBalances } from '../lib/savings'
-import { DESK_CONFIGURED, explorerContractUrl } from '../lib/config'
+import { closePosition, positionBalances } from '../lib/savings'
+import { DESK_CONFIGURED, explorerContractUrl, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
-import { Card, CardContent, CardHeader, CardTitle, PageHeader } from '../components/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader } from '../components/ui'
 import { CoinBadge } from '../components/BrandIcons'
 
 /**
@@ -31,6 +31,8 @@ interface Holding {
 
 interface Position extends ActiveStrategy {
   legs: { code: string; decimals: number; balance: bigint }[]
+  /** Alamat token per kaki, dibutuhkan `dock()`. */
+  tokenAddresses: [string, string]
 }
 
 export function PortfolioPage() {
@@ -38,6 +40,8 @@ export function PortfolioPage() {
   const [holdings, setHoldings] = useState<Holding[] | null>(null)
   const [positions, setPositions] = useState<Position[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [closing, setClosing] = useState<string | null>(null)
+  const [closedTx, setClosedTx] = useState<`0x${string}` | null>(null)
 
   const load = useCallback(async () => {
     if (!address) {
@@ -83,6 +87,7 @@ export function PortfolioPage() {
         const [a, b] = await positionBalances(address, s.hash, tokens[0], tokens[1])
         withLegs.push({
           ...s,
+          tokenAddresses: [tokens[0], tokens[1]],
           legs: [
             { code: codeOf(tokens[0]), decimals: await tokenDecimals(tokens[0] as `0x${string}`), balance: a },
             { code: codeOf(tokens[1]), decimals: await tokenDecimals(tokens[1] as `0x${string}`), balance: b },
@@ -100,6 +105,27 @@ export function PortfolioPage() {
   }, [load])
 
   const totalPositions = useMemo(() => positions?.length ?? 0, [positions])
+
+  /**
+   * Menutup posisi dari tempat kamu melihatnya.
+   *
+   * Sebelumnya satu-satunya jalan menutup posisi ada di halaman Savings, dan ia
+   * menutup posisi aktif PERTAMA apa pun isinya — termasuk posisi yang dibuka
+   * lewat wizard strategi. Melihat daftar tanpa bisa berbuat apa-apa terhadapnya
+   * adalah lubang, dan menutup posisi yang salah lebih buruk lagi.
+   */
+  async function close(p: Position) {
+    if (!address) return
+    setClosing(p.hash); setError(null); setClosedTx(null)
+    try {
+      setClosedTx(await closePosition(address, p.hash, p.tokenAddresses[0], p.tokenAddresses[1]))
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menutup posisi.')
+    } finally {
+      setClosing(null)
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 pb-16 pt-8">
@@ -199,9 +225,32 @@ export function PortfolioPage() {
                       <p className="mt-1.5 break-all font-mono text-[10px] text-zinc-600">
                         {p.hash}
                       </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2"
+                        disabled={closing !== null}
+                        loading={closing === p.hash}
+                        onClick={() => void close(p)}
+                      >
+                        {closing === p.hash ? 'Menutup…' : 'Tutup posisi'}
+                      </Button>
                     </div>
                   ))
                 )}
+
+                {closedTx && (
+                  <p className="text-center text-xs text-patina-300">
+                    Posisi ditutup ·{' '}
+                    <a href={explorerTxUrl(closedTx)} target="_blank" rel="noreferrer" className="hover:underline">
+                      lihat transaksi
+                    </a>
+                  </p>
+                )}
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  Menutup posisi tidak memindahkan token sama sekali — ia cuma menghapus catatan
+                  alokasinya di Aqua. Saldo dompetmu tidak berubah.
+                </p>
               </CardContent>
             </Card>
           </>
