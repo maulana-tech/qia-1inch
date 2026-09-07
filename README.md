@@ -313,19 +313,41 @@ RPC berbayar, naikkan angkanya.
 
 ## Deploy ke testnet
 
+Ini jalur utamanya. Satu perintah, satu dompet.
+
 ```bash
 cd contracts
-export PRIVATE_KEY=0x<kunci-deployer>
-export RPC_URL=https://sepolia.base.org
-
-forge script script/Deploy.s.sol --rpc-url "$RPC_URL" --broadcast
+RPC=https://sepolia.base.org DESK_KEY=0x<kunci-privat> ./script/deploy.sh
 ```
 
-Isi `frontend/.env.local` dengan alamat hasil deploy, dan setel
-`VITE_CHAIN_ID=84532`.
+Yang dibutuhkan cuma ETH Base Sepolia di dompet itu — ambil dari faucet mana
+pun. Skripnya men-deploy Aqua, token uji, router, dan adapter; mengirim posisi
+pertama; menjalankan satu swap sungguhan; lalu menulis
+`frontend/.env.84532` sendiri.
 
-Perlu diketahui: di Base Sepolia **tidak ada Aqua maupun SwapVM resmi**, jadi
-keduanya di-deploy sendiri. Untuk demo kualifikasi, pakai jalur fork di atas.
+```bash
+cp frontend/.env.84532 frontend/.env.local
+pnpm --filter frontend dev
+```
+
+Perintah yang sama bekerja di anvil tanpa argumen apa pun:
+
+```bash
+anvil &
+cd contracts && ./script/deploy.sh
+```
+
+Dua hal yang perlu diketahui:
+
+**Di Base Sepolia tidak ada Aqua maupun SwapVM resmi** — keduanya di-deploy
+sendiri. Untuk demo yang memakai kontrak Aqua resmi, pakai jalur fork di atas.
+
+**Satu dompet mengerjakan dua peran.** Kalau `MAKER_KEY` tidak diisi terpisah,
+maker dan meja jadi akun yang sama, dan WETH yang keluar langsung kembali ke
+dompet itu juga. Yang dibuktikan tetap sama — token benar-benar berpindah dan
+berpindahnya dari dompet, bukan dari kontrak — hanya selisih akhirnya nol.
+Isi `MAKER_KEY` dengan dompet kedua yang juga berisi ETH kalau mau melihat
+perpindahan antar dua pihak.
 
 ---
 
