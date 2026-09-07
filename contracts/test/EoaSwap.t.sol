@@ -47,7 +47,7 @@ contract EoaSwapTest is Test, IqiaOpcodes {
         user = vm.addr(0xEA);
         tokenA = new TokenMock("Token A", "TKA");
         tokenB = new TokenMock("Token B", "TKB");
-        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
+        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this));
     }
 
     function test_PlainWalletCanSwapWithoutAdapter() public {
