@@ -41,7 +41,16 @@ const DECAY_PRESETS = [
   { s: 900, label: '15 menit' },
 ] as const
 
-const SALT = 2_000n
+/**
+ * Salt baru tiap posisi dikirim.
+ *
+ * Aqua menandai strategi yang sudah di-`dock` sebagai `0xff` sementara `ship`
+ * menuntut `0`, jadi satu `strategyHash` cuma sah SEKALI seumur hidup. Nilai
+ * tetap membuat percobaan kedua orang yang sama gagal dengan
+ * `StrategiesMustBeImmutable` — error yang sama sekali tidak menjelaskan
+ * sebabnya.
+ */
+const freshSalt = () => BigInt(Date.now())
 
 function fmt(value: bigint, decimals: number): string {
   const base = 10n ** BigInt(decimals)
@@ -111,6 +120,8 @@ export function StrategyPage() {
   const [bandBps, setBandBps] = useState(1000)
   const [decayPeriod, setDecayPeriod] = useState(300)
   const [taker, setTaker] = useState('')
+  /** Dikunci sekali per kunjungan supaya pratinjau program tidak berubah tiap render. */
+  const [saltValue] = useState(freshSalt)
 
   const [balances, setBalances] = useState<[bigint, bigint] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -139,7 +150,7 @@ export function StrategyPage() {
   const params = useMemo<StrategyParams | null>(() => {
     if (!id) return null
     const base: StrategyParams = {
-      salt: SALT,
+      salt: saltValue,
       feeBps: BigInt(Math.round(feePercent * 1e7)),
       surchargeBps: DESK_SURCHARGE_BPS,
     }
@@ -157,7 +168,7 @@ export function StrategyPage() {
       return { ...base, exclusiveTaker: taker }
     }
     return base
-  }, [id, feePercent, bandBps, decayPeriod, taker, hasCapital, split])
+  }, [id, feePercent, bandBps, decayPeriod, taker, hasCapital, split, saltValue])
 
   const built = useMemo(() => {
     if (!address || !id || !params) return null

@@ -1,3 +1,5 @@
+import { AQUA_CONTRACT_ADDRESSES, NetworkEnum } from '@1inch/aqua-sdk'
+
 /**
  * Konfigurasi deployment untuk frontend Iqia.
  *
@@ -62,8 +64,22 @@ export const TRANSFER_PROCESSOR_ADDRESS = env('VITE_TRANSFER_PROCESSOR', ZERO)
 // SwapVM di sisi TypeScript.
 // ---------------------------------------------------------------------------
 
-/** Registry saldo virtual Aqua. */
-export const AQUA_ADDRESS = env('VITE_AQUA', ZERO)
+/**
+ * Registry saldo virtual Aqua.
+ *
+ * Di rantai yang didukung, alamatnya diambil dari SDK resmi 1inch — Aqua sudah
+ * ter-deploy di 16 jaringan dengan alamat yang sama
+ * (`0x1111113ccf1426a8e30e2bff5e005d929bf6a90a`), termasuk Base mainnet. Tidak
+ * ada satu pun testnet di daftar itu, jadi untuk anvil dan Base Sepolia alamat
+ * hasil deploy sendiri diambil dari env.
+ *
+ * `VITE_AQUA` tetap menang kalau diisi, supaya fork lokal dari rantai yang
+ * didukung tetap bisa menunjuk alamat lain.
+ */
+export const AQUA_ADDRESS =
+  env('VITE_AQUA', '') ||
+  AQUA_CONTRACT_ADDRESSES[CHAIN_ID as NetworkEnum]?.toString() ||
+  ZERO
 
 /** Router SwapVM custom milik Iqia. Sekaligus berperan sebagai Aqua app. */
 export const SWAP_VM_ROUTER_ADDRESS = env('VITE_SWAP_VM_ROUTER', ZERO)

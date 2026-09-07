@@ -11,32 +11,36 @@
  * dengan data yang dibaca langsung dari kontraknya.
  */
 import { getPublicClient, readContracts } from '@wagmi/core'
-import { erc20Abi, parseAbiItem, type Address } from 'viem'
+import { erc20Abi, type Address } from 'viem'
+import { ABI } from '@1inch/aqua-sdk'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import { AQUA_ADDRESS, CHAIN_ID, POOL_DEPLOY_BLOCK, SWAP_VM_ROUTER_ADDRESS, AQUA_CONFIGURED } from './config'
 
-const SHIPPED = parseAbiItem('event Shipped(address maker, address app, bytes32 strategyHash, bytes strategy)')
-const PUSHED = parseAbiItem('event Pushed(address maker, address app, bytes32 strategyHash, address token, uint256 amount)')
-const DOCKED = parseAbiItem('event Docked(address maker, address app, bytes32 strategyHash)')
+/**
+ * Tanda tangan event diambil dari ABI resmi `@1inch/aqua-sdk`.
+ *
+ * Sebelumnya ditulis ulang di sini lewat `parseAbiItem`. Sudah dicocokkan dan
+ * sama persis — tapi salinan tanda tangan adalah hal yang diam-diam basi begitu
+ * kontraknya bergerak, dan gejalanya nanti cuma daftar market yang kosong tanpa
+ * satu pun error.
+ *
+ * SDK juga menyediakan `ShippedEvent.fromLog` untuk mengurai, tapi `getLogs`
+ * viem sudah mengurai sendiri begitu diberi item event-nya, jadi memakainya
+ * cuma menambah lapisan tanpa menambah kepastian.
+ */
+function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked') {
+  const found = ABI.AQUA_ABI.find((x) => x.type === 'event' && x.name === name)
+  if (!found) throw new Error(`Event ${name} tidak ada di ABI Aqua resmi`)
+  return found
+}
 
-const aquaBalancesAbi = [
-  {
-    type: 'function',
-    name: 'rawBalances',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'maker', type: 'address' },
-      { name: 'app', type: 'address' },
-      { name: 'strategyHash', type: 'bytes32' },
-      { name: 'token', type: 'address' },
-    ],
-    outputs: [
-      { name: 'balance', type: 'uint248' },
-      { name: 'tokensCount', type: 'uint8' },
-    ],
-  },
-] as const
+const SHIPPED = aquaEvent('Shipped')
+const PUSHED = aquaEvent('Pushed')
+const DOCKED = aquaEvent('Docked')
+
+/** ABI Aqua resmi, dipakai juga untuk pembacaan saldo. */
+const aquaBalancesAbi = ABI.AQUA_ABI
 
 export interface TokenInfo {
   address: string
@@ -116,7 +120,22 @@ async function readTokenOnChain(address: string): Promise<TokenInfo> {
  * `Docked` menandai mana yang sudah ditutup. Event Aqua tidak ber-`indexed`,
  * jadi penyaringannya dilakukan di sini.
  */
-export async function fetchMarkets(): Promise<Market[]> {
+export interface ActiveStrategy {
+  hash: `0x${string}`
+  maker: string
+  tokens: Set<string>
+}
+
+/**
+ * Strategi yang masih hidup di router ini, hasil rekonstruksi dari event.
+ *
+ * Dipisah dari `fetchMarkets` karena posisi milik satu orang juga perlu dicari
+ * lewat jalan ini. Menghitung ulang `strategyHash` dari salt tetap TIDAK bisa
+ * dipakai: Aqua menandai strategi yang sudah di-`dock` sebagai `0xff` sementara
+ * `ship` menuntut `0`, jadi satu hash cuma sah sekali seumur hidup dan salt
+ * harus baru tiap kali membuka posisi.
+ */
+export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrategy[]> {
   if (!AQUA_CONFIGURED) return []
 
   const client = getPublicClient(wagmiConfig as any, { chainId: ACTIVE_CHAIN_ID as any })
@@ -124,36 +143,44 @@ export async function fetchMarkets(): Promise<Market[]> {
 
   const fromBlock = BigInt(POOL_DEPLOY_BLOCK)
   const router = SWAP_VM_ROUTER_ADDRESS.toLowerCase()
+  const wanted = maker?.toLowerCase()
 
   const [shipped, pushed, docked] = await Promise.all([
-    client.getLogs({ address: AQUA_ADDRESS as Address, event: SHIPPED, fromBlock }),
-    client.getLogs({ address: AQUA_ADDRESS as Address, event: PUSHED, fromBlock }),
-    client.getLogs({ address: AQUA_ADDRESS as Address, event: DOCKED, fromBlock }),
+    client.getLogs({ address: AQUA_ADDRESS as Address, event: SHIPPED as any, fromBlock }),
+    client.getLogs({ address: AQUA_ADDRESS as Address, event: PUSHED as any, fromBlock }),
+    client.getLogs({ address: AQUA_ADDRESS as Address, event: DOCKED as any, fromBlock }),
   ])
 
   const closed = new Set(
     docked
-      .filter((l) => (l.args.app as string)?.toLowerCase() === router)
-      .map((l) => l.args.strategyHash as string),
+      .filter((l: any) => (l.args.app as string)?.toLowerCase() === router)
+      .map((l: any) => l.args.strategyHash as string),
   )
 
-  // strategyHash -> { maker, token set }
-  const strategies = new Map<string, { maker: string; tokens: Set<string> }>()
-  for (const log of shipped) {
+  const strategies = new Map<string, ActiveStrategy>()
+  for (const log of shipped as any[]) {
     const app = (log.args.app as string)?.toLowerCase()
-    const hash = log.args.strategyHash as string
+    const hash = log.args.strategyHash as `0x${string}`
+    const owner = log.args.maker as string
     if (app !== router || closed.has(hash)) continue
-    strategies.set(hash, { maker: log.args.maker as string, tokens: new Set() })
+    if (wanted && owner.toLowerCase() !== wanted) continue
+    strategies.set(hash, { hash, maker: owner, tokens: new Set() })
   }
-  for (const log of pushed) {
+  for (const log of pushed as any[]) {
     const entry = strategies.get(log.args.strategyHash as string)
     if (entry) entry.tokens.add((log.args.token as string).toLowerCase())
   }
+  return [...strategies.values()]
+}
 
+export async function fetchMarkets(): Promise<Market[]> {
+  if (!AQUA_CONFIGURED) return []
+
+  const strategies = await fetchActiveStrategies()
   const listed = await fetchOneInchTokens()
 
   const markets: Market[] = []
-  for (const [strategyHash, { maker, tokens }] of strategies) {
+  for (const { hash: strategyHash, maker, tokens } of strategies) {
     const legs: MarketLeg[] = []
     for (const token of tokens) {
       const meta = listed[token] ?? (await readTokenOnChain(token))

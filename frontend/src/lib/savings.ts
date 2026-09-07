@@ -20,9 +20,17 @@
  * Yang hilang: penegakan. Yang didapat: uangnya benar-benar tetap milik dan
  * kendali pengguna, yang memang inti Aqua.
  */
-import { readContract, readContracts, writeContract, waitForTransactionReceipt } from '@wagmi/core'
+import { readContract, readContracts, writeContract, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { erc20Abi, keccak256, type Address } from 'viem'
 import { buildOrder, encodeOrder, type Hex } from '@iqia/swapvm'
+import {
+  ABI,
+  Address as AquaAddress,
+  AquaProtocolContract,
+  HexString,
+} from '@1inch/aqua-sdk'
+
+const { AQUA_ABI } = ABI
 
 import { strategyProgram } from './strategies'
 
@@ -35,46 +43,19 @@ import {
   AQUA_CONFIGURED,
 } from './config'
 
-export const aquaAbi = [
-  {
-    type: 'function',
-    name: 'ship',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'app', type: 'address' },
-      { name: 'strategy', type: 'bytes' },
-      { name: 'tokens', type: 'address[]' },
-      { name: 'amounts', type: 'uint256[]' },
-    ],
-    outputs: [{ name: 'strategyHash', type: 'bytes32' }],
-  },
-  {
-    type: 'function',
-    name: 'dock',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'app', type: 'address' },
-      { name: 'strategyHash', type: 'bytes32' },
-      { name: 'tokens', type: 'address[]' },
-    ],
-    outputs: [],
-  },
-  {
-    type: 'function',
-    name: 'rawBalances',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'maker', type: 'address' },
-      { name: 'app', type: 'address' },
-      { name: 'strategyHash', type: 'bytes32' },
-      { name: 'token', type: 'address' },
-    ],
-    outputs: [
-      { name: 'balance', type: 'uint248' },
-      { name: 'tokensCount', type: 'uint8' },
-    ],
-  },
-] as const
+/**
+ * ABI Aqua resmi dari `@1inch/aqua-sdk`.
+ *
+ * Sebelumnya ditulis tangan di sini. Sudah dibandingkan dan cocok, tapi ABI
+ * salinan adalah hal yang diam-diam basi ketika kontraknya bergerak — dan
+ * satu-satunya gejalanya nanti panggilan yang gagal tanpa sebab yang jelas.
+ */
+export const aquaAbi = AQUA_ABI
+
+/** Pembungkus kontrak Aqua resmi, dibuat saat dipakai supaya alamatnya selalu terkini. */
+function aquaContract(): AquaProtocolContract {
+  return new AquaProtocolContract(new AquaAddress(AQUA_ADDRESS))
+}
 
 /** Basis basis-point SwapVM. 1e9, bukan 10_000. */
 export const BPS = 1_000_000_000n
@@ -214,18 +195,22 @@ export async function openPosition(
     }
   }
 
-  const hash = await writeContract(wagmiConfig as any, {
-    address: AQUA_ADDRESS as Address,
-    abi: aquaAbi,
-    functionName: 'ship',
-    chainId: ACTIVE_CHAIN_ID,
-    args: [
-      SWAP_VM_ROUTER_ADDRESS as Address,
-      encodeOrder(order.encoded),
-      [tokenA as Address, tokenB as Address],
-      [amountA, amountB],
+  // Calldata dirakit SDK resmi, bukan tangan. Sudah dibandingkan byte-per-byte
+  // dengan versi tulisan tangan sebelumnya dan identik.
+  const { to, data, value } = aquaContract().ship({
+    app: new AquaAddress(SWAP_VM_ROUTER_ADDRESS),
+    strategy: new HexString(encodeOrder(order.encoded)),
+    amountsAndTokens: [
+      { token: new AquaAddress(tokenA), amount: amountA },
+      { token: new AquaAddress(tokenB), amount: amountB },
     ],
-    chain: null,
+  })
+
+  const hash = await sendTransaction(wagmiConfig as any, {
+    to: to as Address,
+    data: data as Hex,
+    value,
+    chainId: ACTIVE_CHAIN_ID,
     account,
   })
   await waitForTransactionReceipt(wagmiConfig as any, { hash })
@@ -240,13 +225,17 @@ export async function closePosition(
   tokenB: string,
 ): Promise<`0x${string}`> {
   requireConfigured()
-  const hash = await writeContract(wagmiConfig as any, {
-    address: AQUA_ADDRESS as Address,
-    abi: aquaAbi,
-    functionName: 'dock',
+  const { to, data, value } = aquaContract().dock({
+    app: new AquaAddress(SWAP_VM_ROUTER_ADDRESS),
+    strategyHash: new HexString(strategyHash),
+    tokens: [new AquaAddress(tokenA), new AquaAddress(tokenB)],
+  })
+
+  const hash = await sendTransaction(wagmiConfig as any, {
+    to: to as Address,
+    data: data as Hex,
+    value,
     chainId: ACTIVE_CHAIN_ID,
-    args: [SWAP_VM_ROUTER_ADDRESS as Address, strategyHash, [tokenA as Address, tokenB as Address]],
-    chain: null,
     account,
   })
   await waitForTransactionReceipt(wagmiConfig as any, { hash })

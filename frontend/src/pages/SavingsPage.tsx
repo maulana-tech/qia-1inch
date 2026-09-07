@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { CircleCheckIcon, PiggyBankIcon, WalletIcon } from 'lucide-react'
 
@@ -8,7 +8,6 @@ import {
   positionBalances,
   savingsOrder,
   splitAmounts,
-  strategyHashOf,
   walletBalances,
 } from '../lib/savings'
 import {
@@ -30,6 +29,7 @@ import {
   Spinner,
 } from '../components/ui'
 import { cx } from '../lib/cx'
+import { fetchActiveStrategies } from '../lib/markets'
 import { DESK_PAIR } from '../lib/strategies'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
@@ -42,7 +42,11 @@ function fmt(value: bigint, decimals: number): string {
 
 const TOKENS = DESK_PAIR
 
-const SALT = 1_000n
+/**
+ * Salt baru tiap posisi. Lihat catatan pada `strategyHash` di bawah — nilai
+ * tetap membuat pembukaan kedua mustahil.
+ */
+const freshSalt = () => BigInt(Date.now())
 const PRESETS = [10, 20, 35, 50] as const
 
 /** Pilihan persentase, sebentuk dengan pemilih sumber yield pada acuannya. */
@@ -97,29 +101,40 @@ export function SavingsPage() {
 
   const configured = AQUA_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
-  const strategyHash = useMemo(
-    () => (address ? strategyHashOf(savingsOrder(address, SALT)) : null),
-    [address],
-  )
+  /**
+   * `strategyHash` posisi yang sedang terbuka, dicari dari event.
+   *
+   * Dulu dihitung ulang dari salt tetap, dan itu salah: Aqua menandai strategi
+   * yang sudah di-`dock` sebagai `0xff` sementara `ship` menuntut `0`, jadi satu
+   * hash cuma sah SEKALI. Dengan salt tetap, menutup lalu membuka lagi selalu
+   * gagal dengan `StrategiesMustBeImmutable` — dan itu hal biasa yang dilakukan
+   * orang pada percobaan kedua.
+   */
+  const [strategyHash, setStrategyHash] = useState<`0x${string}` | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!address || !configured || !strategyHash) {
+    if (!address || !configured) {
       setLoading(false)
       return
     }
     try {
-      const [w, p] = await Promise.all([
+      const [w, active] = await Promise.all([
         walletBalances(address, TOKENS[0].address, TOKENS[1].address),
-        positionBalances(address, strategyHash, TOKENS[0].address, TOKENS[1].address),
+        fetchActiveStrategies(address),
       ])
       setWallet(w)
-      setPosition(p)
+
+      const mine = active[0]?.hash ?? null
+      setStrategyHash(mine)
+      setPosition(
+        mine ? await positionBalances(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal membaca saldo.')
     } finally {
       setLoading(false)
     }
-  }, [address, configured, strategyHash])
+  }, [address, configured])
 
   useEffect(() => { void refresh() }, [refresh])
 
@@ -133,7 +148,7 @@ export function SavingsPage() {
     setBusy('open'); setError(null); setTxHash(null)
     try {
       const { hash } = await openPosition(
-        address, TOKENS[0].address, TOKENS[1].address, split[0], split[1], savingsOrder(address, SALT),
+        address, TOKENS[0].address, TOKENS[1].address, split[0], split[1], savingsOrder(address, freshSalt()),
       )
       setTxHash(hash)
       await refresh()
