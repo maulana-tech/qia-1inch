@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
-import { readContracts } from '@wagmi/core'
-import { erc20Abi, formatUnits, type Address } from 'viem'
+import { getBalance, readContracts } from '@wagmi/core'
+import { erc20Abi, formatUnits, parseEther, type Address } from 'viem'
 
 import { CURATED_TOKENS } from '../lib/tokens'
-import { tokenDecimals } from '../lib/payments'
+import { canWrapNative, tokenDecimals, unwrapNative, wrapNative } from '../lib/payments'
 import { fetchActiveStrategies, fetchPositionTrades, type ActiveStrategy, type PositionTrade } from '../lib/markets'
 import { closePosition, positionBalances } from '../lib/savings'
-import { DESK_CONFIGURED, explorerContractUrl, explorerTxUrl } from '../lib/config'
+import { DESK_CONFIGURED, MOCK_WETH_ADDRESS, explorerContractUrl, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
-import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader } from '../components/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader, TextInput } from '../components/ui'
 import { CoinBadge } from '../components/BrandIcons'
 
 /**
@@ -44,6 +44,11 @@ export function PortfolioPage() {
   const [error, setError] = useState<string | null>(null)
   const [closing, setClosing] = useState<string | null>(null)
   const [closedTx, setClosedTx] = useState<`0x${string}` | null>(null)
+  const [nativeBalance, setNativeBalance] = useState<bigint | null>(null)
+  const [wrappable, setWrappable] = useState(false)
+  const [wrapAmount, setWrapAmount] = useState('')
+  const [wrapping, setWrapping] = useState<'wrap' | 'unwrap' | null>(null)
+  const [wrapTx, setWrapTx] = useState<`0x${string}` | null>(null)
 
   const load = useCallback(async () => {
     if (!address) {
@@ -53,6 +58,9 @@ export function PortfolioPage() {
     }
     setError(null)
     try {
+      setNativeBalance((await getBalance(wagmiConfig as any, { address, chainId: ACTIVE_CHAIN_ID })).value)
+      setWrappable(await canWrapNative(MOCK_WETH_ADDRESS as Address))
+
       const results = await readContracts(wagmiConfig as any, {
         contracts: HOLDINGS.map((t) => ({
           address: t.sac as Address,
@@ -110,6 +118,44 @@ export function PortfolioPage() {
   const totalPositions = useMemo(() => positions?.length ?? 0, [positions])
 
   /**
+   * Membungkus ETH jadi WETH, dan sebaliknya.
+   *
+   * Ini yang paling dekat dengan "menaruh dana" di aplikasi ini. Bukan karena
+   * ada kontrak yang menampung — tidak ada — tapi karena posisi Aqua dan swap
+   * bekerja dengan ERC20 sementara orang memegang ETH. Tanpa langkah ini,
+   * pemegang ETH di rantai sungguhan tidak bisa berbuat apa-apa.
+   *
+   * Di anvil kartunya tidak muncul: "WETH" di sana MockERC20 tanpa `deposit()`,
+   * dan tokennya diambil dari Faucet.
+   */
+  async function doWrap(direction: 'wrap' | 'unwrap') {
+    if (!address) return
+    let amount: bigint
+    try {
+      amount = parseEther(wrapAmount.trim() || '0')
+    } catch {
+      setError('Jumlahnya tidak valid.')
+      return
+    }
+    if (amount === 0n) return
+
+    setWrapping(direction); setError(null); setWrapTx(null)
+    try {
+      setWrapTx(
+        direction === 'wrap'
+          ? await wrapNative(address, MOCK_WETH_ADDRESS as Address, amount)
+          : await unwrapNative(address, MOCK_WETH_ADDRESS as Address, amount),
+      )
+      setWrapAmount('')
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal membungkus.')
+    } finally {
+      setWrapping(null)
+    }
+  }
+
+  /**
    * Menutup posisi dari tempat kamu melihatnya.
    *
    * Sebelumnya satu-satunya jalan menutup posisi ada di halaman Savings, dan ia
@@ -158,6 +204,60 @@ export function PortfolioPage() {
 
         {address && (
           <>
+            {wrappable && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>ETH ↔ WETH</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs leading-relaxed text-zinc-500">
+                    Posisi dan swap bekerja dengan ERC20, sedangkan kamu memegang ETH. Membungkus
+                    tidak menyerahkan dana ke siapa pun — WETH tetap milikmu, di dompetmu.
+                  </p>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span className="text-spectral/60">ETH</span>
+                    <span className="font-mono tabular-nums text-zinc-200">
+                      {nativeBalance === null ? '—' : formatUnits(nativeBalance, 18)}
+                    </span>
+                  </div>
+                  <TextInput
+                    mono
+                    inputMode="decimal"
+                    placeholder="0.0"
+                    value={wrapAmount}
+                    onChange={(e) => setWrapAmount(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      disabled={wrapping !== null}
+                      loading={wrapping === 'wrap'}
+                      onClick={() => void doWrap('wrap')}
+                    >
+                      Bungkus jadi WETH
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      disabled={wrapping !== null}
+                      loading={wrapping === 'unwrap'}
+                      onClick={() => void doWrap('unwrap')}
+                    >
+                      Buka jadi ETH
+                    </Button>
+                  </div>
+                  {wrapTx && (
+                    <p className="text-center text-xs text-patina-300">
+                      Selesai ·{' '}
+                      <a href={explorerTxUrl(wrapTx)} target="_blank" rel="noreferrer" className="hover:underline">
+                        lihat transaksi
+                      </a>
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Saldo dompet</CardTitle>
