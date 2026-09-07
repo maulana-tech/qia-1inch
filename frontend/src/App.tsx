@@ -4,7 +4,6 @@ import { AppLayout } from './components/AppLayout'
 import { Faucet } from './components/Faucet'
 import { Hub } from './pages/Hub'
 import { PortfolioPage } from './pages/PortfolioPage'
-import { DepositPage } from './pages/DepositPage'
 import { PayPage } from './pages/PayPage'
 import { PaymentLinkPage } from './pages/PaymentLinkPage'
 import { SwapPage } from './pages/SwapPage'
@@ -25,7 +24,6 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/app" element={<Hub />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/deposit" element={<DepositPage />} />
         <Route path="/pay" element={<PayPage />} />
         <Route path="/pay/:address" element={<PayPage />} />
         <Route path="/payment-link" element={<PaymentLinkPage />} />
@@ -36,7 +34,6 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/faucet" element={<Faucet />} />
 
-        <Route path="/bridge" element={<Navigate to="/deposit" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
