@@ -76,7 +76,7 @@ contract StrategiesTest is Test, IqiaOpcodes {
         outsider = vm.addr(0xC3);
         tokenA = new TokenMock("Token A", "TKA");
         tokenB = new TokenMock("Token B", "TKB");
-        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
+        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this));
     }
 
     // ===== program per strategi =====
@@ -329,7 +329,7 @@ contract ConcentratedBandTest is Test, IqiaOpcodes {
         taker = vm.addr(0xD2);
         weth = new TokenMockDecimals("Wrapped Ether", "WETH", 18);
         usdc = new TokenMockDecimals("USD Coin", "USDC", 6);
-        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this), "IqiaSwapVM", "1.0.0");
+        router = new IqiaSwapVMRouter(address(AQUA), address(0), address(this));
     }
 
     /// @dev Salinan `impliedSpotE18`: P = tokenGt/tokenLt, unit mentah.
