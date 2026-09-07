@@ -193,9 +193,9 @@ dan `node_modules/@1inch/solidity-utils/`. Jadi meski dipasang lewat
 `forge install`, paket npm-nya tetap harus ada. Versi yang dipatok keduanya sama:
 `@openzeppelin/contracts` 5.4.0 dan `@1inch/solidity-utils` 6.9.7.
 
-**#11 — `via_ir` wajib, tapi merusak verifier hasil-generate Noir.**
+**#11 — `via_ir` wajib untuk SwapVM.** (Dulu ia merusak verifier ZK bawaan aplikasi asal; lapisan itu sudah dibuang.)
 Tanpa `via_ir` compiler kehabisan stack saat mengompilasi SwapVM. Dengan `via_ir`
-justru verifier UltraHonk yang pecah, di sekitar `PAIRING_POINTS_SIZE`. Jawabannya
+justru verifier ZK bawaan aplikasi asal yang pecah. Lapisan itu sudah dibuang; jawabannya dulu
 `compilation_restrictions` per-file di `foundry.toml`: verifier tetap di pipeline
 lama, sisanya via_ir.
 
