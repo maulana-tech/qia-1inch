@@ -56,7 +56,7 @@ echo "3. men-deploy router Iqia (SwapVM yang diperluas)"
 # membatalkan SELURUH broadcast — termasuk transaksi yang sebenarnya berhasil.
 ROUTER=$(forge create src/iqia/IqiaSwapVMRouter.sol:IqiaSwapVMRouter \
   --rpc-url "$RPC" --private-key "$DESK_KEY" --broadcast \
-  --constructor-args "$AQUA" "$WETH" "$DESK" "IqiaSwapVM" "1.0.0" \
+  --constructor-args "$AQUA" "$WETH" "$DESK" \
   2>/dev/null | awk '/Deployed to:/{print $3}')
 [ -n "$ROUTER" ] || { echo "gagal men-deploy router"; exit 1; }
 echo "   router: $ROUTER"
