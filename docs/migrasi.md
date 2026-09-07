@@ -85,7 +85,7 @@ router. Satu kontrak memenuhi dua syarat.
 | ✅ `SimpleAMM` dihapus | Bersama jalur swap palsunya |
 
 Ketiganya terverifikasi: SDK 41 test lolos, matcher 25 test lolos, frontend
-typecheck bersih, sirkuit Noir 5 test lolos.
+typecheck bersih.
 
 ### Bug yang ikut terperbaiki
 
@@ -174,7 +174,7 @@ as a mock"*.
 
 **Nol test Solidity.**
 `contracts/test/` hanya berisi fixture proof. Semua test ada di TypeScript
-dan Noir. Ini peluang — harness Foundry Aqua/SwapVM tinggal diturunkan.
+dan sirkuit ZK. Semua itu sudah dibuang; harness Foundry Aqua/SwapVM yang dipakai sekarang.
 
 **`setTeeAddress()` tanpa kontrol akses.**
 Ada komentar `// TODO: add access control (onlyOwner)`. Jalurnya sudah mati,
