@@ -1,7 +1,0 @@
-[package]
-name = "cancel_order"
-type = "bin"
-authors = ["Iqia"]
-
-[dependencies]
-iqia_lib = { path = "../iqia_lib" }
