@@ -331,6 +331,23 @@ keduanya di-deploy sendiri. Untuk demo kualifikasi, pakai jalur fork di atas.
 
 ## Kalau ada yang tidak jalan
 
+**Market muncul tapi saldonya 0 dan simbolnya berupa alamat.**
+Pembacaan kontraknya gagal, bukan likuiditasnya habis — halamannya sekarang
+mengatakan itu apa adanya. Penyebab paling sering: **Multicall3 tidak ada** di
+rantai yang dipakai. viem memakainya untuk rantai yang definisinya menyatakan
+ada (Base, Base Sepolia), jadi anvil lokal yang menyamar sebagai Base Sepolia
+akan gagal seluruh pembacaannya. Salin bytecode-nya ke alamat kanonik:
+
+```bash
+cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 \
+  "$(cast code 0xcA11bde05977b3631167028862bE2a173976CA11 --rpc-url https://mainnet.base.org)" \
+  --rpc-url http://127.0.0.1:8545
+```
+
+Base Sepolia dan Base yang sungguhan sudah punya Multicall3, jadi ini hanya
+soal emulasi lokal.
+
+
 **Halaman market kosong, muncul error `eth_getLogs is limited to a 10,000 range`.**
 Pesannya menyesatkan; masalahnya bukan rentang blok melainkan salah jaringan.
 Pastikan `VITE_CHAIN_ID` cocok dengan chain yang berjalan, lalu restart vite —
