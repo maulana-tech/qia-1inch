@@ -6,7 +6,7 @@ import type {
   SVGProps,
 } from 'react'
 import { cx } from '../lib/cx'
-import type { AssetCode } from '../lib/iqia-sdk'
+import type { AssetCode } from '../lib/tokens'
 import { truncateKey } from '../lib/format'
 import { CoinBadge, IqiaSpinnerMark } from './BrandIcons'
 
