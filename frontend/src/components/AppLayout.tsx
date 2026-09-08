@@ -22,7 +22,13 @@ import { ConnectWallet } from './ConnectWallet'
 import { Logo, LogoMark } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
 import { useT } from '../lib/settings'
-import { SWAP_VM_ROUTER_ADDRESS, AQUA_CONFIGURED, explorerContractUrl } from '../lib/config'
+import {
+  CHAIN_NAME,
+  DESK_CONFIGURED,
+  HAS_EXPLORER,
+  SWAP_VM_ROUTER_ADDRESS,
+  explorerContractUrl,
+} from '../lib/config'
 
 /**
  * Kerangka aplikasi: sidebar yang bisa diciutkan jadi rail, konten di kanan.
@@ -143,13 +149,18 @@ function SidebarContent({
           <SettingsIcon className="h-[18px] w-[18px] shrink-0" />
           <span className={label}>Settings</span>
         </NavLink>
-        {AQUA_CONFIGURED ? (
+        {/* Tautan ini menunjuk ROUTER kita, jadi ia butuh dua hal sekaligus:
+            router yang benar-benar ter-deploy di rantai ini (`DESK_CONFIGURED`,
+            bukan `AQUA_CONFIGURED` — di Base kita cuma membaca dan tidak punya
+            router), dan explorer yang ada. Anvil tidak punya explorer, dan
+            tautan ke sana cuma membuka halaman kosong. */}
+        {DESK_CONFIGURED && HAS_EXPLORER ? (
           <a
             href={explorerContractUrl(SWAP_VM_ROUTER_ADDRESS)}
             target="_blank"
             rel="noreferrer"
             className={cx(ITEM, rail && 'justify-center px-0', 'text-spectral/62 hover:bg-spectral/[0.06] hover:text-spectral/90')}
-            title={rail ? 'Router' : undefined}
+            title={`Router SwapVM Iqia di ${CHAIN_NAME} — ${SWAP_VM_ROUTER_ADDRESS}`}
           >
             <ExternalLinkIcon className="h-[18px] w-[18px] shrink-0" />
             <span className={label}>Router</span>
