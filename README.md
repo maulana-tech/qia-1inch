@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Base-Sepolia-1b1b1b" alt="Base Sepolia" />
+  <img src="https://img.shields.io/badge/Ethereum-Sepolia-1b1b1b" alt="Ethereum Sepolia" />
   <img src="https://img.shields.io/badge/1inch-Aqua%20%C2%B7%20SwapVM-1b1b1b" alt="Aqua / SwapVM" />
   <img src="https://img.shields.io/badge/License-MIT-1b1b1b" alt="MIT" />
 </p>
@@ -322,7 +322,7 @@ sekaligus:
 > (**local forks are ok**)
 
 Aqua ter-deploy di 16 jaringan dan **semuanya mainnet** — tidak ada satu pun
-testnet. Di Base Sepolia kita terpaksa men-deploy Aqua sendiri, padahal kurung
+testnet. Di testnet mana pun kita terpaksa men-deploy Aqua sendiri, padahal kurung
 syaratnya cuma mengizinkan **SwapVM** yang di-deploy ulang, bukan Aqua. Fork
 memberi kontrak resmi yang asli tanpa uang sungguhan, dan syaratnya menyebutnya
 secara eksplisit.
@@ -376,20 +376,21 @@ RPC berbayar, naikkan angkanya.
 
 ## Deploy ke testnet
 
-Ini jalur utamanya. Satu perintah, satu dompet.
+Jaringan yang dipakai proyek ini: **Ethereum Sepolia** (`11155111`). Alamat
+kontraknya ada di bagian atas README.
 
 ```bash
 cd contracts
-RPC=https://sepolia.base.org DESK_KEY=0x<kunci-privat> ./script/deploy.sh
+RPC=https://ethereum-sepolia-rpc.publicnode.com DESK_KEY=0x<kunci-privat> ./script/deploy.sh
 ```
 
-Yang dibutuhkan cuma ETH Base Sepolia di dompet itu — ambil dari faucet mana
-pun. Skripnya men-deploy Aqua, token uji, router, dan adapter; mengirim posisi
+Yang dibutuhkan cuma ETH Sepolia di dompet itu — ambil dari faucet mana pun.
+Skripnya men-deploy Aqua, token uji, router, dan adapter; mengirim posisi
 pertama; menjalankan satu swap sungguhan; lalu menulis
-`frontend/.env.84532` sendiri.
+`frontend/.env.11155111` sendiri.
 
 ```bash
-cp frontend/.env.84532 frontend/.env.local
+cp frontend/.env.11155111 frontend/.env.local
 pnpm --filter frontend dev
 ```
 
@@ -400,17 +401,22 @@ anvil &
 cd contracts && ./script/deploy.sh
 ```
 
+Rantai lain yang didukung frontend: Base Sepolia (`84532`), Base (`8453`), dan
+anvil (`31337`). Menambah rantai berarti menambahnya ke `SUPPORTED_CHAIN_IDS` di
+`frontend/src/lib/wagmi.ts` — kalau tidak, aplikasinya melempar saat dimuat
+alih-alih diam-diam menembak rantai yang salah.
+
 Dua hal yang perlu diketahui:
 
-**Di Base Sepolia tidak ada Aqua maupun SwapVM resmi** — keduanya di-deploy
-sendiri. Untuk demo yang memakai kontrak Aqua resmi, pakai jalur fork di atas.
+**Aqua resmi tidak ada di testnet mana pun** — ia ter-deploy di 16 jaringan,
+semuanya mainnet. Jadi di testnet, Aqua-nya kita deploy sendiri. Untuk demo yang
+memakai kontrak Aqua resmi, pakai jalur fork di atas.
 
 **Satu dompet mengerjakan dua peran.** Kalau `MAKER_KEY` tidak diisi terpisah,
 maker dan meja jadi akun yang sama, dan WETH yang keluar langsung kembali ke
 dompet itu juga. Yang dibuktikan tetap sama — token benar-benar berpindah dan
-berpindahnya dari dompet, bukan dari kontrak — hanya selisih akhirnya nol.
-Isi `MAKER_KEY` dengan dompet kedua yang juga berisi ETH kalau mau melihat
-perpindahan antar dua pihak.
+berpindahnya dari dompet — hanya selisih akhirnya nol. Isi `MAKER_KEY` dengan
+dompet kedua yang juga berisi ETH kalau mau melihat perpindahan antar dua pihak.
 
 ---
 
@@ -420,8 +426,8 @@ perpindahan antar dua pihak.
 Pembacaan kontraknya gagal, bukan likuiditasnya habis — halamannya sekarang
 mengatakan itu apa adanya. Penyebab paling sering: **Multicall3 tidak ada** di
 rantai yang dipakai. viem memakainya untuk rantai yang definisinya menyatakan
-ada (Base, Base Sepolia), jadi anvil lokal yang menyamar sebagai Base Sepolia
-akan gagal seluruh pembacaannya. Salin bytecode-nya ke alamat kanonik:
+ada (Ethereum Sepolia, Base, Base Sepolia), jadi anvil lokal yang menyamar
+sebagai salah satunya akan gagal seluruh pembacaannya. Salin bytecode-nya ke alamat kanonik:
 
 ```bash
 cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 \
@@ -429,8 +435,9 @@ cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 \
   --rpc-url http://127.0.0.1:8545
 ```
 
-Base Sepolia dan Base yang sungguhan sudah punya Multicall3, jadi ini hanya
-soal emulasi lokal.
+Rantai publiknya sendiri sudah punya Multicall3 di alamat kanonik — Ethereum
+Sepolia, Base Sepolia, dan Base semuanya sudah diperiksa — jadi ini hanya soal
+emulasi lokal.
 
 
 **Halaman market kosong, muncul error `eth_getLogs is limited to a 10,000 range`.**
