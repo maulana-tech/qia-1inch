@@ -41,3 +41,4 @@ bridge/deploy/committee.json
 # Ditulis ulang tiap kali contracts/script/fork-demo.sh jalan.
 frontend/.env.fork
 frontend/.env.[0-9]*
+frontend/.env.sepolia
