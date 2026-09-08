@@ -1,5 +1,5 @@
 import { createConfig, http } from 'wagmi'
-import { base, baseSepolia, foundry } from 'wagmi/chains'
+import { base, baseSepolia, foundry, sepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 import { CHAIN_ID, RPC_URL } from './config'
@@ -13,7 +13,7 @@ import { CHAIN_ID, RPC_URL } from './config'
  * error RPC yang membingungkan, bukan sebagai salah konfigurasi. Pakai
  * `ACTIVE_CHAIN_ID` di bawah.
  */
-const SUPPORTED_CHAIN_IDS = [baseSepolia.id, base.id, foundry.id] as const
+const SUPPORTED_CHAIN_IDS = [sepolia.id, baseSepolia.id, base.id, foundry.id] as const
 
 /**
  * @dev Diberi tipe union, bukan `number`, supaya salah ketik di
@@ -34,11 +34,12 @@ export const ACTIVE_CHAIN_ID = ((): (typeof SUPPORTED_CHAIN_IDS)[number] => {
 })()
 
 export const wagmiConfig = createConfig({
-  chains: [baseSepolia, base, foundry],
+  chains: [sepolia, baseSepolia, base, foundry],
   connectors: [injected()],
   // `VITE_RPC_URL` menang untuk rantai yang sedang aktif. Itu yang membuat fork
   // lokal Base (chain 8453 di localhost:8546) bisa dipakai apa adanya.
   transports: {
+    [sepolia.id]: sepolia.id === CHAIN_ID && RPC_URL ? http(RPC_URL) : http(),
     [baseSepolia.id]: baseSepolia.id === CHAIN_ID && RPC_URL ? http(RPC_URL) : http(),
     [base.id]: base.id === CHAIN_ID && RPC_URL ? http(RPC_URL) : http(),
     [foundry.id]: http(RPC_URL || 'http://localhost:8545'),
