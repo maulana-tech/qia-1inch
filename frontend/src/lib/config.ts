@@ -1,4 +1,5 @@
 import { AQUA_CONTRACT_ADDRESSES, NetworkEnum } from '@1inch/aqua-sdk'
+import { base, baseSepolia, mainnet, sepolia } from 'wagmi/chains'
 
 /**
  * Konfigurasi deployment untuk frontend Iqia.
@@ -38,10 +39,42 @@ export const CHAIN_ID = Number(env('VITE_CHAIN_ID', '84532'))
 export const CHAIN_NAME = env('VITE_CHAIN_NAME', 'Base Sepolia')
 
 /** Basis URL block explorer. */
-export const EXPLORER_URL = env('VITE_EXPLORER_URL', 'https://sepolia.basescan.org')
+/**
+ * Explorer untuk rantai aktif.
+ *
+ * Diturunkan dari definisi chain viem, bukan variabel lepas. Sebelumnya ia env
+ * tersendiri dengan bawaan Basescan — jadi konfigurasi yang lupa mengisinya akan
+ * menautkan alamat Ethereum Sepolia ke explorer Base, dan tautannya membuka
+ * halaman "alamat tidak ditemukan" tanpa petunjuk apa pun soal sebabnya.
+ *
+ * `VITE_EXPLORER_URL` tetap menang kalau diisi, untuk explorer alternatif.
+ */
+const CHAIN_EXPLORERS: Record<number, string> = {
+  [mainnet.id]: mainnet.blockExplorers.default.url,
+  [sepolia.id]: sepolia.blockExplorers.default.url,
+  [base.id]: base.blockExplorers.default.url,
+  [baseSepolia.id]: baseSepolia.blockExplorers.default.url,
+}
 
-export const explorerTxUrl = (hash: string) => `${EXPLORER_URL}/tx/${hash}`
-export const explorerContractUrl = (address: string) => `${EXPLORER_URL}/address/${address}`
+export const EXPLORER_URL =
+  env('VITE_EXPLORER_URL', '') || CHAIN_EXPLORERS[CHAIN_ID] || ''
+
+/** Anvil tidak punya explorer. Tautan ke sana cuma menyesatkan. */
+export const HAS_EXPLORER = EXPLORER_URL !== ''
+
+/**
+ * Tautan explorer, atau `undefined` kalau rantainya tidak punya explorer.
+ *
+ * Sengaja `undefined`, bukan string kosong: `href={undefined}` membuat React
+ * tidak menulis atribut itu sama sekali, jadi elemennya jadi teks biasa alih-alih
+ * tautan yang membawa orang ke halaman kosong. Di anvil dulu ia menghasilkan
+ * `/tx/0x…` yang ditangkap router aplikasi dan melempar balik ke landing.
+ */
+export const explorerTxUrl = (hash: string): string | undefined =>
+  HAS_EXPLORER ? `${EXPLORER_URL}/tx/${hash}` : undefined
+
+export const explorerContractUrl = (address: string): string | undefined =>
+  HAS_EXPLORER ? `${EXPLORER_URL}/address/${address}` : undefined
 
 // ---------------------------------------------------------------------------
 // Aqua / SwapVM
