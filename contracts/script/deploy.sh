@@ -4,8 +4,8 @@
 #   # anvil lokal
 #   ./script/deploy.sh
 #
-#   # Base Sepolia (butuh ETH testnet di dompetmu)
-#   RPC=https://sepolia.base.org DESK_KEY=0x<kunci-privat> ./script/deploy.sh
+#   # Ethereum Sepolia (butuh ETH testnet di dompetmu)
+#   RPC=https://ethereum-sepolia-rpc.publicnode.com DESK_KEY=0x<kunci-privat> ./script/deploy.sh
 #
 # Aqua di-deploy lebih dulu lalu alamatnya diberikan ke skrip demo. Dulu skrip
 # itu MENEBAK alamat Aqua dari nonce deployer, yang hanya benar di rantai baru
