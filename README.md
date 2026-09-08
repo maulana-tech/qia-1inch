@@ -247,6 +247,20 @@ cp frontend/.env.sepolia.example frontend/.env.local
 pnpm --filter frontend dev
 ```
 
+### Menambah pasar dengan modal yang sama
+
+Satu posisi saja belum menunjukkan apa pun yang khas. Tambahkan dua lagi yang
+memakai tumpukan WETH yang SAMA:
+
+```bash
+cd contracts
+DESK_KEY=0x<kunci-yang-men-deploy> ./script/add-markets.sh
+```
+
+Sesudahnya halaman `/desk` menunjukkan **efisiensi modal 2,5x**: 20 WETH nyata
+terdaftar sebagai 50 WETH likuiditas di tiga pasar. Kunci privatnya tidak pernah
+dicetak ke mana pun dan tidak meninggalkan mesinmu.
+
 ---
 
 ## Satu kantong modal, banyak pasar
