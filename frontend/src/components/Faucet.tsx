@@ -11,7 +11,15 @@ import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader } from './
 
 import { useWalletClient, usePublicClient, useAccount, useSwitchChain } from 'wagmi'
 
-const FAUCET_TOKENS = CURATED_TOKENS.filter((t) => t.faucet)
+/**
+ * Hanya token yang benar-benar ada di rantai ini.
+ *
+ * Registry-nya mendaftar empat token uji, tapi tiap deployment belum tentu
+ * memasang semuanya — Sepolia cuma punya WETH dan USDC. Menampilkan tombol
+ * cetak untuk token yang alamatnya kosong cuma menawarkan sesuatu yang pasti
+ * gagal.
+ */
+const FAUCET_TOKENS = CURATED_TOKENS.filter((t) => t.faucet && (t.sac || USE_MOCK))
 const DRIP = 1000
 
 /**
