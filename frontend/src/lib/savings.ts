@@ -33,6 +33,7 @@ import {
 const { AQUA_ABI } = ABI
 
 import { strategyProgram } from './strategies'
+import { fetchPositionTrades } from './markets'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import {
@@ -251,4 +252,98 @@ export function strategyHashOf(order: ReturnType<typeof savingsOrder>): Hex {
   return AquaProtocolContract.calculateStrategyHash(
     new HexString(encodeOrder(order.encoded)),
   ).toString() as Hex
+}
+
+/** Hasil yang benar-benar sudah dipungut sebuah posisi tabungan. */
+export interface SavingsEarnings {
+  /** Berapa kali ada yang menukar lewat posisi ini. */
+  swaps: number
+  /** Yang dipungut, per token masuk, dalam satuan dasar token itu. */
+  earned: Map<string, bigint>
+  /** Volume yang lewat, per token masuk. */
+  volume: Map<string, bigint>
+  /** Blok swap pertama, atau null kalau belum ada swap. */
+  sinceBlock: bigint | null
+}
+
+/**
+ * Menghitung hasil posisi dari event, bukan dari perkiraan.
+ *
+ * Tidak ada APY di sini dan tidak akan ada. APY sebuah posisi likuiditas adalah
+ * ramalan yang menyamar jadi angka; yang bisa dipertanggungjawabkan cuma apa
+ * yang sudah terjadi.
+ *
+ * `flatFeeIn` memungut `feeBps` dari masukan SETELAH fee protokol, dan yang
+ * sampai ke dompet maker adalah masukan setelah fee protokol itu — persisnya
+ * jumlah pada event `Pushed`. Jadi bagian maker = jumlah itu × feeBps ÷ BPS,
+ * bukan taksiran.
+ */
+export async function savingsEarnings(
+  strategyHash: string,
+  feeBps: bigint = SAVINGS_FEE_BPS,
+): Promise<SavingsEarnings> {
+  const trades = await fetchPositionTrades(strategyHash)
+  const earned = new Map<string, bigint>()
+  const volume = new Map<string, bigint>()
+
+  for (const t of trades) {
+    const token = t.tokenIn.toLowerCase()
+    volume.set(token, (volume.get(token) ?? 0n) + t.amountIn)
+    earned.set(token, (earned.get(token) ?? 0n) + (t.amountIn * feeBps) / BPS)
+  }
+
+  return {
+    swaps: trades.length,
+    earned,
+    volume,
+    sinceBlock: trades.length ? trades.reduce((a, t) => (t.blockNumber < a ? t.blockNumber : a), trades[0].blockNumber) : null,
+  }
+}
+
+/** Seberapa jauh satu kantong modal terpakai di banyak pasar sekaligus. */
+export interface SharedCapital {
+  /** Jumlah posisi aktif yang mendaftarkan salah satu dari kedua token. */
+  positions: number
+  /** Yang benar-benar ada di dompet, per token. */
+  real: [bigint, bigint]
+  /** Jumlah yang terdaftar di seluruh posisi, per token. */
+  committed: [bigint, bigint]
+  /** Berapa kali lipat modal nyata terdaftar. 1 kalau tidak ada lipatan. */
+  multiple: number
+}
+
+/**
+ * Properti Aqua yang tidak dimiliki AMM mana pun, diukur di dompet pengguna.
+ *
+ * `ship()` tidak memindahkan token dan tidak memeriksa saldo, jadi saldo yang
+ * sama bisa terdaftar sebagai likuiditas di beberapa pasar sekaligus. Di pool
+ * mana pun, modal yang sudah masuk satu pool tidak bisa ikut bekerja di pool
+ * lain.
+ *
+ * Yang menjaganya tetap waras: `SolvencyGuard` membaca dompet yang sama di tiap
+ * pasar, jadi begitu satu pasar menghabiskan modalnya, harga pasar lain ikut
+ * memburuk. Diukur di `contracts/test/SharedCapital.t.sol`.
+ */
+export async function sharedCapital(
+  account: Address,
+  positions: { hash: `0x${string}`; tokens: Set<string> }[],
+  tokenA: string,
+  tokenB: string,
+): Promise<SharedCapital> {
+  const pair = [tokenA.toLowerCase(), tokenB.toLowerCase()]
+  const relevant = positions.filter((p) => [...p.tokens].some((t) => pair.includes(t.toLowerCase())))
+
+  const committed: [bigint, bigint] = [0n, 0n]
+  for (const p of relevant) {
+    const [a, b] = await positionBalances(account, p.hash, tokenA, tokenB)
+    committed[0] += a
+    committed[1] += b
+  }
+
+  const real = await walletBalances(account, tokenA, tokenB)
+  const ratios = [0, 1]
+    .filter((i) => real[i] > 0n && committed[i] > 0n)
+    .map((i) => Number((committed[i] * 100n) / real[i]) / 100)
+
+  return { positions: relevant.length, real, committed, multiple: ratios.length ? Math.max(...ratios) : 1 }
 }

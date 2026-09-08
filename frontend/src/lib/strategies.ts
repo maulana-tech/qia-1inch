@@ -29,6 +29,8 @@
  * pernah menampilkan APY — kita tidak punya sumbernya.
  */
 import {
+  aquaProtocolFee,
+  withoutSalt,
   decay,
   exclusiveFill,
   flatFeeIn,
@@ -42,7 +44,7 @@ import {
   type Hex,
 } from '@iqia/swapvm'
 
-import { MOCK_USDC_ADDRESS, MOCK_WETH_ADDRESS } from './config'
+import { MOCK_USDC_ADDRESS, MOCK_WETH_ADDRESS, PROTOCOL_FEE_BPS, TREASURY_ADDRESS } from './config'
 
 /**
  * Pasangan yang dilayani meja ini.
@@ -175,6 +177,11 @@ export function strategyProgram(id: StrategyId, p: StrategyParams): Hex {
     head.push(xycConcentrate(band.min, band.max))
   }
 
+  // Fee protokol mendahului fee maker. Keduanya memotong dari MASUKAN sebelum
+  // kurva, jadi yang berkurang keluaran penukar — bukan bagian maker. Diukur di
+  // contracts/test/ProtocolFee.t.sol.
+  if (PROTOCOL_FEE_BPS > 0n) head.push(aquaProtocolFee(PROTOCOL_FEE_BPS, TREASURY_ADDRESS))
+
   if (p.feeBps > 0n) head.push(flatFeeIn(p.feeBps))
 
   return program(...head, xycSwap(), salt(p.salt))
@@ -183,4 +190,20 @@ export function strategyProgram(id: StrategyId, p: StrategyParams): Hex {
 export function strategyOrder(maker: string, id: StrategyId, p: StrategyParams) {
   const o = buildOrder({ maker, program: strategyProgram(id, p) })
   return { maker: o.maker, traits: BigInt(o.traits), data: o.data, encoded: o } as const
+}
+
+
+
+/**
+ * Apakah posisi ini dibuka lewat halaman Savings.
+ *
+ * Dikenali dari BENTUK programnya, bukan dari urutan kemunculannya. Sebelumnya
+ * halaman Savings mengambil posisi aktif pertama apa pun jenisnya — jadi posisi
+ * Terkonsentrasi yang dibuka lewat wizard akan tampil sebagai "tabunganmu", dan
+ * tombol Tutup akan menutup posisi itu. Tombol destruktif yang mengenai sasaran
+ * yang salah.
+ */
+export function isSavingsProgram(program: Hex, params: Omit<StrategyParams, 'salt'>): boolean {
+  const expected = withoutSalt(strategyProgram('santai', { ...params, salt: 0n }))
+  return withoutSalt(program).toLowerCase() === expected.toLowerCase()
 }

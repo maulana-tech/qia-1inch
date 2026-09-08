@@ -34,6 +34,26 @@ export function flatFeeIn(feeBps: bigint): Hex {
   return instruction(OPCODE.FLAT_FEE_IN, toBytes(feeBps, 4))
 }
 
+/**
+ * Fee protokol: potongan dari masukan yang langsung dikirim ke `to`.
+ *
+ * Dipotong sebelum kurva, sama seperti `flatFeeIn`, jadi yang berkurang adalah
+ * keluaran untuk penukar — bukan bagian maker. Ditulis di dalam program posisi,
+ * sehingga siapa pun bisa membongkar bytecode-nya dan melihat berapa yang
+ * diambil dan ke mana.
+ *
+ * @param feeBps basis-point 1e9
+ * @param to penerima. Alamat nol ditolak kontraknya, jadi ditolak di sini juga.
+ */
+export function aquaProtocolFee(feeBps: bigint, to: string): Hex {
+  if (feeBps > BPS) throw new Error(`feeBps tidak boleh melebihi ${BPS}`)
+  if (/^0x0{40}$/i.test(to)) throw new Error('penerima fee protokol tidak boleh alamat nol')
+  return instruction(
+    OPCODE.AQUA_PROTOCOL_FEE_IN,
+    concatHex([toBytes(feeBps, 4), toAddressBytes(to)]),
+  )
+}
+
 /** Kurva hasil-kali tetap, x*y=k. */
 export function xycSwap(): Hex {
   return instruction(OPCODE.XYC_SWAP)
@@ -122,4 +142,21 @@ export function deadline(timestamp: number): Hex {
 /** Menyambung beberapa instruksi menjadi satu program. Urutan menentukan arti. */
 export function program(...instructions: Hex[]): Hex {
   return concatHex(instructions)
+}
+
+/**
+ * Program tanpa instruksi `salt` di ekornya.
+ *
+ * Salt itu pembeda, bukan perilaku — dua posisi dengan program sama dan salt
+ * berbeda berperilaku identik. Untuk mengenali JENIS sebuah posisi, salt-nya
+ * harus dibuang dulu.
+ *
+ * Instruksi salt selalu 10 byte di ekor: opcode 0x14, panjang 0x08, lalu 8 byte
+ * nilainya. Program yang tidak berakhir dengan salt dikembalikan apa adanya.
+ */
+export function withoutSalt(program: Hex): Hex {
+  const body = program.slice(2)
+  const start = body.length - 20
+  if (start < 0 || body.slice(start, start + 4).toLowerCase() !== '1408') return program
+  return `0x${body.slice(0, start)}` as Hex
 }

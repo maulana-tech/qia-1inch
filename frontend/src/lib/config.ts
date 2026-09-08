@@ -129,7 +129,25 @@ export const DESK_SURCHARGE_BPS = BigInt(env('VITE_DESK_SURCHARGE_BPS', '0'))
  * harga kurva murni dan maker hanya menanggung pergerakan inventarisnya. Fee
  * inilah yang membuat "menabung" benar-benar berarti sesuatu.
  */
-export const SAVINGS_FEE_BPS = BigInt(env('VITE_SAVINGS_FEE_BPS', '3000000'))
+export const SAVINGS_FEE_BPS = BigInt(env('VITE_SAVINGS_FEE_BPS', '2500000'))
+
+/**
+ * Model bisnisnya: potongan kecil ke treasury, di swap yang sama.
+ *
+ * Bukan langganan, bukan biaya penarikan, bukan mengunci dana. Kalau tidak ada
+ * yang menukar lewat posisi penggunanya, aplikasi ini tidak dapat apa-apa —
+ * persis seperti makernya. Tertulis di bytecode posisi, jadi siapa pun bisa
+ * membongkarnya dan melihat berapa yang diambil dan ke mana.
+ *
+ * Nol berarti mati: tanpa alamat treasury, instruksinya tidak disisipkan sama
+ * sekali. Kontraknya menolak penerima alamat nol, jadi separuh konfigurasi akan
+ * menggagalkan setiap swap alih-alih diam-diam mengambil ke mana-mana.
+ */
+export const TREASURY_ADDRESS = env('VITE_TREASURY', '')
+
+export const PROTOCOL_FEE_BPS = isValidAddress(TREASURY_ADDRESS)
+  ? BigInt(env('VITE_PROTOCOL_FEE_BPS', '500000'))
+  : 0n
 
 /** Kalau diisi, hanya alamat ini yang boleh mengisi order meja. */
 export const DESK_EXCLUSIVE_TAKER = env('VITE_DESK_EXCLUSIVE_TAKER', '')

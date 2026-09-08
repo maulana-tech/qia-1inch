@@ -39,6 +39,14 @@ contract OpcodeNumbersTest is Test, IqiaOpcodes {
         assertEq(p.findOpcode(Decay._decayXD), 19, "DECAY");
         assertEq(p.findOpcode(Controls._salt), 20, "SALT");
         assertEq(p.findOpcode(Fee._flatFeeAmountInXD), 21, "FLAT_FEE_IN");
+        // Fee protokol: potongan yang langsung dibayarkan ke alamat lain di
+        // dalam swap yang sama. Varian Aqua, bukan yang biasa — yang biasa
+        // memakai transferFrom langsung dari maker ke penerima.
+        //
+        // Nomor 28 ini juga yang muncul di program market maker sungguhan di
+        // Base mainnet, dengan argumen 24 byte (4 bps + 20 alamat). Jadi jalur
+        // ini memang yang dipakai di produksi, bukan tebakan kita.
+        assertEq(p.findOpcode(Fee._aquaProtocolFeeAmountInXD), 28, "AQUA_PROTOCOL_FEE_IN");
         assertEq(p.findOpcode(ExclusiveFill._onlyExclusiveTaker), 22, "EXCLUSIVE_FILL");
         assertEq(p.findOpcode(SolvencyGuard._solvencyGuardXD), 23, "SOLVENCY_GUARD");
 

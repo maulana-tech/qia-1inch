@@ -6,6 +6,10 @@ import {
   closePosition,
   openPosition,
   positionBalances,
+  savingsEarnings,
+  sharedCapital,
+  type SavingsEarnings,
+  type SharedCapital,
   savingsOrder,
   splitAmounts,
   walletBalances,
@@ -13,6 +17,7 @@ import {
 import {
   DESK_CONFIGURED,
   DESK_SURCHARGE_BPS,
+  PROTOCOL_FEE_BPS,
   SAVINGS_FEE_BPS,
   MOCK_USDC_ADDRESS,
   MOCK_WETH_ADDRESS,
@@ -29,8 +34,8 @@ import {
   Spinner,
 } from '../components/ui'
 import { cx } from '../lib/cx'
-import { fetchActiveStrategies } from '../lib/markets'
-import { DESK_PAIR } from '../lib/strategies'
+import { decodeOrder, fetchActiveStrategies } from '../lib/markets'
+import { DESK_PAIR, isSavingsProgram } from '../lib/strategies'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
 function fmt(value: bigint, decimals: number): string {
@@ -88,6 +93,75 @@ function PresetOption({
   )
 }
 
+/**
+ * Hasil yang sudah dipungut. Dari event, bukan ramalan.
+ *
+ * Sengaja tidak ada APY. Angka yang tidak bisa dipertanggungjawabkan lebih buruk
+ * daripada tidak ada angka, dan posisi yang belum pernah dipakai memang belum
+ * menghasilkan apa-apa — itu jawaban yang jujur, dan ditampilkan apa adanya.
+ */
+function Earnings({ earnings }: { earnings: SavingsEarnings | null }) {
+  if (!earnings) return null
+
+  if (earnings.swaps === 0) {
+    return (
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-spectral/80">Hasil terkumpul</p>
+        <p className="text-sm text-spectral/50">
+          Belum ada yang menukar lewat posisimu. Hasilnya muncul di sini begitu ada.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-sm font-medium text-spectral/80">Hasil terkumpul</p>
+        <p className="text-xs text-spectral/45">
+          {earnings.swaps} swap sejak blok {earnings.sinceBlock?.toString()}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-8">
+        {TOKENS.map((t) => {
+          const earned = earnings.earned.get(t.address.toLowerCase()) ?? 0n
+          const volume = earnings.volume.get(t.address.toLowerCase()) ?? 0n
+          if (volume === 0n) return null
+          return (
+            <div key={t.symbol}>
+              <div className="coord-label">{t.symbol}</div>
+              <div className="font-mono text-lg tabular-nums text-spectral/90">
+                +{fmt(earned, t.decimals)}
+              </div>
+              <div className="text-xs text-spectral/40">dari volume {fmt(volume, t.decimals)}</div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Tabunganmu tidak eksklusif — dan itu fiturnya, bukan celahnya.
+ *
+ * Saldo yang sama menopang setiap posisi yang kamu buka. Ditampilkan di sini
+ * supaya jelas bahwa "disisihkan" tidak berarti "terkunci di satu tempat".
+ */
+function SharedCapitalNote({ shared }: { shared: SharedCapital | null }) {
+  if (!shared || shared.positions < 2) return null
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <p className="text-sm text-spectral/55">
+        Saldo yang sama menopang {shared.positions} pasar sekaligus.
+      </p>
+      <p className="font-mono text-lg tabular-nums text-spectral/90">
+        {shared.multiple.toFixed(2)}×
+      </p>
+    </div>
+  )
+}
+
 export function SavingsPage() {
   const { address } = useAccount()
 
@@ -98,6 +172,8 @@ export function SavingsPage() {
   const [txHash, setTxHash] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [earnings, setEarnings] = useState<SavingsEarnings | null>(null)
+  const [shared, setShared] = useState<SharedCapital | null>(null)
 
   const configured = DESK_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
@@ -124,11 +200,33 @@ export function SavingsPage() {
       ])
       setWallet(w)
 
-      const mine = active[0]?.hash ?? null
+      // Posisi tabungan dikenali dari BENTUK programnya, bukan dari urutannya.
+      //
+      // Dulu barisnya `active[0]?.hash` — posisi aktif pertama, jenis apa pun.
+      // Kalau punya posisi Terkonsentrasi dari wizard, posisi ITU yang muncul
+      // sebagai "tabunganmu", dan tombol Tutup menutupnya. Tombol yang merusak
+      // hal yang salah.
+      //
+      // Cocoknya persis, termasuk parameter fee. Kalau fee protokolnya diubah,
+      // posisi lama berhenti dikenali di sini — tetap terlihat dan bisa ditutup
+      // dari halaman Portfolio, yang memang mendaftar semuanya.
+      const mine =
+        active.find((s) => {
+          const order = decodeOrder(s.strategy)
+          return (
+            order !== null &&
+            isSavingsProgram(order.data, {
+              feeBps: SAVINGS_FEE_BPS,
+              surchargeBps: DESK_SURCHARGE_BPS,
+            })
+          )
+        })?.hash ?? null
       setStrategyHash(mine)
       setPosition(
         mine ? await positionBalances(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
       )
+      setEarnings(mine ? await savingsEarnings(mine) : null)
+      setShared(active.length ? await sharedCapital(address, active, TOKENS[0].address, TOKENS[1].address) : null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal membaca saldo.')
     } finally {
@@ -244,9 +342,19 @@ export function SavingsPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between gap-3">
+                  <Separator />
+
+                  <Earnings earnings={earnings} />
+
+                  <SharedCapitalNote shared={shared} />
+
+                  <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-spectral/55">
-                        Tiap swap lewat posisimu memungut {Number(SAVINGS_FEE_BPS) / 1e7}% untukmu.
+                        Tiap swap lewat posisimu memungut {Number(SAVINGS_FEE_BPS) / 1e7}% untukmu
+                        {PROTOCOL_FEE_BPS > 0n
+                          ? `, dan ${Number(PROTOCOL_FEE_BPS) / 1e7}% untuk aplikasi ini`
+                          : ''}
+                        .
                       </p>
                       <Button size="sm" variant="ghost" disabled={anyBusy} onClick={handleClose}>
                         {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Tutup'}

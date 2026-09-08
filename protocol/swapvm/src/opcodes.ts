@@ -18,6 +18,14 @@ export const OPCODE = {
   DECAY: 19,
   SALT: 20,
   FLAT_FEE_IN: 21,
+  /**
+   * Fee protokol varian Aqua: potongan yang langsung dibayarkan ke alamat lain
+   * di dalam swap yang sama.
+   *
+   * Nomor ini juga yang muncul di program market maker sungguhan di Base
+   * mainnet, dengan argumen 24 byte — 4 byte bps ditambah 20 byte alamat.
+   */
+  AQUA_PROTOCOL_FEE_IN: 28,
   /** Custom Iqia — hanya alamat yang ditunjuk boleh mengisi order. */
   EXCLUSIVE_FILL: 22,
   /** Custom Iqia — harga menyesuaikan sandaran nyata maker. */

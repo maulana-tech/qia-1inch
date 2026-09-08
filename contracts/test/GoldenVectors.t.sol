@@ -144,6 +144,16 @@ contract GoldenVectorsTest is Test, IqiaOpcodes {
             swapAndSalt
         ));
 
+        // Program tabungan dengan model bisnisnya: fee protokol ke treasury,
+        // lalu fee maker, baru kurva.
+        console.log("strategySavingsWithProtocolFee");
+        console.logBytes(bytes.concat(
+            guard,
+            p.build(Fee._aquaProtocolFeeAmountInXD, FeeArgsBuilder.buildProtocolFee(500_000, TAKER)),
+            fee,
+            swapAndSalt
+        ));
+
         console.log("savingsProgram");
         console.logBytes(bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),

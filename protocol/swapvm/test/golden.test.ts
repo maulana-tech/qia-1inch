@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildOrder, buildTakerData } from '../src/traits.js'
 import {
+  aquaProtocolFee,
   decay,
   exclusiveFill,
   flatFeeIn,
@@ -11,6 +12,7 @@ import {
   sqrtPriceX18,
   xycConcentrate,
   xycSwap,
+  withoutSalt,
 } from '../src/program.js'
 
 /**
@@ -49,6 +51,8 @@ const GOLDEN_STRATEGIES = {
   terkonsentrasi:
     '0x170402faf080124000000000000000000000000000000000000000000000000009d025defee4df4400000000000000000000000000000000000000000000000013a04bbdfdc9be881504002dc6c011001408000000000000002a',
   antiArbitrase: '0x170402faf0801302012c1504002dc6c011001408000000000000002a',
+  denganFeeProtokol:
+    '0x170402faf0801c180007a120f39fd6e51aad88f6f4ce6ab8827279cfffb922661504002dc6c011001408000000000000002a',
   mejaPrivat:
     '0x1614f39fd6e51aad88f6f4ce6ab8827279cfffb92266170402faf0801504002dc6c011001408000000000000002a',
 } as const
@@ -93,6 +97,25 @@ describe('perakit program', () => {
     ).toBe(GOLDEN_STRATEGIES.terkonsentrasi)
     expect(program(guard, decay(300), fee, ...tail)).toBe(GOLDEN_STRATEGIES.antiArbitrase)
     expect(program(exclusiveFill(TAKER), guard, fee, ...tail)).toBe(GOLDEN_STRATEGIES.mejaPrivat)
+  })
+
+  it('menyisipkan fee protokol sebelum fee maker', () => {
+    // Urutannya penting dan bukan selera: keduanya memotong dari MASUKAN
+    // sebelum kurva, jadi yang berkurang keluaran penukar — bukan bagian maker.
+    // Dibuktikan di contracts/test/ProtocolFee.t.sol.
+    expect(
+      program(
+        solvencyGuard(50_000_000n),
+        aquaProtocolFee(500_000n, TAKER),
+        flatFeeIn(3_000_000n),
+        xycSwap(),
+        salt(0x2an),
+      ),
+    ).toBe(GOLDEN_STRATEGIES.denganFeeProtokol)
+  })
+
+  it('menolak penerima fee protokol yang kosong', () => {
+    expect(() => aquaProtocolFee(500_000n, '0x' + '0'.repeat(40))).toThrow(/alamat nol/)
   })
 
   it('menolak pita dan periode yang tidak masuk akal', () => {
@@ -198,5 +221,28 @@ describe('pengkodean order', () => {
     expect(keccak256(encodeOrder(order))).toBe(
       '0xab8fe078986f0e6012469a83d4cd15e4a91e77db47c5e9b9e4b16de35604ed1d',
     )
+  })
+})
+
+describe('mengenali jenis posisi', () => {
+  it('membuang salt di ekor, menyisakan sisanya utuh', () => {
+    const body = program(solvencyGuard(50_000_000n), xycSwap())
+    expect(withoutSalt(program(solvencyGuard(50_000_000n), xycSwap(), salt(2n)))).toBe(body)
+
+    // Dua posisi yang sama dengan salt berbeda harus dikenali sebagai satu jenis.
+    expect(withoutSalt(program(solvencyGuard(50_000_000n), xycSwap(), salt(99n)))).toBe(body)
+  })
+
+  it('membiarkan program tanpa salt apa adanya', () => {
+    const p = program(solvencyGuard(50_000_000n), xycSwap())
+    expect(withoutSalt(p)).toBe(p)
+  })
+
+  it('tidak keliru memotong instruksi lain yang berukuran sama', () => {
+    // flatFeeIn berakhir 6 byte, bukan 10 — tapi ekor mana pun yang kebetulan
+    // berpola `1408` akan salah dipotong. Yang menjaga: pola itu harus berada
+    // tepat 10 byte dari ujung.
+    const p = program(flatFeeIn(2_500_000n), xycSwap())
+    expect(withoutSalt(p)).toBe(p)
   })
 })

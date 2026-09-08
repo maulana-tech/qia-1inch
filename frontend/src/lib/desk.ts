@@ -15,7 +15,7 @@
 // wagmiConfig di-cast saat dipakai: tipe Config generiknya tidak menyatu antar
 // salinan @wagmi/core yang ter-hoist. Pola yang sama dipakai real-sdk.ts.
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
-import { erc20Abi, parseAbi, decodeAbiParameters } from 'viem'
+import { erc20Abi, parseAbi } from 'viem'
 import {
   buildOrder,
   buildTakerData,
@@ -29,6 +29,7 @@ import {
 } from '@iqia/swapvm'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
+import { decodeOrder } from './markets'
 import {
   SWAP_VM_ROUTER_ADDRESS,
   DESK_MAKER,
@@ -172,18 +173,6 @@ export async function swap(
   return { hash, amountIn: quotedIn, amountOut: quotedOut }
 }
 
-/** Bentuk `Order` seperti yang dikodekan `abi.encode` di Solidity. */
-const ORDER_TUPLE = [
-  {
-    type: 'tuple',
-    components: [
-      { name: 'maker', type: 'address' },
-      { name: 'traits', type: 'uint256' },
-      { name: 'data', type: 'bytes' },
-    ],
-  },
-] as const
-
 /**
  * Mengutip harga sebuah posisi milik siapa pun.
  *
@@ -200,7 +189,8 @@ export async function quotePosition(
   amountIn: bigint,
   taker: string,
 ): Promise<bigint> {
-  const [order] = decodeAbiParameters(ORDER_TUPLE, strategy)
+  const order = decodeOrder(strategy)
+  if (!order) throw new Error('Byte strategi tidak bisa dibaca sebagai Order.')
   const [, amountOut] = await readContract(wagmiConfig as any, {
     address: app as `0x${string}`,
     abi: swapVmAbi,

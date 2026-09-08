@@ -11,7 +11,7 @@
  * dengan data yang dibaca langsung dari kontraknya.
  */
 import { getPublicClient, readContracts } from '@wagmi/core'
-import { erc20Abi, type Address } from 'viem'
+import { decodeAbiParameters, erc20Abi, type Address } from 'viem'
 import { ABI } from '@1inch/aqua-sdk'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
@@ -292,6 +292,38 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
     if (entry) entry.tokens.add((log.args.token as string).toLowerCase())
   }
   return [...strategies.values()]
+}
+
+/** Bentuk `Order` seperti yang dikodekan `abi.encode` di Solidity. */
+const ORDER_TUPLE = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'maker', type: 'address' },
+      { name: 'traits', type: 'uint256' },
+      { name: 'data', type: 'bytes' },
+    ],
+  },
+] as const
+
+/**
+ * Membongkar byte `Shipped` jadi `Order`-nya.
+ *
+ * `data` di dalamnya adalah program SwapVM apa adanya — itulah yang menentukan
+ * perilaku posisi, dan satu-satunya cara mengenali JENIS sebuah posisi tanpa
+ * bertanya ke siapa pun.
+ *
+ * Mengembalikan null kalau byte-nya bukan `Order`. Rantai publik berisi posisi
+ * dari app lain yang formatnya bukan urusan kita, dan satu posisi asing tidak
+ * boleh menjatuhkan seluruh daftar.
+ */
+export function decodeOrder(strategy: `0x${string}`) {
+  try {
+    const [order] = decodeAbiParameters(ORDER_TUPLE, strategy)
+    return order
+  } catch {
+    return null
+  }
 }
 
 /** Satu swap yang benar-benar lewat sebuah posisi. */
