@@ -130,7 +130,20 @@ export const MOCK_WBTC_ADDRESS = env('VITE_WBTC_ADDRESS', '')
 export const MOCK_DAI_ADDRESS = env('VITE_DAI_ADDRESS', '')
 
 /** Apakah token mock sudah dideploy dan dikonfigurasi. */
-export const MOCK_TOKENS_DEPLOYED = isValidAddress(MOCK_USDC_ADDRESS) && isValidAddress(MOCK_WBTC_ADDRESS)
+/**
+ * True kalau ADA token uji yang bisa dicetak di rantai ini.
+ *
+ * Dulu syaratnya USDC **dan** WBTC. Di Sepolia cuma WETH dan USDC yang
+ * ter-deploy, jadi halaman Faucet memperingatkan "alamat belum diisi" padahal
+ * dua token yang ada sepenuhnya bisa dipakai — peringatan yang salah lebih
+ * buruk daripada tidak ada peringatan.
+ */
+export const MOCK_TOKENS_DEPLOYED = [
+  MOCK_WETH_ADDRESS,
+  MOCK_USDC_ADDRESS,
+  MOCK_WBTC_ADDRESS,
+  MOCK_DAI_ADDRESS,
+].some(isValidAddress)
 
 // ---------------------------------------------------------------------------
 // Layanan
