@@ -226,6 +226,29 @@ dikirim skrip demo.
 
 ---
 
+## Sudah hidup di testnet publik
+
+Ethereum Sepolia, chain `11155111`. Bukan fork, bukan anvil — siapa pun bisa
+memeriksanya di explorer.
+
+| | Alamat |
+|---|---|
+| Aqua | [`0xbfeE998a…2c11`](https://sepolia.etherscan.io/address/0xbfeE998a404B38E90d5f8fb88Fc0a19279Fe2c11) |
+| IqiaSwapVMRouter | [`0xe7BdB2Ac…F8BE`](https://sepolia.etherscan.io/address/0xe7BdB2AceBB51E678d2fDFBa2bAE8D263cbaF8BE) |
+| Maker (meja) | [`0x3a8d93D5…c84B`](https://sepolia.etherscan.io/address/0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B) |
+| WETH (uji) | `0x1207A026f2D052b9FB8A74F8E01f917BF956bE81` |
+| USDC (uji) | `0x8eed5f3Fb7124A35732e41203cb54C34CbC2fFdf` |
+
+Yang sudah terjadi di sana: **2 posisi dikirim, 1 swap sungguhan tereksekusi, 1
+posisi ditutup.** Posisi yang masih hidup memegang 10 WETH / 35.000 USDC.
+
+```bash
+cp frontend/.env.sepolia.example frontend/.env.local
+pnpm --filter frontend dev
+```
+
+---
+
 ## Satu kantong modal, banyak pasar
 
 Ini yang tidak bisa dilakukan AMM mana pun, dan alasan utama aplikasi ini ada.
