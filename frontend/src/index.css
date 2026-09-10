@@ -63,9 +63,29 @@
   --aqua-deep: 27 49 79;     /* #1B314F — navy 1inch, untuk kedalaman */
   --aqua-lift: 120 200 255;  /* cyan terang, mengangkat tepi atas */
 
-  --wash-core: 0.10;
-  --wash-deep: 0.05;
-  --wash-lift: 0.07;
+  --wash-core: 0.18;
+  --wash-deep: 0.09;
+  --wash-lift: 0.12;
+}
+
+/* Lapisan cahaya, didefinisikan SEKALI.
+ *
+ * Ditaruh di custom property supaya `body` dan `.app-wash` memakai gradien yang
+ * sama persis tanpa menyalinnya. `var()` di dalam custom property diselesaikan
+ * di tempat ia DIPAKAI, bukan di tempat ia ditulis — jadi elemen di dalam
+ * `.dark` otomatis mendapat nilai gelapnya, dan blok ini tidak perlu digandakan
+ * per tema.
+ *
+ * Tiga sumber cahaya, bukan satu: satu radial besar terbaca sebagai lingkaran,
+ * tiga yang saling tumpang pada ukuran dan kepekatan berbeda terbaca sebagai
+ * ruang. Yang miring mencegah bagian tengah halaman panjang jatuh jadi bidang
+ * mati. */
+:root {
+  --aqua-wash:
+    radial-gradient(58rem 40rem at 50% -12rem, rgb(var(--aqua-core) / var(--wash-core)), transparent 62%),
+    radial-gradient(40rem 34rem at 88% 6rem, rgb(var(--aqua-lift) / var(--wash-lift)), transparent 60%),
+    radial-gradient(46rem 38rem at 6% 42%, rgb(var(--aqua-deep) / var(--wash-deep)), transparent 64%),
+    linear-gradient(168deg, rgb(var(--aqua-deep) / calc(var(--wash-deep) * 0.7)), transparent 46%);
 }
 
 .dark {
@@ -112,9 +132,9 @@
   --aqua-deep: 32 90 170;
   --aqua-lift: 90 190 255;
 
-  --wash-core: 0.16;
-  --wash-deep: 0.10;
-  --wash-lift: 0.08;
+  --wash-core: 0.22;
+  --wash-deep: 0.13;
+  --wash-lift: 0.11;
 }
 
 @layer base {
@@ -157,26 +177,7 @@
      * di bawah teks saat digulir. */
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"),
-      radial-gradient(
-        58rem 40rem at 50% -12rem,
-        rgb(var(--aqua-core) / var(--wash-core)),
-        transparent 62%
-      ),
-      radial-gradient(
-        40rem 34rem at 88% 6rem,
-        rgb(var(--aqua-lift) / var(--wash-lift)),
-        transparent 60%
-      ),
-      radial-gradient(
-        46rem 38rem at 6% 42%,
-        rgb(var(--aqua-deep) / var(--wash-deep)),
-        transparent 64%
-      ),
-      linear-gradient(
-        168deg,
-        rgb(var(--aqua-deep) / calc(var(--wash-deep) * 0.7)),
-        transparent 46%
-      );
+      var(--aqua-wash);
     background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
     background-size: 140px 140px, auto, auto, auto, auto;
     background-attachment: scroll, fixed, fixed, fixed, fixed;
@@ -210,6 +211,30 @@
 }
 
 @layer components {
+  /* Latar aplikasi memakai cahaya yang sama dengan body.
+   *
+   * Perlu ada karena `BrandCanvas` adalah `fixed inset-0` dengan warna SOLID —
+   * ia menutupi latar body sepenuhnya di dalam shell aplikasi. Wash yang cuma
+   * dipasang di body akan terlihat di halaman landing dan hilang di mana-mana
+   * lagi, yang persis yang terjadi sebelum ini. */
+  /* Pilihan aktif pada ToggleGroup.
+   *
+   * Dulu `shadow-[inset_0_0_0_1px_rgba(214,192,131,0.4)]` — kuning kuningan,
+   * satu-satunya sisa warna hangat di palet yang komentarnya sendiri berjanji
+   * "no gold, brass or sepia cast anywhere". Sekarang biru 1inch, dan ditulis
+   * sebagai kelas biasa karena nilai arbitrer Tailwind tidak menerima `/`
+   * di dalam `rgb()` tanpa perlawanan. */
+  .toggle-active {
+    background-color: rgb(var(--aqua-core) / 0.12);
+    box-shadow: inset 0 0 0 1px rgb(var(--aqua-core) / 0.45);
+  }
+
+  .app-wash {
+    background-image: var(--aqua-wash);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
   .card {
     @apply overflow-hidden rounded-2xl bg-ink-850/80 shadow-panel ring-1 ring-spectral/10;
   }
