@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { CircleCheckIcon, PiggyBankIcon, WalletIcon } from 'lucide-react'
 
@@ -37,8 +38,10 @@ import {
   Spinner,
 } from '../components/ui'
 import { cx } from '../lib/cx'
-import { decodeOrder, fetchActiveStrategies } from '../lib/markets'
+import { decodeOrder, fetchActiveStrategies, type ActiveStrategy } from '../lib/markets'
+import { WHY_IT_PROTECTS_YOU } from '../lib/instructions'
 import { DESK_PAIR, isSavingsProgram } from '../lib/strategies'
+import { disassemble } from '@iqia/swapvm'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
 function fmt(value: bigint, decimals: number): string {
@@ -234,6 +237,57 @@ function Backing({ backing }: { backing: SideBacking[] | null }) {
   )
 }
 
+/**
+ * Apa yang sebenarnya dijalankan posisimu, dalam bahasa manusia.
+ *
+ * Program tabungan dibongkar dengan disassembler yang sama yang dipakai halaman
+ * posisi, lalu tiap instruksi dibacakan sebagai JAMINAN, bukan sebagai
+ * spesifikasi. `SALT` disaring keluar — ia hanya pembeda, tidak mengubah
+ * perilaku apa pun, dan menyebutnya cuma menambah baris yang harus diabaikan
+ * pembacanya.
+ *
+ * Bytecode mentahnya tidak dibuang, cuma tidak jadi hal pertama: satu tautan ke
+ * `/market/<hash>` menyediakannya utuh. Satu klik, bukan nol akses.
+ */
+function WhatItDoes({ strategy }: { strategy: ActiveStrategy | null }) {
+  if (!strategy) return null
+
+  const order = decodeOrder(strategy.strategy)
+  if (!order) return null
+
+  let program
+  try {
+    program = disassemble(order.data as `0x${string}`)
+  } catch {
+    // Program yang tidak terbaca formatnya bukan alasan menjatuhkan halaman
+    // Savings. Halaman posisi yang menjelaskan kenapa.
+    return null
+  }
+
+  const lines = program.filter((i) => i.name && i.name !== 'SALT' && WHY_IT_PROTECTS_YOU[i.name])
+  if (lines.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-spectral/80">What your position actually does</p>
+      <ul className="space-y-2">
+        {lines.map((i) => (
+          <li key={i.offset} className="flex gap-2.5 text-sm leading-relaxed text-spectral/55">
+            <span aria-hidden className="mt-[7px] size-1 shrink-0 rounded-full bg-spectral/30" />
+            <span>{WHY_IT_PROTECTS_YOU[i.name as string]}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        to={`/market/${strategy.hash}`}
+        className="inline-block text-xs text-spectral/60 underline underline-offset-4 transition hover:text-spectral/90"
+      >
+        See the actual bytecode ↗
+      </Link>
+    </div>
+  )
+}
+
 export function SavingsPage() {
   const { address } = useAccount()
 
@@ -261,6 +315,8 @@ export function SavingsPage() {
    * orang pada percobaan kedua.
    */
   const [strategyHash, setStrategyHash] = useState<`0x${string}` | null>(null)
+  /** Posisi utuh, disimpan supaya programnya bisa dibacakan ke penggunanya. */
+  const [mineStrategy, setMineStrategy] = useState<ActiveStrategy | null>(null)
 
   const refresh = useCallback(async () => {
     if (!address || !configured) {
@@ -284,7 +340,7 @@ export function SavingsPage() {
       // Cocoknya persis, termasuk parameter fee. Kalau fee protokolnya diubah,
       // posisi lama berhenti dikenali di sini — tetap terlihat dan bisa ditutup
       // dari halaman Portfolio, yang memang mendaftar semuanya.
-      const mine =
+      const found =
         active.find((s) => {
           const order = decodeOrder(s.strategy)
           return (
@@ -294,7 +350,9 @@ export function SavingsPage() {
               surchargeBps: DESK_SURCHARGE_BPS,
             })
           )
-        })?.hash ?? null
+        }) ?? null
+      const mine = found?.hash ?? null
+      setMineStrategy(found)
       setStrategyHash(mine)
       setPosition(
         mine ? await positionBalancesOrZero(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
@@ -454,6 +512,10 @@ export function SavingsPage() {
                   <Separator />
 
                   <Earnings earnings={earnings} />
+
+                  <Separator />
+
+                  <WhatItDoes strategy={mineStrategy} />
 
                   <Separator />
 
