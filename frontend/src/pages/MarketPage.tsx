@@ -71,7 +71,7 @@ function InstructionRow({ ins }: { ins: Instruction }) {
       <span
         className={cx(
           'font-mono text-sm',
-          known ? 'text-spectral/90' : 'text-yellow-300/80',
+          known ? 'text-spectral/90' : 'text-warn/80',
         )}
       >
         {/* Opcode tim lain tidak selalu ada di tabel kita, dan menebak namanya
@@ -177,7 +177,7 @@ export function MarketPage() {
           </Card>
         ) : error ? (
           <Card>
-            <CardContent className="text-sm text-yellow-300">{error}</CardContent>
+            <CardContent className="text-sm text-warn">{error}</CardContent>
           </Card>
         ) : !strategy ? (
           <Card>
@@ -259,9 +259,22 @@ export function MarketPage() {
                 </div>
 
                 {programError ? (
-                  <p className="text-sm text-yellow-300">
-                    This program could not be disassembled: {programError}
-                  </p>
+                  // Kegagalan di sini hampir tidak pernah berarti programnya
+                  // rusak. `app` di Aqua boleh kontrak apa pun — dari 11 app di
+                  // registry resmi, cuma milik kita yang berformat SwapVM.
+                  // Menyebutnya "rusak" akan menuduh yang salah.
+                  <div className="space-y-3">
+                    <p className="text-sm text-warn">
+                      This is not in the SwapVM instruction format.
+                    </p>
+                    <p className="max-w-2xl text-sm leading-relaxed text-spectral/55">
+                      Aqua does not require an app to be a SwapVM router — it accepts any contract,
+                      and each one decides what its order bytes mean. This position belongs to a
+                      different engine, so there is nothing here to disassemble. The bytes are
+                      still public, and shown below.
+                    </p>
+                    <p className="font-mono text-[11px] text-spectral/35">{programError}</p>
+                  </div>
                 ) : program && program.length > 0 ? (
                   <>
                     <div className="overflow-x-auto">
@@ -271,17 +284,22 @@ export function MarketPage() {
                         ))}
                       </div>
                     </div>
-                    <details className="group">
-                      <summary className="coord-label cursor-pointer list-none transition hover:text-spectral/80">
-                        raw bytecode ▸
-                      </summary>
-                      <p className="mt-2 break-all font-mono text-[11px] leading-relaxed text-spectral/40">
-                        {order?.data}
-                      </p>
-                    </details>
                   </>
                 ) : (
                   <p className="text-sm text-spectral/55">This position carries an empty program.</p>
+                )}
+
+                {/* Selalu ditampilkan, berhasil dibongkar atau tidak. Justru
+                    saat gagal inilah byte mentahnya paling berguna. */}
+                {order?.data && order.data !== '0x' && (
+                  <details className="group">
+                    <summary className="coord-label cursor-pointer list-none transition hover:text-spectral/80">
+                      raw bytecode · {(order.data.length - 2) / 2} bytes ▸
+                    </summary>
+                    <p className="mt-2 break-all font-mono text-[11px] leading-relaxed text-spectral/40">
+                      {order.data}
+                    </p>
+                  </details>
                 )}
               </CardContent>
             </Card>
