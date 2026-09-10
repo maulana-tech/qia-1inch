@@ -48,8 +48,17 @@ fi
 
 read_env() { grep -E "^$1=" "$ENVFILE" | head -1 | cut -d= -f2-; }
 
+# Baca dan tulis lewat endpoint BERBEDA, dan itu bukan gaya-gayaan.
+#
+# tenderly andal untuk eth_getLogs — terukur 30 dari 30 panggilan benar,
+# sementara publicnode menjatuhkan sekitar separuhnya secara diam-diam. Tapi
+# tenderly membatasi eth_sendRawTransaction dan menolak dengan "rate limit
+# exceeded" pada transaksi pertama, yang sudah menjatuhkan skrip ini sekali.
+#
+# Jadi: baca lewat yang jujur, kirim lewat yang mau menerima.
 RPC=${RPC:-$(read_env VITE_RPC_URL)}
 RPC=${RPC:-https://sepolia.gateway.tenderly.co}
+WRITE_RPC=${WRITE_RPC:-https://ethereum-sepolia-rpc.publicnode.com}
 WETH_ADDR=$(read_env VITE_WETH_ADDRESS)
 USDC_ADDR=$(read_env VITE_USDC_ADDRESS)
 OLD_AQUA=$(read_env VITE_AQUA)
@@ -95,7 +104,7 @@ FROM_BLOCK=$(cast block-number --rpc-url "$RPC")
 echo ""
 echo "Men-deploy router dan mengirim posisi…"
 AQUA="$OFFICIAL_AQUA" WETH_ADDR="$WETH_ADDR" USDC_ADDR="$USDC_ADDR" "${SIGN_ENV[@]}" \
-  forge script script/MigrateToOfficialAqua.s.sol --rpc-url "$RPC" --broadcast \
+  forge script script/MigrateToOfficialAqua.s.sol --rpc-url "$WRITE_RPC" --broadcast \
   "${SIGN_ARGS[@]}" | tee /tmp/iqia-migrate.log
 
 NEW_ROUTER=$(grep -o 'VITE_SWAP_VM_ROUTER=0x[0-9a-fA-F]*' /tmp/iqia-migrate.log | tail -1 | cut -d= -f2)
