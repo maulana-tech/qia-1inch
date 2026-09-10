@@ -97,7 +97,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
       setHash(tx)
       setAmount('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Pengiriman gagal.')
+      setError(e instanceof Error ? e.message : 'Sending failed.')
     } finally {
       setBusy(false)
     }
@@ -116,7 +116,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
               <p className="mt-0.5 break-all font-mono text-xs text-zinc-400">{request?.address}</p>
             </div>
           ) : (
-            <Field label="Alamat penerima" hint="Alamat dompet EVM biasa (0x…).">
+            <Field label="Recipient address" hint="An ordinary EVM wallet address (0x…).">
               <TextInput
                 mono
                 placeholder="0x…"
@@ -135,11 +135,11 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
               />
             </Field>
             <Field
-              label="Jumlah"
+              label="Amount"
               hint={
                 balance === null
                   ? undefined
-                  : `Saldo ${formatUnits(balance, decimals ?? 18)} ${token.code}`
+                  : `Balance ${formatUnits(balance, decimals ?? 18)} ${token.code}`
               }
             >
               <TextInput
@@ -161,22 +161,22 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
           </div>
 
           {!account && (
-            <p className="text-center text-xs text-zinc-500">Hubungkan dompetmu untuk mengirim.</p>
+            <p className="text-center text-xs text-zinc-500">Connect your wallet to send.</p>
           )}
           {account && !enough && (
-            <p className="text-center text-xs text-yellow-300">Saldomu kurang untuk jumlah ini.</p>
+            <p className="text-center text-xs text-yellow-300">Your balance is short for this amount.</p>
           )}
           {account && to !== '' && !recipientValid && (
-            <p className="text-center text-xs text-yellow-300">Alamat penerimanya tidak valid.</p>
+            <p className="text-center text-xs text-yellow-300">That recipient address is not valid.</p>
           )}
 
           <Button className="w-full" disabled={!ready} loading={busy} onClick={() => void onSend()}>
-            {busy ? 'Mengirim…' : 'Kirim'}
+            {busy ? 'Sending…' : 'Send'}
           </Button>
 
           {hash && (
             <p className="text-center text-xs text-zinc-500">
-              Terkirim ·{' '}
+              Sent ·{' '}
               <a
                 href={explorerTxUrl(hash)}
                 target="_blank"
