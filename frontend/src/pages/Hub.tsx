@@ -92,6 +92,16 @@ function MarketRow({ market }: { market: Market }) {
   )
 }
 
+/** Satu angka pada baris statistik. */
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="min-w-[7.5rem]">
+      <div className="coord-label">{label}</div>
+      <div className="mt-1.5 font-mono text-xl tabular-nums text-spectral/90">{value}</div>
+    </div>
+  )
+}
+
 export function Hub() {
   const [markets, setMarkets] = useState<Market[] | null>(null)
   const [tokens, setTokens] = useState<TokenInfo[]>([])
@@ -121,84 +131,93 @@ export function Hub() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-8">
-      <section className="space-y-5">
+      {/* Satu ritme vertikal untuk seluruh halaman.
+          Dulu `space-y-5` di section DAN `mb-6` di baris statistik — keduanya
+          menumpuk, jadi jarak caption→statistik 1,25rem sementara
+          statistik→kartu 2,75rem. Bukan pilihan desain, cuma dua aturan yang
+          kebetulan bertabrakan. */}
+      <section className="space-y-8">
         <PageHeader
           title="Markets"
           caption={`Liquidity from 1inch Aqua on ${CHAIN_NAME}. Every market is backed by a market maker's wallet.`}
         />
 
-      <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-2">
-        <div>
-          <div className="coord-label">market aktif</div>
-          <div className="font-mono text-lg text-spectral/90">{markets?.length ?? '—'}</div>
+        {/* Kolom dengan lebar minimum yang sama.
+            Sebelumnya lebar tiap kolom ditentukan panjang labelnya, jadi
+            angka-angkanya mendarat di jarak yang acak — "0" di bawah "token"
+            dan "—" di bawah label lima kata. Terbaca seperti kecelakaan, bukan
+            barisan angka. */}
+        <div className="flex flex-wrap gap-x-12 gap-y-4">
+          <Stat label="active markets" value={markets?.length ?? '—'} />
+          <Stat label="tokens" value={markets ? totalLegs : '—'} />
+          <Stat label="on the 1inch list" value={tokens.length || '—'} />
         </div>
-        <div>
-          <div className="coord-label">token</div>
-          <div className="font-mono text-lg text-spectral/90">{markets ? totalLegs : '—'}</div>
-        </div>
-        <div>
-          <div className="coord-label">dikenali daftar 1inch</div>
-          <div className="font-mono text-lg text-spectral/90">{tokens.length || '—'}</div>
-        </div>
-      </div>
 
-      {markets === null ? (
-        <Card className="flex items-center gap-3 p-6 text-sm text-spectral/60">
-          <Spinner className="h-4 w-4" /> Reading markets from the chain…
-        </Card>
-      ) : error ? (
-        <Card className="p-6 text-sm text-rose-300/90">{error}</Card>
-      ) : markets.length > 0 ? (
-        <div className="space-y-2">
-          {markets.map((m) => (
-            <MarketRow key={m.strategyHash} market={m} />
-          ))}
-        </div>
-      ) : (
-        <Card className="p-6">
-          <div className="text-sm text-spectral/80">Belum ada market aktif.</div>
-          <p className="mt-2 text-sm text-spectral/55">
-            {AQUA_CONFIGURED
-              ? 'The router is configured, but no position has been shipped to Aqua yet. Markets appear as soon as a market maker calls ship().'
-              : 'The Aqua and router addresses are not set. Run script/DemoIqiaDesk.s.sol, then copy the env it prints into frontend/.env.local.'}
-          </p>
-          {AQUA_CONFIGURED ? (
-            <a
-              className="coord-label mt-4 inline-block underline underline-offset-4"
-              href={explorerContractUrl(SWAP_VM_ROUTER_ADDRESS)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              view the router on the explorer ↗
-            </a>
-          ) : null}
-        </Card>
-      )}
-
-      {tokens.length > 0 ? (
-        <section className="mt-12">
-          <div className="coord-label mb-3">tokens 1inch recognises on {CHAIN_NAME}</div>
-          <div className="flex flex-wrap gap-2">
-            {tokens.slice(0, 60).map((t) => (
-              <span
-                key={t.address}
-                className={cx(
-                  'inline-flex items-center gap-1.5 rounded-full border border-spectral/12 px-2.5 py-1 text-xs',
-                  'text-spectral/70',
-                )}
-              >
-                <TokenGlyph token={t} />
-                {t.symbol}
-              </span>
+        {markets === null ? (
+          <Card className="flex items-center gap-3 p-6 text-sm text-spectral/60">
+            <Spinner className="h-4 w-4" /> Reading markets from the chain…
+          </Card>
+        ) : error ? (
+          <Card className="p-6 text-sm text-rose-300/90">{error}</Card>
+        ) : markets.length > 0 ? (
+          <div className="space-y-2">
+            {markets.map((m) => (
+              <MarketRow key={m.strategyHash} market={m} />
             ))}
-            {tokens.length > 60 ? (
-              <span className="self-center text-xs text-spectral/40">
-                +{tokens.length - 60} more
-              </span>
-            ) : null}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <Card className="p-6 sm:p-7">
+            {/* Baris pertama dinaikkan jadi judul sungguhan. Dulu ia `text-sm`
+                sama persis dengan paragraf di bawahnya, jadi tidak ada hierarki
+                — pembaca melihat dua kalimat setara, bukan judul dan
+                penjelasannya. */}
+            <h3 className="text-base font-medium text-spectral/85">No active markets yet.</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-spectral/55">
+              {AQUA_CONFIGURED
+                ? 'The router is configured, but no position has been shipped to Aqua yet. Markets appear as soon as a market maker calls ship().'
+                : 'The Aqua and router addresses are not set. Run script/DemoIqiaDesk.s.sol, then copy the env it prints into frontend/.env.local.'}
+            </p>
+            {AQUA_CONFIGURED ? (
+              // `coord-label` itu gaya LABEL — mono 10px huruf besar dengan
+              // tracking lebar. Sebagai tautan yang harus diklik ia terbaca
+              // rapat dan sulit disasar; ukuran teks biasa lebih jujur soal
+              // fungsinya.
+              <a
+                className="mt-5 inline-block text-sm text-spectral/70 underline underline-offset-4 transition hover:text-spectral/90"
+                href={explorerContractUrl(SWAP_VM_ROUTER_ADDRESS)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View the router on the explorer ↗
+              </a>
+            ) : null}
+          </Card>
+        )}
+
+        {tokens.length > 0 ? (
+          <section className="pt-4">
+            <div className="coord-label mb-4">tokens 1inch recognises on {CHAIN_NAME}</div>
+            <div className="flex flex-wrap gap-2">
+              {tokens.slice(0, 60).map((t) => (
+                <span
+                  key={t.address}
+                  className={cx(
+                    'inline-flex items-center gap-1.5 rounded-full border border-spectral/12 px-2.5 py-1 text-xs',
+                    'text-spectral/70',
+                  )}
+                >
+                  <TokenGlyph token={t} />
+                  {t.symbol}
+                </span>
+              ))}
+              {tokens.length > 60 ? (
+                <span className="self-center text-xs text-spectral/40">
+                  +{tokens.length - 60} more
+                </span>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
       </section>
     </div>
   )
