@@ -234,7 +234,7 @@ export function PortfolioPage() {
                       loading={wrapping === 'wrap'}
                       onClick={() => void doWrap('wrap')}
                     >
-                      Bungkus jadi WETH
+                      Wrap to WETH
                     </Button>
                     <Button
                       variant="outline"
