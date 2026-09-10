@@ -93,7 +93,7 @@ contract AddMarkets is Script, IqiaOpcodes {
         console.log(string.concat("VITE_WBTC_ADDRESS=", vm.toString(quotes[1])));
     }
 
-    function _program(uint64 saltValue) internal view returns (bytes memory) {
+    function _program(uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
