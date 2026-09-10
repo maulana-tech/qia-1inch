@@ -47,6 +47,25 @@
   --zinc-800: 240 240 240;
   --zinc-900: 255 255 255;
   --zinc-950: 255 255 255;
+
+  /* Biru 1inch. Satu-satunya warna di palet ini — sisanya R=G=B.
+   *
+   * Dipakai HANYA untuk cahaya latar, tidak untuk teks, garis, atau status.
+   * Itu batasnya, dan disengaja: begitu biru masuk ke elemen antarmuka, ia
+   * mulai bersaing dengan makna yang sudah dibawa kontras abu-abu, dan
+   * "biru berarti apa" jadi pertanyaan yang harus dijawab di setiap komponen.
+   * Sebagai latar ia cuma suasana, dan tidak perlu dijawab.
+   *
+   * --wash-* memisahkan kekuatan dari warna, supaya tema terang dan gelap bisa
+   * memakai biru yang sama pada kepekatan yang berbeda. Biru 10% di atas putih
+   * dan 10% di atas hitam bukan efek yang sama. */
+  --aqua-core: 47 138 245;   /* #2F8AF5 — biru utama 1inch */
+  --aqua-deep: 27 49 79;     /* #1B314F — navy 1inch, untuk kedalaman */
+  --aqua-lift: 120 200 255;  /* cyan terang, mengangkat tepi atas */
+
+  --wash-core: 0.10;
+  --wash-deep: 0.05;
+  --wash-lift: 0.07;
 }
 
 .dark {
@@ -86,6 +105,16 @@
   --zinc-800: 32 32 32;
   --zinc-900: 19 19 19;
   --zinc-950: 13 13 13;
+
+  /* Biru yang sama, lebih kuat. Di atas #0d0d0d cahaya harus lebih tebal untuk
+   * terbaca sama; angka yang sama akan hilang sama sekali. */
+  --aqua-core: 47 138 245;
+  --aqua-deep: 32 90 170;
+  --aqua-lift: 90 190 255;
+
+  --wash-core: 0.16;
+  --wash-deep: 0.10;
+  --wash-lift: 0.08;
 }
 
 @layer base {
@@ -109,14 +138,49 @@
 
   body {
     @apply min-h-screen bg-ink-950 font-sans text-zinc-300;
-    /* Subtle fractal-noise grain over the neutral background. */
+
+    /* Cahaya latar biru, tiga radial dan satu miring.
+     *
+     * Yang digantikan: dua radial putih pada 3% dan 1,5%. Di tema gelap
+     * keduanya nyaris tak terlihat, dan di tema terang — yang sekarang jadi
+     * default — putih di atas putih tidak menghasilkan apa pun sama sekali.
+     * Jadi latarnya rata betul.
+     *
+     * Tiga sumber cahaya, bukan satu, karena satu radial besar terbaca sebagai
+     * lingkaran; tiga yang saling tumpang pada ukuran dan kepekatan berbeda
+     * terbaca sebagai ruang. Yang miring di paling bawah mencegah bagian tengah
+     * halaman panjang jatuh jadi bidang mati.
+     *
+     * `fixed` hanya pada lapisan cahaya, `scroll` pada grain. Cahayanya jadi
+     * suasana ruangan yang tidak ikut bergulir, sementara grain tetap menempel
+     * pada halaman — kalau grain-nya juga fixed, teksturnya terlihat merayap
+     * di bawah teks saat digulir. */
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"),
-      radial-gradient(60rem 40rem at 50% -14rem, rgba(255, 255, 255, 0.03), transparent 60%),
-      radial-gradient(42rem 32rem at 86% 2rem, rgba(255, 255, 255, 0.015), transparent 58%);
-    background-repeat: repeat, no-repeat, no-repeat;
-    background-size: 140px 140px, auto, auto;
-    background-blend-mode: overlay, normal, normal;
+      radial-gradient(
+        58rem 40rem at 50% -12rem,
+        rgb(var(--aqua-core) / var(--wash-core)),
+        transparent 62%
+      ),
+      radial-gradient(
+        40rem 34rem at 88% 6rem,
+        rgb(var(--aqua-lift) / var(--wash-lift)),
+        transparent 60%
+      ),
+      radial-gradient(
+        46rem 38rem at 6% 42%,
+        rgb(var(--aqua-deep) / var(--wash-deep)),
+        transparent 64%
+      ),
+      linear-gradient(
+        168deg,
+        rgb(var(--aqua-deep) / calc(var(--wash-deep) * 0.7)),
+        transparent 46%
+      );
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    background-size: 140px 140px, auto, auto, auto, auto;
+    background-attachment: scroll, fixed, fixed, fixed, fixed;
+    background-blend-mode: overlay, normal, normal, normal, normal;
   }
 
   h1,
