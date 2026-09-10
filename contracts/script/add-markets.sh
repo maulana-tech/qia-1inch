@@ -34,8 +34,17 @@ read_env() { grep -E "^$1=" "$ENVFILE" | head -1 | cut -d= -f2-; }
 # konsisten jauh lebih buruk daripada sekadar salah membaca: `forge script`
 # memverifikasi hasilnya dengan membaca ulang, dan bacaan yang bohong membuat
 # broadcast yang berhasil terlihat gagal.
+# Baca dan tulis lewat endpoint BERBEDA, dan itu bukan gaya-gayaan.
+#
+# tenderly andal untuk eth_getLogs — terukur 30 dari 30 panggilan benar,
+# sementara publicnode menjatuhkan sekitar separuhnya secara diam-diam. Tapi
+# tenderly membatasi eth_sendRawTransaction dan menolak dengan "rate limit
+# exceeded" pada transaksi pertama, yang sudah menjatuhkan skrip ini sekali.
+#
+# Jadi: baca lewat yang jujur, kirim lewat yang mau menerima.
 RPC=${RPC:-$(read_env VITE_RPC_URL)}
 RPC=${RPC:-https://sepolia.gateway.tenderly.co}
+WRITE_RPC=${WRITE_RPC:-https://ethereum-sepolia-rpc.publicnode.com}
 
 AQUA=$(read_env VITE_AQUA)
 ROUTER=$(read_env VITE_SWAP_VM_ROUTER)
@@ -45,7 +54,7 @@ WETH_ADDR=$(read_env VITE_WETH_ADDRESS)
 echo "chain $(cast chain-id --rpc-url "$RPC") | Aqua $AQUA | router $ROUTER"
 
 deploy_token() {
-  forge create src/MockERC20.sol:MockERC20 --rpc-url "$RPC" --private-key "$DESK_KEY" --broadcast \
+  forge create src/MockERC20.sol:MockERC20 --rpc-url "$WRITE_RPC" --private-key "$DESK_KEY" --broadcast \
     --constructor-args "$1" "$2" "$3" 2>/dev/null | awk '/Deployed to:/{print $3}'
 }
 
@@ -62,7 +71,7 @@ echo "   WBTC $QUOTE_B"
 echo "2. mengirim dua posisi dengan modal WETH yang sama"
 AQUA="$AQUA" ROUTER="$ROUTER" WETH_ADDR="$WETH_ADDR" \
 QUOTE_A="$QUOTE_A" QUOTE_B="$QUOTE_B" DESK_KEY="$DESK_KEY" \
-  forge script script/AddMarkets.s.sol --rpc-url "$RPC" --broadcast --private-key "$DESK_KEY"
+  forge script script/AddMarkets.s.sol --rpc-url "$WRITE_RPC" --broadcast --private-key "$DESK_KEY"
 
 # Alamat token baru ditambahkan ke env, supaya frontend mengenali simbolnya.
 grep -v -E '^VITE_(DAI|WBTC)_ADDRESS=' "$ENVFILE" > "$ENVFILE.tmp"
