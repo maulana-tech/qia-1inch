@@ -93,42 +93,42 @@ export interface StrategyMeta {
 export const STRATEGIES: StrategyMeta[] = [
   {
     id: 'santai',
-    name: 'Santai',
-    summary: 'Melayani di seluruh rentang harga, memungut fee kecil dari tiap swap.',
-    bestFor: 'Kamu ingin saldomu bekerja tanpa perlu ditengok.',
-    tradeoff: 'Penghasilan per modal paling kecil dari keempatnya.',
+    name: 'Relaxed',
+    summary: 'Quotes across the whole price range, taking a small fee from every swap.',
+    bestFor: 'You want your balance working without needing to watch it.',
+    tradeoff: 'The lowest earnings per unit of capital of the four.',
     opcodes: ['solvencyGuard', 'flatFeeIn', 'xycSwap'],
   },
   {
     id: 'terkonsentrasi',
-    name: 'Terkonsentrasi',
-    summary: 'Memusatkan likuiditas di satu pita harga, jadi modal yang sama memungut jauh lebih banyak.',
-    bestFor: 'Kamu punya pandangan soal rentang harga dan bersedia menengoknya.',
+    name: 'Concentrated',
+    summary: 'Concentrates liquidity into one price band, so the same capital earns far more.',
+    bestFor: 'You have a view on the price range and are willing to check on it.',
     tradeoff:
-      'Di luar pita posisimu berhenti menghasilkan dan berakhir seluruhnya di satu sisi aset, dan pitanya perlu dikirim ulang kalau sudah basi. Pita sempit juga tidak otomatis lebih menghasilkan kalau saldomu timpang.',
+      'Outside the band your position stops earning and ends up entirely on one side of the pair, and a stale band has to be re-shipped. A narrow band is also not automatically better when your two balances are lopsided.',
     opcodes: ['solvencyGuard', 'xycConcentrate', 'flatFeeIn', 'xycSwap'],
   },
   {
     id: 'anti-arbitrase',
-    name: 'Anti-arbitrase',
-    summary: 'Sesudah harga bergerak, kuotasimu menyusul bertahap, bukan seketika.',
-    bestFor: 'Kamu sering kehilangan selisih harga ke arbitraser saat pasar bergerak cepat.',
-    tradeoff: 'Penukar biasa sesekali mendapat harga sedikit lebih buruk, jadi volume bisa turun.',
+    name: 'Anti-arbitrage',
+    summary: 'After the price moves, your quote catches up gradually rather than instantly.',
+    bestFor: 'You keep losing the spread to arbitrageurs when the market moves fast.',
+    tradeoff: 'Ordinary swappers occasionally get a slightly worse price, so volume can drop.',
     opcodes: ['solvencyGuard', 'decay', 'flatFeeIn', 'xycSwap'],
   },
   {
     id: 'meja-privat',
-    name: 'Meja privat',
-    summary: 'Hanya satu alamat yang kamu sebut boleh mengisi posisimu.',
-    bestFor: 'Kamu punya penyalur atau solver tetap dan ingin memberi mereka harga lebih tipis.',
-    tradeoff: 'Selain alamat itu, tidak ada yang bisa mengisi — kalau mereka diam, posisimu diam.',
+    name: 'Private desk',
+    summary: 'Only the one address you name may fill your position.',
+    bestFor: 'You have a regular flow provider or solver and want to quote them tighter.',
+    tradeoff: 'Nobody else can fill it — if they go quiet, your position goes quiet.',
     opcodes: ['exclusiveFill', 'solvencyGuard', 'flatFeeIn', 'xycSwap'],
   },
 ]
 
 export function strategyMeta(id: StrategyId): StrategyMeta {
   const found = STRATEGIES.find((s) => s.id === id)
-  if (!found) throw new Error(`Strategi tidak dikenal: ${id}`)
+  if (!found) throw new Error(`Unknown strategy: ${id}`)
   return found
 }
 
@@ -148,7 +148,7 @@ export function impliedSpotE18(
   const aIsLt = tokenA.toLowerCase() < tokenB.toLowerCase()
   const lt = aIsLt ? amountA : amountB
   const gt = aIsLt ? amountB : amountA
-  if (lt === 0n) throw new Error('saldo sisi bawah nol, harga tersiratnya tidak terdefinisi')
+  if (lt === 0n) throw new Error('the lower-side balance is zero, so the implied price is undefined')
   return (gt * 10n ** 18n) / lt
 }
 
@@ -157,7 +157,7 @@ export function strategyProgram(id: StrategyId, p: StrategyParams): Hex {
   const head: Hex[] = []
 
   if (id === 'meja-privat') {
-    if (!p.exclusiveTaker) throw new Error('Meja privat butuh alamat penyalur.')
+    if (!p.exclusiveTaker) throw new Error('A private desk needs the flow provider address.')
     head.push(exclusiveFill(p.exclusiveTaker))
   }
 
@@ -171,7 +171,7 @@ export function strategyProgram(id: StrategyId, p: StrategyParams): Hex {
 
   if (id === 'terkonsentrasi') {
     if (!p.bandBps || p.spotE18 === undefined) {
-      throw new Error('Terkonsentrasi butuh lebar pita dan harga acuan.')
+      throw new Error('Concentrated needs a band width and a reference price.')
     }
     const band = priceBand(p.spotE18, p.bandBps)
     head.push(xycConcentrate(band.min, band.max))
