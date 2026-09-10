@@ -160,7 +160,7 @@ function SidebarContent({
             target="_blank"
             rel="noreferrer"
             className={cx(ITEM, rail && 'justify-center px-0', 'text-spectral/62 hover:bg-spectral/[0.06] hover:text-spectral/90')}
-            title={`Router SwapVM Iqia di ${CHAIN_NAME} — ${SWAP_VM_ROUTER_ADDRESS}`}
+            title={`Iqia SwapVM router on ${CHAIN_NAME} — ${SWAP_VM_ROUTER_ADDRESS}`}
           >
             <ExternalLinkIcon className="h-[18px] w-[18px] shrink-0" />
             <span className={label}>Router</span>
