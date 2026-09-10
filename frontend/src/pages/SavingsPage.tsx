@@ -5,7 +5,7 @@ import { CircleCheckIcon, PiggyBankIcon, WalletIcon } from 'lucide-react'
 import {
   closePosition,
   openPosition,
-  positionBalances,
+  positionBalancesOrZero,
   savingsEarnings,
   sharedCapital,
   type SavingsEarnings,
@@ -223,7 +223,7 @@ export function SavingsPage() {
         })?.hash ?? null
       setStrategyHash(mine)
       setPosition(
-        mine ? await positionBalances(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
+        mine ? await positionBalancesOrZero(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
       )
       setEarnings(mine ? await savingsEarnings(mine) : null)
       setShared(active.length ? await sharedCapital(address, active, TOKENS[0].address, TOKENS[1].address) : null)
