@@ -30,14 +30,14 @@ export function ReceivePage() {
       <section className="space-y-5">
         <PageHeader
           title="Receive"
-          caption={`Alamat dompetmu di ${CHAIN_NAME}. Siapa pun bisa mengirim token ke sini.`}
+          caption={`Your wallet address on ${CHAIN_NAME}. Anyone can send tokens here.`}
         />
 
         <Card>
           <CardContent className="space-y-5">
             {address === undefined ? (
               <p className="py-6 text-center text-sm text-zinc-500">
-                Hubungkan dompetmu untuk melihat alamatnya.
+                Connect your wallet to see your address.
               </p>
             ) : (
               <>
@@ -54,13 +54,13 @@ export function ReceivePage() {
                     {address}
                   </p>
                   <Button className="shrink-0" onClick={() => void copy()}>
-                    {copied ? 'Tersalin' : 'Salin'}
+                    {copied ? 'Copied' : 'Copy'}
                   </Button>
                 </div>
 
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  Kalau kamu ingin meminta nominal tertentu, pakai halaman Payment link — ia
-                  membuat tautan yang sudah mengisi jumlahnya untuk pembayar.
+                  If you want to ask for a specific amount, use the Payment link page — it
+                  to create a link that pre-fills the amount for the payer.
                 </p>
               </>
             )}
