@@ -1,7 +1,7 @@
 import { CHAIN_ID, CHAIN_NAME } from '../lib/config'
 import { PageHeader } from '../components/ui'
 import { useState } from 'react'
-import { useSettings, useT, type Locale, type DisplayCurrency } from '../lib/settings'
+import { useSettings, useT, type Locale, type DisplayCurrency } from '../lib/settingsContext'
 import { useTheme } from '../hooks/useTheme'
 import { AQUA_ADDRESS, SWAP_VM_ROUTER_ADDRESS } from '../lib/config'
 import { cx } from '../lib/cx'
