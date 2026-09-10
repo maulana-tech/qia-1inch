@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      // Set the theme class before first paint (no flash). Saved choice wins;
-      // otherwise follow the OS preference, defaulting to the signature dark "Mist".
+      // Set the theme class before first paint (no flash). A saved choice always
+      // wins; without one the app opens light.
+      //
+      // This script is the ONLY place the default lives. useTheme reads the class
+      // this sets rather than deciding for itself, so the two can never disagree
+      // and there is nothing to flash between.
       (function () {
         try {
           var saved = localStorage.getItem('iqia.theme');
-          // Default to the signature dark "Mist" theme; only go light if the user chose it.
-          var dark = saved ? saved === 'dark' : true;
+          var dark = saved === 'dark';
           document.documentElement.classList.toggle('dark', dark);
         } catch (e) {
-          document.documentElement.classList.add('dark');
+          // Storage blocked (private mode). Fall back to the same default as above.
+          document.documentElement.classList.remove('dark');
         }
       })();
     </script>
