@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useWallet } from '../hooks/useWallet'
+import { useWallet } from '../hooks/walletContext'
 import { CURATED_TOKENS } from '../lib/tokens'
 import { faucetMint } from '../lib/faucet'
 import { truncateKey } from '../lib/format'
