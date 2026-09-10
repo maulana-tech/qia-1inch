@@ -164,10 +164,10 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
             <p className="text-center text-xs text-zinc-500">Connect your wallet to send.</p>
           )}
           {account && !enough && (
-            <p className="text-center text-xs text-yellow-300">Your balance is short for this amount.</p>
+            <p className="text-center text-xs text-warn">Your balance is short for this amount.</p>
           )}
           {account && to !== '' && !recipientValid && (
-            <p className="text-center text-xs text-yellow-300">That recipient address is not valid.</p>
+            <p className="text-center text-xs text-warn">That recipient address is not valid.</p>
           )}
 
           <Button className="w-full" disabled={!ready} loading={busy} onClick={() => void onSend()}>
@@ -187,7 +187,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
               </a>
             </p>
           )}
-          {error && <p className="text-center text-xs text-yellow-300">{error}</p>}
+          {error && <p className="text-center text-xs text-warn">{error}</p>}
         </CardContent>
       </Card>
     </div>
