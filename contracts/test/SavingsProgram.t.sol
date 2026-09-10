@@ -61,7 +61,7 @@ contract SavingsProgramTest is Test, IqiaOpcodes {
 
     /// @dev Bentuknya harus sama persis dengan `savingsProgram` di
     ///   frontend/src/lib/savings.ts, termasuk URUTANNYA.
-    function _savingsProgram(bool withFee, uint64 saltValue) internal view returns (bytes memory) {
+    function _savingsProgram(bool withFee, uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
