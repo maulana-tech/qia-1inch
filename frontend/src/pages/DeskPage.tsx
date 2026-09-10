@@ -226,7 +226,7 @@ export function DeskPage() {
               <CardHeader className="flex items-center justify-between">
                 <CardTitle>Kutipan hidup</CardTitle>
                 <Button size="sm" variant="outline" loading={busy} onClick={() => void load()}>
-                  Muat ulang
+                  Reload
                 </Button>
               </CardHeader>
               <CardContent className="space-y-2">
