@@ -6,6 +6,7 @@ import { Logo } from './Logo'
 import { BentoGrid } from './BentoGrid'
 import { StoryStack } from './StoryStack'
 import { Mechanics } from './Mechanics'
+import { Proof } from './Proof'
 import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
@@ -247,9 +248,10 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           <p
             className={`mt-8 max-w-xl text-[15px] font-medium leading-relaxed ${dark ? 'text-[#ffffff]/70' : 'text-[#191919]/70'}`}
           >
-            A trading desk built on 1inch Aqua. Market makers keep their tokens in their own
-            wallets — Aqua records an allowance, never a deposit — and the pricing rules run
-            as SwapVM bytecode instead of a hand-written contract.
+            Put money in a pool and it stops being yours to spend. Here it never moves: 1inch
+            Aqua records an allowance, never a deposit, so the same balance earns fees from
+            swaps and stays spendable the whole time. The price it quotes is not a setting —
+            it is SwapVM bytecode anyone can read, including every other maker's.
           </p>
         </div>
 
@@ -289,6 +291,8 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         }}
       />
       </section>
+
+      <Proof />
 
       <BentoGrid onEnter={onEnter} />
 
