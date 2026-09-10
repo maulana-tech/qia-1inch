@@ -215,7 +215,12 @@ export function PageHeader({ title, caption }: { title: string; caption: string 
   return (
     <header>
       <h2 className="text-lg font-semibold tracking-tight text-spectral/90">{title}</h2>
-      <p className="text-sm text-spectral/55">{caption}</p>
+      {/* Preflight menolkan margin `p`, jadi tanpa `mt-*` keterangannya menempel
+          persis di bawah judul dan keduanya terbaca sebagai satu blok teks.
+          `max-w-2xl` menahan panjang barisnya: pada kontainer 5xl keterangan
+          sepanjang satu kalimat membentang lebih dari 900px, jauh melewati
+          panjang baris yang nyaman dibaca. */}
+      <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-spectral/55">{caption}</p>
     </header>
   )
 }
