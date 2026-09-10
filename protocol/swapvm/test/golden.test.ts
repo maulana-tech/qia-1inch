@@ -270,7 +270,7 @@ describe('membongkar program', () => {
 
   it('menolak program yang terpotong alih-alih mengembalikan separuh', () => {
     // opcode 0x11, mengaku punya 4 byte argumen, tapi cuma ada 2.
-    expect(() => disassemble('0x11040102')).toThrow(/byte habis/)
+    expect(() => disassemble('0x11040102')).toThrow(/ran out of bytes/)
   })
 })
 
