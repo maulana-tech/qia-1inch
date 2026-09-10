@@ -107,6 +107,16 @@ const MODULES: Module[] = [
     // angka yang tidak akan pernah dipungut posisinya.
     blurb: `Put part of your balance to work as liquidity and take ${Number(SAVINGS_FEE_BPS) / 1e7}% of every swap through it.`,
   },
+  {
+    href: '/strategy',
+    name: 'Open position',
+    blurb: 'Four strategies. The last step shows the bytecode before you ship it.',
+  },
+  {
+    href: '/desk',
+    name: 'My desk',
+    blurb: 'How many times over your real capital is quoting. A pool cannot show this number.',
+  },
   { href: '/pay', name: 'Pay', blurb: 'Send any listed token to a plain address.' },
   { href: '/payment-link', name: 'Payment link', blurb: 'One link and a QR that pre-fills the amount for whoever pays.' },
   { href: '/faucet', name: 'Faucet', blurb: 'Mint test tokens so every screen above has something to move.' },
