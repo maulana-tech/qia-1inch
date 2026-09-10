@@ -99,7 +99,7 @@ export function savingsOrder(maker: string, saltValue: bigint) {
 
 export class SavingsNotConfiguredError extends Error {
   constructor() {
-    super('Aqua belum dikonfigurasi. Isi VITE_AQUA dan VITE_SWAP_VM_ROUTER.')
+    super('Aqua is not configured. Set VITE_AQUA and VITE_SWAP_VM_ROUTER.')
   }
 }
 
