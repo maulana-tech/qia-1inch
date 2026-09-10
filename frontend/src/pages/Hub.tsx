@@ -211,7 +211,7 @@ export function Hub() {
             <Spinner className="h-4 w-4" /> Reading markets from the chain…
           </Card>
         ) : error ? (
-          <Card className="p-6 text-sm text-rose-300/90">{error}</Card>
+          <Card className="p-6 text-sm text-danger/90">{error}</Card>
         ) : markets.length > 0 ? (
           <div className="space-y-2">
             {markets.map((m) => (
