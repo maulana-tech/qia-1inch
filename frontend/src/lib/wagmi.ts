@@ -26,7 +26,7 @@ export const ACTIVE_CHAIN_ID = ((): (typeof SUPPORTED_CHAIN_IDS)[number] => {
   const found = SUPPORTED_CHAIN_IDS.find((id) => id === CHAIN_ID)
   if (found === undefined) {
     throw new Error(
-      `VITE_CHAIN_ID=${CHAIN_ID} tidak ada di daftar chain yang dikonfigurasi ` +
+      `VITE_CHAIN_ID=${CHAIN_ID} is not in the list of configured chains ` +
         `(${SUPPORTED_CHAIN_IDS.join(', ')}).`,
     )
   }
