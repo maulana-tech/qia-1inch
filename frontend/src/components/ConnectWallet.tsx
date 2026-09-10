@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useWallet } from '../hooks/useWallet'
+import { useWallet } from '../hooks/walletContext'
 import { truncateKey } from '../lib/format'
 import { CHAIN_NAME } from '../lib/config'
 import { cx } from '../lib/cx'
