@@ -454,7 +454,7 @@ export function SavingsPage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Lihat transaksi ↗
+                  View transaction ↗
                 </a>
               ) : null}
             </CardContent>
