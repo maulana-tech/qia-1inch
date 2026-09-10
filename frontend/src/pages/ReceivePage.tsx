@@ -1,35 +1,83 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { renderSVG } from 'uqr'
+import type { Address } from 'viem'
 
 import { CHAIN_NAME } from '../lib/config'
 import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
-import { Button, Card, CardContent, PageHeader } from '../components/ui'
+import { buildEip681 } from '../lib/paymentLink'
+import { parseAmountStrict } from '../lib/amount'
+import { tokenDecimals } from '../lib/payments'
+import { CURATED_TOKENS } from '../lib/tokens'
+import { Button, Card, CardContent, Field, PageHeader, Select, TextInput } from '../components/ui'
+
+/** Hanya token yang benar-benar ada di jaringan ini. */
+const RECEIVABLE = CURATED_TOKENS.filter((t) => t.native || t.sac)
 
 /**
- * Menerima token: alamat dompet biasa, apa adanya.
+ * Menerima token.
  *
- * Dulu halaman ini menampilkan kode terima `wr1…` milik kolam terlindung. Kolam
- * itu sudah dibuang, dan kode yang tidak bisa dipakai siapa pun lebih buruk
- * daripada tidak ada halaman sama sekali.
+ * # Kenapa halaman ini punya QR sendiri, terpisah dari Payment link
+ *
+ * Keduanya menghasilkan QR, dan sempat terlihat mubazir — halaman ini bahkan
+ * pernah cuma menyuruh pengguna pindah ke Payment link kalau mau menyebut
+ * nominal. Tapi dua QR itu untuk PEMINDAI yang berbeda:
+ *
+ *   - Di sini: `ethereum:…` (EIP-681). Dibaca MetaMask, Rainbow, Trust. Yang
+ *     memindainya langsung mendapat layar kirim dompetnya sendiri, terisi.
+ *     Tidak perlu browser, tidak perlu mengenal aplikasi ini.
+ *   - Payment link: URL ke aplikasi ini. Yang memindainya membuka formulir kirim
+ *     KITA — berguna kalau pembayarnya juga memakai aplikasi ini, dan satu-satunya
+ *     yang bisa membawa label nama.
+ *
+ * Jadi yang perlu diperbaiki bukan menghapus salah satunya, tapi berhenti
+ * membuat halaman ini setengah jadi. Sekarang ia bisa menyebut nominal juga.
  */
 export function ReceivePage() {
   const { address } = useAccount()
   const [copied, setCopied] = useState(false)
+  const [code, setCode] = useState('USDC')
+  const [amount, setAmount] = useState('')
+  const [decimals, setDecimals] = useState<number | null>(null)
+
+  const token = RECEIVABLE.find((t) => t.code === code) ?? RECEIVABLE[0]
+
+  useEffect(() => {
+    let live = true
+    void (async () => {
+      const d = await tokenDecimals(token.native ? undefined : (token.sac as Address))
+      if (live) setDecimals(d)
+    })()
+    return () => {
+      live = false
+    }
+  }, [token])
+
+  const value = decimals === null ? null : parseAmountStrict(amount, decimals)
 
   /**
-   * QR-nya EIP-681, bukan alamat telanjang.
+   * Nominal yang mengecil jadi nol TIDAK diam-diam dibuang.
    *
-   * `ethereum:0x…@11155111` memberi tahu dompet pemindainya dua hal sekaligus:
-   * ke mana kirimannya, dan di RANTAI MANA. Alamat telanjang cuma memberi yang
-   * pertama — dompet akan mengisi penerima lalu memakai rantai apa pun yang
-   * sedang aktif, dan alamat EVM sah di semua rantai, jadi kirimannya tetap
-   * "berhasil" ke tempat yang tidak bisa kamu ambil.
-   *
-   * Dompet yang tidak mengenal skema ini tetap membaca alamatnya dari dalam URI,
-   * jadi tidak ada yang hilang dengan memakainya.
+   * "0.0000001" USDC itu angka yang sah dan nol pada 6 desimal. Tanpa
+   * peringatan, QR-nya menjadi permintaan tanpa nominal, dan yang membuatnya
+   * mengira sudah meminta sesuatu.
    */
-  const uri = address ? `ethereum:${address}@${ACTIVE_CHAIN_ID}` : ''
+  const roundsToZero = amount.trim() !== '' && decimals !== null && value === null
+
+  const uri = useMemo(() => {
+    if (!address) return ''
+    try {
+      return buildEip681({
+        to: address,
+        chainId: ACTIVE_CHAIN_ID,
+        ...(token.native ? {} : { token: token.sac as string }),
+        ...(value ? { amount: value } : {}),
+      })
+    } catch {
+      return ''
+    }
+  }, [address, token, value])
+
   const qr = useMemo(() => (uri ? renderSVG(uri) : ''), [uri])
 
   async function copy() {
@@ -44,7 +92,7 @@ export function ReceivePage() {
       <section className="space-y-5">
         <PageHeader
           title="Receive"
-          caption={`Your wallet address on ${CHAIN_NAME}. Anyone can send tokens here.`}
+          caption={`Your wallet address on ${CHAIN_NAME}. Show the code, or ask for a specific amount.`}
         />
 
         <Card>
@@ -55,6 +103,32 @@ export function ReceivePage() {
               </p>
             ) : (
               <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Token">
+                    <Select
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      options={RECEIVABLE.map((t) => ({ value: t.code, label: t.code }))}
+                    />
+                  </Field>
+                  <Field label="Amount" hint="Leave empty to let the sender decide.">
+                    <TextInput
+                      mono
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </Field>
+                </div>
+
+                {roundsToZero && (
+                  <p className="text-xs text-warn">
+                    That amount rounds to zero for {token.code}. The code below asks for no
+                    specific amount.
+                  </p>
+                )}
+
                 {/* Latarnya putih di tema mana pun — pemindai butuh modul gelap di atas terang. */}
                 <div className="mx-auto w-fit rounded-2xl border border-ink-700 bg-white p-4">
                   <div
@@ -73,8 +147,10 @@ export function ReceivePage() {
                 </div>
 
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  If you want to ask for a specific amount, use the Payment link page — it
-                  to create a link that pre-fills the amount for the payer.
+                  This code is an <span className="font-mono">ethereum:</span> request that any
+                  wallet can read — scanning it opens their own send screen, already filled in. If
+                  you would rather send a link that opens this app, and carries a name, use the
+                  Payment link page.
                 </p>
               </>
             )}
