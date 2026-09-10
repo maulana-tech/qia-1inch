@@ -259,7 +259,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                           {' · '}
                           <span
                             className={
-                              Math.abs(deviation) > 5 ? 'text-yellow-300' : 'text-zinc-500'
+                              Math.abs(deviation) > 5 ? 'text-warn' : 'text-zinc-500'
                             }
                           >
                             {deviation >= 0 ? '+' : ''}
@@ -347,7 +347,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                 </p>
               )}
               {(error ?? q.error) && (
-                <p className="text-center text-xs text-yellow-300">{error ?? q.error}</p>
+                <p className="text-center text-xs text-warn">{error ?? q.error}</p>
               )}
             </div>
           </Card>
