@@ -75,7 +75,7 @@ export function useDeskQuote(
           ...s,
           amountOut: null,
           loading: false,
-          error: e instanceof Error ? e.message : 'Meja tidak bisa mengutip jumlah ini.',
+          error: e instanceof Error ? e.message : 'The desk cannot quote this amount.',
         }))
       }
     }, DEBOUNCE_MS)
