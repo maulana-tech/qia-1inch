@@ -51,10 +51,42 @@ function TokenGlyph({ token }: { token: TokenInfo }) {
   )
 }
 
+/**
+ * Label asal posisi.
+ *
+ * Sekarang ada tiga, bukan dua: sejak meja pindah ke registry Aqua resmi, papan
+ * ini memuat posisi tim lain juga — app mereka sendiri, maker mereka sendiri.
+ * Mereka bukan "1inch SwapVM" dan jelas bukan "iqia", jadi keduanya akan jadi
+ * label yang berbohong.
+ */
+const BADGE: Record<Market['source'], { text: string; title: string; className: string }> = {
+  ours: {
+    text: 'iqia',
+    title: 'Liquidity on the Iqia router — you can trade this one',
+    className: 'bg-patina-500/15 text-patina-300',
+  },
+  official: {
+    text: '1inch SwapVM',
+    title: 'Liquidity on the official 1inch SwapVM router',
+    className: 'bg-spectral/15 text-spectral-soft',
+  },
+  other: {
+    text: 'other app',
+    title: "Another team's SwapVM router on the same official Aqua registry",
+    className: 'bg-ink-700/60 text-zinc-400',
+  },
+}
+
 function MarketRow({ market }: { market: Market }) {
+  const badge = BADGE[market.source]
+  const tradable = market.source === 'ours'
   return (
     <Link
-      to={market.official ? '/app' : '/swap'}
+      // Hanya posisi di router KITA yang bisa diisi dari sini. Program milik app
+      // lain memuat instruksi yang panggilan dari dompet biasa tidak bisa penuhi
+      // — `quote` pun ditolak — jadi menautkannya ke halaman Swap akan
+      // menjanjikan sesuatu yang pasti gagal.
+      to={tradable ? '/swap' : '/app'}
       className="card block p-4 transition-shadow hover:ring-spectral/30"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -70,29 +102,20 @@ function MarketRow({ market }: { market: Market }) {
               {/* Asal likuiditasnya disebut terang-terangan. Menampilkan posisi
                   maker lain sebagai seolah milik meja kita akan menyesatkan. */}
               <span
-                className={
-                  market.official
-                    ? 'rounded-full bg-spectral/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-spectral-soft'
-                    : 'rounded-full bg-patina-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-patina-300'
-                }
-                title={
-                  market.official
-                    ? 'Liquidity on the official 1inch SwapVM router'
-                    : 'Liquidity on the Iqia router'
-                }
+                className={cx(
+                  'rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.14em]',
+                  badge.className,
+                )}
+                title={badge.title}
               >
-                {market.official ? '1inch SwapVM' : 'iqia'}
+                {badge.text}
               </span>
-              {/* Posisi di router resmi bisa DIBACA tapi tidak bisa diisi dari
-                  sini: programnya memuat instruksi yang panggilan dari dompet
-                  biasa tidak bisa penuhi — `quote` pun ditolak. Menautkannya ke
-                  halaman Swap akan menjanjikan sesuatu yang pasti gagal. */}
-              {market.official && (
+              {!tradable && (
                 <span
                   className="rounded-full bg-ink-700/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-zinc-400"
-                  title="Another maker's position on the official router. Readable, but not fillable from this app."
+                  title="Readable and priceable by anyone, but not fillable from this app."
                 >
-                  baca saja
+                  read only
                 </span>
               )}
             </div>
