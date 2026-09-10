@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useIsDark } from '../hooks/useTheme'
+import { CHAIN_NAME } from '../lib/config'
 
 /* Shared cream-section tokens: ink #f5f5f5, body #c4c4c4,
    labels #d6d6d6 / #8a8a8a / #858585, gold #bfbfbf / #a6a6a6, card border
@@ -107,20 +108,20 @@ export function SystemArchitecture() {
           />
           <Connector note="no token moves — ship() is bookkeeping only" />
           <Layer
-            eyebrow="Base EVM · execution"
+            eyebrow={`${CHAIN_NAME} · execution`}
             title="IqiaSwapVMRouter"
             items={['runs the strategy bytecode', 'ExclusiveFill · SolvencyGuard', 'doubles as the Aqua app']}
             highlight
           />
           <Connector note="taker approves the router — no adapter contract needed" />
           <Layer
-            eyebrow="Base EVM · settlement"
+            eyebrow={`${CHAIN_NAME} · settlement`}
             title="Aqua pull / push"
             items={['pull tokenOut from maker wallet', 'push tokenIn back to it', 'Aqua holds nothing']}
           />
           <Connector note="the maker's real wallet balance is readable, so pricing can react to it" />
           <Layer
-            eyebrow="Base EVM · opcode 22 · opcode 23"
+            eyebrow={`${CHAIN_NAME} · opcode 22 · opcode 23`}
             title="two instructions of our own"
             items={['ExclusiveFill — one named filler', 'SolvencyGuard — price follows real backing', 'reserved slots, no renumbering']}
           />
