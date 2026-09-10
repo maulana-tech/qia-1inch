@@ -66,7 +66,6 @@ contract DemoOnBaseFork is Script, IqiaOpcodes {
     constructor() IqiaOpcodes(OFFICIAL_AQUA) { }
 
     function run() external {
-        address desk = vm.addr(DESK_KEY);
         address maker = vm.addr(MAKER_KEY);
         address taker = vm.addr(TAKER_KEY);
 
