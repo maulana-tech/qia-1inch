@@ -4,14 +4,15 @@ import { CircleCheckIcon, PiggyBankIcon, WalletIcon } from 'lucide-react'
 
 import {
   closePosition,
-  openPosition,
   positionBalancesOrZero,
   positionBacking,
   savingsEarnings,
+  zapAndOpen,
   sharedCapital,
   type SavingsEarnings,
   type SharedCapital,
   type SideBacking,
+  type ZapStep,
   savingsOrder,
   splitAmounts,
   walletBalances,
@@ -246,6 +247,7 @@ export function SavingsPage() {
   const [earnings, setEarnings] = useState<SavingsEarnings | null>(null)
   const [shared, setShared] = useState<SharedCapital | null>(null)
   const [backing, setBacking] = useState<SideBacking[] | null>(null)
+  const [step, setStep] = useState<ZapStep | null>(null)
 
   const configured = DESK_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
@@ -323,23 +325,36 @@ export function SavingsPage() {
   const isOpen = position[0] > 0n || position[1] > 0n
   const split = splitAmounts(wallet, percent)
   /**
-   * KEDUA sisi harus terisi, bukan salah satu.
+   * Cukup SALAH SATU sisi terisi.
    *
-   * Dulu `||`, dan posisi satu sisi yang lolos dari situ tidak bisa melayani
-   * satu swap pun: `XYCSwap` menolak dengan `XYCSwapRequiresBothBalancesNonZero`
-   * sebelum menghitung apa pun. Posisinya tetap terlihat hidup di setiap layar,
-   * saldonya terdaftar, dan penghasilannya nol selamanya — tanpa satu pun tanda
-   * ada yang salah. Dipatok di contracts/test/OneSidedSavings.t.sol.
+   * Posisi Aqua tetap butuh kedua sisi — `XYCSwap` menolak `balanceIn = 0`, dan
+   * posisi satu sisi tidak pernah melayani satu swap pun (dipatok di
+   * `contracts/test/OneSidedSavings.t.sol`). Sempat syaratnya `&&` karena itu,
+   * dan akibatnya pengguna yang cuma memegang USDC diblokir total lalu disuruh
+   * menukar sendiri di halaman lain.
+   *
+   * Sekarang `zapAndOpen` yang mengerjakan tukarnya, jadi syaratnya boleh
+   * longgar lagi — bukan karena aturannya berubah, tapi karena aplikasinya
+   * akhirnya memenuhinya sendiri.
    */
-  const canOpen = !isOpen && split[0] > 0n && split[1] > 0n
+  const canOpen = !isOpen && (split[0] > 0n || split[1] > 0n)
+
+  /** Perlu ditukar dulu kalau salah satu sisi kosong. */
+  const needsZap = canOpen && (split[0] === 0n || split[1] === 0n)
   const anyBusy = busy !== null
 
   async function handleOpen() {
     if (!address) return
-    setBusy('open'); setError(null); setTxHash(null)
+    setBusy('open'); setError(null); setTxHash(null); setStep(null)
     try {
-      const { hash } = await openPosition(
-        address, TOKENS[0].address, TOKENS[1].address, split[0], split[1], savingsOrder(address, freshSalt()),
+      const { hash } = await zapAndOpen(
+        address,
+        TOKENS[0].address,
+        TOKENS[1].address,
+        wallet,
+        percent,
+        savingsOrder(address, freshSalt()),
+        { onStep: setStep },
       )
       setTxHash(hash)
       await refresh()
@@ -347,6 +362,7 @@ export function SavingsPage() {
       setError(err instanceof Error ? err.message : 'Failed to open the position.')
     } finally {
       setBusy(null)
+      setStep(null)
     }
   }
 
@@ -483,7 +499,13 @@ export function SavingsPage() {
                         {percent}% of your balance works, {100 - percent}% stays free to spend.
                       </p>
                       <Button size="sm" disabled={!canOpen || anyBusy} onClick={handleOpen}>
-                        {busy === 'open' ? <Spinner className="h-4 w-4" /> : 'Start'}
+                        {busy === 'open' ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : needsZap ? (
+                          'Swap & start'
+                        ) : (
+                          'Start'
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -521,13 +543,33 @@ export function SavingsPage() {
                     </div>
                   ))}
                 </div>
+                {/* Progres dilaporkan apa adanya. `ship()` wajib datang dari
+                    dompet penggunanya — `Aqua.ship` memakai `msg.sender` sebagai
+                    maker — jadi langkahnya memang tidak bisa disatukan, dan
+                    berpura-pura sebaliknya cuma membuat tanda tangan kedua
+                    terasa seperti kesalahan. */}
+                {step ? (
+                  <p className="flex items-center gap-2 text-xs text-spectral/60">
+                    <Spinner className="h-3 w-3" />
+                    {step.detail}
+                    <span className="text-spectral/35">
+                      {step.phase === 'swapping' ? 'step 1 of 2' : needsZap ? 'step 2 of 2' : ''}
+                    </span>
+                  </p>
+                ) : null}
+
+                {needsZap && !anyBusy ? (
+                  <p className="text-xs leading-relaxed text-spectral/45">
+                    You only hold {split[0] === 0n ? TOKENS[1].symbol : TOKENS[0].symbol}. A
+                    position needs both sides, so half of what you set aside is swapped first —
+                    two signatures, one decision.
+                  </p>
+                ) : null}
+
                 {!canOpen && !isOpen && !anyBusy ? (
                   <p className="text-xs text-spectral/45">
-                    {wallet[0] === 0n && wallet[1] === 0n
-                      ? 'Your wallet balance is still zero. Grab test tokens on the Faucet page first.'
-                      : `A position needs both sides. You are short on ${
-                          split[0] === 0n ? TOKENS[0].symbol : TOKENS[1].symbol
-                        } — a one-sided position cannot serve a single swap.`}
+                    Your wallet balance is still zero. Grab test tokens on the Faucet page
+                    first.
                   </p>
                 ) : null}
               </div>
