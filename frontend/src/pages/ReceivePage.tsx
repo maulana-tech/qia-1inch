@@ -9,7 +9,8 @@ import { buildEip681 } from '../lib/paymentLink'
 import { parseAmountStrict } from '../lib/amount'
 import { tokenDecimals } from '../lib/payments'
 import { CURATED_TOKENS } from '../lib/tokens'
-import { Button, Card, CardContent, Field, PageHeader, Select, TextInput } from '../components/ui'
+import { Button, Card, CardContent, Field, PageHeader, TextInput } from '../components/ui'
+import { TokenSelect } from '../components/TokenSelect'
 
 /** Hanya token yang benar-benar ada di jaringan ini. */
 const RECEIVABLE = CURATED_TOKENS.filter((t) => t.native || t.sac)
@@ -95,7 +96,7 @@ export function ReceivePage() {
           caption={`Your wallet address on ${CHAIN_NAME}. Show the code, or ask for a specific amount.`}
         />
 
-        <Card>
+        <Card className="overflow-visible">
           <CardContent className="space-y-5">
             {address === undefined ? (
               <p className="py-6 text-center text-sm text-zinc-500">
@@ -105,11 +106,7 @@ export function ReceivePage() {
               <>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Token">
-                    <Select
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      options={RECEIVABLE.map((t) => ({ value: t.code, label: t.code }))}
-                    />
+                    <TokenSelect value={code} onChange={setCode} options={RECEIVABLE} />
                   </Field>
                   <Field label="Amount" hint="Leave empty to let the sender decide.">
                     <TextInput
