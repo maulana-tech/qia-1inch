@@ -284,7 +284,7 @@ export function StrategyPage() {
                 </div>
 
                 <label className="block">
-                  <span className="text-xs text-spectral/60">Atur sendiri: {percent}%</span>
+                  <span className="text-xs text-spectral/60">Custom: {percent}%</span>
                   <input
                     type="range"
                     min={1}
@@ -298,7 +298,7 @@ export function StrategyPage() {
                 {!address && (
                   <p className="rounded-xl border border-ink-800 bg-ink-900/40 p-3 text-xs text-zinc-500">
                     Your wallet is not connected, so the numbers are empty. You can still read
-                    keempat strategi dulu — hubungkan saat mau mengirim.
+                    all four strategies first — connect when you are ready to ship.
                   </p>
                 )}
 
@@ -516,14 +516,14 @@ export function StrategyPage() {
                 disabled={step === 0}
                 onClick={() => go(step - 1)}
               >
-                <ChevronLeftIcon className="h-4 w-4" /> Kembali
+                <ChevronLeftIcon className="h-4 w-4" /> Back
               </Button>
 
               <div className="flex items-center gap-3">
                 {blocked && <span className="text-xs text-zinc-500">{blocked}</span>}
                 {step < STEPS.length - 1 && (
                   <Button disabled={blocked !== null} onClick={() => go(step + 1)}>
-                    Lanjut <ChevronRightIcon className="h-4 w-4" />
+                    Next <ChevronRightIcon className="h-4 w-4" />
                   </Button>
                 )}
               </div>
