@@ -52,8 +52,8 @@ function MarketRow({ market }: { market: Market }) {
                 }
                 title={
                   market.official
-                    ? 'Likuiditas di router SwapVM resmi 1inch'
-                    : 'Likuiditas di router Iqia'
+                    ? 'Liquidity on the official 1inch SwapVM router'
+                    : 'Liquidity on the Iqia router'
                 }
               >
                 {market.official ? '1inch SwapVM' : 'iqia'}
@@ -169,7 +169,7 @@ export function Hub() {
               target="_blank"
               rel="noreferrer"
             >
-              lihat router di explorer ↗
+              view the router on the explorer ↗
             </a>
           ) : null}
         </Card>
