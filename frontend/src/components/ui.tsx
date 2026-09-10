@@ -359,7 +359,15 @@ export function ToggleGroup<T extends string>({
   options: ToggleOption<T>[]
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-none border border-ink-700 bg-ink-900/60 p-1">
+    // Jumlah kolom mengikuti jumlah pilihan. Dulu dipatok `grid-cols-2` karena
+    // pemakai pertamanya toggle Buy/Sell — dan pemakai ketiga (toleransi
+    // slippage) membungkus jadi dua baris dengan satu tombol menggantung
+    // sendirian. Ditulis inline karena `grid-cols-${n}` tidak bisa dipindai
+    // Tailwind saat build.
+    <div
+      className="grid gap-1 rounded-none border border-ink-700 bg-ink-900/60 p-1"
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    >
       {options.map((option) => {
         const active = value === option.value
         return (
@@ -370,8 +378,7 @@ export function ToggleGroup<T extends string>({
             className={cx(
               'rounded-none py-2 text-sm font-semibold transition',
               active
-                ? (option.activeClassName ??
-                    'bg-spectral/15 text-zinc-100 shadow-[inset_0_0_0_1px_rgba(214,192,131,0.4)]')
+                ? (option.activeClassName ?? 'toggle-active text-zinc-100')
                 : 'text-zinc-400 hover:text-zinc-200',
             )}
           >
