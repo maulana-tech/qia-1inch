@@ -107,7 +107,7 @@ export function PortfolioPage() {
       }
       setPositions(withLegs)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal membaca portofolio.')
+      setError(e instanceof Error ? e.message : 'Failed to read your portfolio.')
     }
   }, [address])
 
@@ -134,7 +134,7 @@ export function PortfolioPage() {
     try {
       amount = parseEther(wrapAmount.trim() || '0')
     } catch {
-      setError('Jumlahnya tidak valid.')
+      setError('That amount is not valid.')
       return
     }
     if (amount === 0n) return
@@ -149,7 +149,7 @@ export function PortfolioPage() {
       setWrapAmount('')
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal membungkus.')
+      setError(e instanceof Error ? e.message : 'Wrapping failed.')
     } finally {
       setWrapping(null)
     }
@@ -170,7 +170,7 @@ export function PortfolioPage() {
       setClosedTx(await closePosition(address, p.hash, p.tokenAddresses[0], p.tokenAddresses[1]))
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal menutup posisi.')
+      setError(e instanceof Error ? e.message : 'Failed to close the position.')
     } finally {
       setClosing(null)
     }
@@ -181,14 +181,14 @@ export function PortfolioPage() {
       <section className="space-y-5">
         <PageHeader
           title="Portfolio"
-          caption="Saldo dompetmu, dan modal yang sedang bekerja sebagai likuiditas di Aqua. Token yang bekerja TIDAK pindah ke mana pun — ia tetap terhitung di saldo dompetmu."
+          caption="Your wallet balances, and the capital currently working as liquidity in Aqua. Working tokens do NOT move anywhere — they still count towards your wallet balance."
         />
 
         {!address && (
           <Card>
             <CardContent>
               <p className="py-6 text-center text-sm text-zinc-500">
-                Hubungkan dompetmu untuk melihat portofolio.
+                Connect your wallet to see your portfolio.
               </p>
             </CardContent>
           </Card>
@@ -211,8 +211,8 @@ export function PortfolioPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-xs leading-relaxed text-zinc-500">
-                    Posisi dan swap bekerja dengan ERC20, sedangkan kamu memegang ETH. Membungkus
-                    tidak menyerahkan dana ke siapa pun — WETH tetap milikmu, di dompetmu.
+                    Positions and swaps work in ERC20, and you are holding ETH. Wrapping
+                    hands your funds to nobody — the WETH stays yours, in your wallet.
                   </p>
                   <div className="flex items-baseline justify-between text-sm">
                     <span className="text-spectral/60">ETH</span>
@@ -243,7 +243,7 @@ export function PortfolioPage() {
                       loading={wrapping === 'unwrap'}
                       onClick={() => void doWrap('unwrap')}
                     >
-                      Buka jadi ETH
+                      Unwrap to ETH
                     </Button>
                   </div>
                   {wrapTx && (
@@ -260,14 +260,14 @@ export function PortfolioPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Saldo dompet</CardTitle>
+                <CardTitle>Wallet balances</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {holdings === null ? (
                   <p className="py-3 text-center text-xs text-zinc-500">Membaca…</p>
                 ) : holdings.length === 0 ? (
                   <p className="py-3 text-center text-xs text-zinc-500">
-                    Belum ada token. Ambil token uji di halaman Faucet.
+                    No tokens yet. Grab test tokens on the Faucet page.
                   </p>
                 ) : (
                   holdings.map((h) => (
@@ -296,14 +296,14 @@ export function PortfolioPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Posisi di Aqua ({totalPositions})</CardTitle>
+                <CardTitle>Positions in Aqua ({totalPositions})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {positions === null ? (
                   <p className="py-3 text-center text-xs text-zinc-500">Membaca…</p>
                 ) : positions.length === 0 ? (
                   <p className="py-3 text-center text-xs text-zinc-500">
-                    Belum ada posisi terbuka. Mulai dari halaman Open position.
+                    No open positions yet. Start from the Open position page.
                   </p>
                 ) : (
                   positions.map((p) => (
@@ -331,12 +331,12 @@ export function PortfolioPage() {
                       <div className="mt-2 border-t border-ink-800 pt-2">
                         {p.trades.length === 0 ? (
                           <p className="text-xs text-zinc-600">
-                            Belum ada yang menukar lewat posisi ini.
+                            Nobody has swapped through this position yet.
                           </p>
                         ) : (
                           <>
                             <p className="text-[10px] uppercase tracking-[0.14em] text-spectral/60">
-                              {p.trades.length} swap lewat posisi ini
+                              {p.trades.length} swaps through this position
                             </p>
                             <div className="mt-1 space-y-1">
                               {p.trades.slice(0, 3).map((t) => (
@@ -377,7 +377,7 @@ export function PortfolioPage() {
                         loading={closing === p.hash}
                         onClick={() => void close(p)}
                       >
-                        {closing === p.hash ? 'Menutup…' : 'Tutup posisi'}
+                        {closing === p.hash ? 'Closing…' : 'Close position'}
                       </Button>
                     </div>
                   ))
@@ -385,15 +385,15 @@ export function PortfolioPage() {
 
                 {closedTx && (
                   <p className="text-center text-xs text-patina-300">
-                    Posisi ditutup ·{' '}
+                    Position closed ·{' '}
                     <a href={explorerTxUrl(closedTx)} target="_blank" rel="noreferrer" className="hover:underline">
                       lihat transaksi
                     </a>
                   </p>
                 )}
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  Menutup posisi tidak memindahkan token sama sekali — ia cuma menghapus catatan
-                  alokasinya di Aqua. Saldo dompetmu tidak berubah.
+                  Closing a position moves no tokens at all — it only removes the allocation
+                  record in Aqua. Your wallet balance does not change.
                 </p>
               </CardContent>
             </Card>
