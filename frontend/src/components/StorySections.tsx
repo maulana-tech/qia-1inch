@@ -46,7 +46,7 @@ function Layer({
         {items.map((it) => (
           <span
             key={it}
-            className="rounded-none px-2 py-1 font-mono text-[10px] tracking-[0.03em] text-[#555555] dark:text-[#c4c4c4]"
+            className="rounded-md px-2 py-1 font-mono text-[10px] tracking-[0.03em] text-[#555555] dark:text-[#c4c4c4]"
             style={{ background: dark ? 'rgba(242,242,242,0.06)' : 'rgba(25,25,25,0.05)' }}
           >
             {it}
