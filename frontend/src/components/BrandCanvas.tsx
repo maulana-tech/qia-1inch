@@ -3,8 +3,11 @@ import { useEffect, useRef } from 'react'
 import { useIsDark } from '../hooks/useTheme'
 
 /**
- * Latar aplikasi: "Horizon Glow" — kubah bercahaya yang mengembang dari
- * bawah-tengah, di atas bidang kertas.
+ * Latar aplikasi, satu per tema.
+ *
+ *   - Terang: "Horizon Glow" — kubah bercahaya yang mengembang dari
+ *     bawah-tengah, di atas bidang kertas. Teranimasi.
+ *   - Gelap: satu radial hitam→violet dari atas. Diam.
  *
  * Menggantikan `.app-wash`, tiga radial biru pada 9–18% yang secara teknis
  * terpasang tapi praktis tidak terlihat di layar.
@@ -31,8 +34,22 @@ import { useIsDark } from '../hooks/useTheme'
 const SPEED = 1.0
 const AMOUNT = 0.3
 
-/** Bidang di baliknya. Tema gelap memakai backdrop navy, bukan parchment. */
-const BASE = { light: '#F7F4EC', dark: '#0B1220' } as const
+/** Bidang di baliknya. */
+const BASE = { light: '#F7F4EC', dark: '#000000' } as const
+
+/**
+ * Tema gelap: satu radial hitam→violet, diam.
+ *
+ * Bukan versi gelap dari kubah, dan itu disengaja. Kubah bekerja karena
+ * cahayanya lebih terang dari bidangnya; di atas hitam, "lebih terang" berarti
+ * satu bola menyala yang menuntut perhatian terus-menerus di belakang teks yang
+ * sedang dibaca. Gradien ini bergerak ke arah sebaliknya — gelap di ATAS tempat
+ * teks berada, warna terkumpul di bawah tempat halaman kosong.
+ *
+ * Diam, tanpa rAF: tidak ada radius yang perlu diinterpolasi, jadi merakit
+ * ulang string ini tiap frame tidak akan mengubah satu piksel pun.
+ */
+const NIGHT = 'radial-gradient(125% 125% at 50% 10%, #000 40%, #63e 100%)'
 
 /**
  * Grain statis, dipisah dari perakitan per frame.
@@ -64,6 +81,22 @@ export function BrandCanvas() {
     const el = ref.current
     if (!el) return
 
+    if (dark) {
+      // Satu lapis, jadi `size`/`repeat`/`blend` harus ikut menyusut. Nilai
+      // empat-lapis yang ditinggalkan mode terang akan tetap dipakai browser,
+      // dan grain-nya menempel sebagai ubin 120px di atas gradien yang
+      // seharusnya mulus.
+      el.style.backgroundImage = NIGHT
+      el.style.backgroundSize = 'auto'
+      el.style.backgroundRepeat = 'no-repeat'
+      el.style.backgroundBlendMode = 'normal'
+      return
+    }
+
+    el.style.backgroundSize = '120px 120px, auto, auto, auto'
+    el.style.backgroundRepeat = 'repeat, no-repeat, no-repeat, no-repeat'
+    el.style.backgroundBlendMode = 'overlay, normal, normal, normal'
+
     // Frame diam selalu digambar lebih dulu. Tanpa ini, pengguna dengan
     // reduced-motion mendapat bidang polos alih-alih kubahnya.
     el.style.backgroundImage = layers(1, 1)
@@ -85,21 +118,21 @@ export function BrandCanvas() {
 
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [])
+    // `dark` wajib ada di sini: tanpanya efek ini jalan sekali seumur hidup
+    // komponen, dan menekan tombol tema cuma menukar warna dasarnya —
+    // gradiennya tertinggal pada tema sebelumnya. Ia juga menghentikan rAF saat
+    // pindah ke gelap, bukan membiarkannya menulisi latar yang sudah diganti.
+  }, [dark])
 
   return (
     <div
       ref={ref}
       className="pointer-events-none fixed inset-0 -z-10 transition-colors duration-300"
-      style={{
-        // `backgroundColor`, bukan `background`: shorthand-nya menghapus
-        // `background-image` yang ditulis efek di atas, dan kubahnya hilang
-        // tanpa jejak di devtools selain properti yang tidak pernah ada.
-        backgroundColor: dark ? BASE.dark : BASE.light,
-        backgroundSize: '120px 120px, auto, auto, auto',
-        backgroundRepeat: 'repeat, no-repeat, no-repeat, no-repeat',
-        backgroundBlendMode: 'overlay, normal, normal, normal',
-      }}
+      // `backgroundColor`, bukan `background`: shorthand-nya menghapus
+      // `background-image` yang ditulis efek di atas, dan latarnya hilang tanpa
+      // jejak di devtools selain properti yang tidak pernah ada. Sisa properti
+      // latar juga diatur di efek, karena jumlah lapisannya beda per tema.
+      style={{ backgroundColor: dark ? BASE.dark : BASE.light }}
     />
   )
 }
