@@ -1,9 +1,8 @@
 /**
- * Payment link: alamat + nominal opsional, dikemas jadi satu URL.
+ * Pembayaran dan pembungkusan token: semua yang menyentuh rantai.
  *
- * Tidak ada kontrak di balik ini dan memang tidak perlu — link-nya cuma
- * pra-mengisi formulir kirim di sisi penerima tautan. Pembayarannya sendiri
- * transfer ERC20 biasa dari dompet pembayar ke alamat penerima.
+ * Perakitan payment link ada di `lib/paymentLink.ts` — logika murni, dipisah
+ * supaya bisa diuji tanpa wagmi.
  */
 import {
   readContract,
@@ -12,60 +11,10 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from '@wagmi/core'
-import { erc20Abi, getAddress, isAddress, type Address } from 'viem'
+import { erc20Abi, type Address } from 'viem'
 
 import type { Config } from '@wagmi/core'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
-
-export interface PaymentRequest {
-  /** Alamat penerima, sudah dinormalkan ke checksum. */
-  address: string
-  /** Label opsional yang ditampilkan ke pembayar. */
-  name?: string
-  /** Nominal yang disarankan, apa adanya sebagai teks. */
-  amount?: string
-  /** Kode token yang disarankan, mis. USDC. */
-  token?: string
-}
-
-/**
- * Nominal sengaja tidak diikutkan kalau tidak masuk akal, bukan ditulis apa
- * adanya. Link dengan `amount=abc` akan mengisi formulir dengan sampah dan
- * pembayar baru sadar saat transaksinya gagal.
- */
-export function buildPaymentLink(req: PaymentRequest, origin: string): string {
-  const params = new URLSearchParams()
-  const name = req.name?.trim()
-  if (name) params.set('name', name)
-  const amount = req.amount?.trim()
-  if (amount && Number(amount) > 0) params.set('amount', amount)
-  if (req.token) params.set('token', req.token)
-  const query = params.toString()
-  return `${origin}/pay/${req.address}${query === '' ? '' : `?${query}`}`
-}
-
-/**
- * Membaca kembali link jadi permintaan bayar.
- *
- * Alamatnya divalidasi dengan `isAddress` viem. Ini pernah salah di tempat
- * lain: validator yang tersisa dari silsilah Stellar menolak SETIAP alamat EVM
- * yang sah, dan gejalanya cuma tombol yang mati tanpa alasan.
- */
-export function parsePaymentLink(
-  rawAddress: string | undefined,
-  search: URLSearchParams,
-): PaymentRequest | null {
-  if (!rawAddress || !isAddress(rawAddress)) return null
-  const name = search.get('name')?.trim()
-  const amount = search.get('amount')?.trim()
-  const token = search.get('token')?.trim()
-  return {
-    address: getAddress(rawAddress),
-    ...(name ? { name } : {}),
-    ...(amount && Number(amount) > 0 ? { amount } : {}),
-    ...(token ? { token } : {}),
-  }
-}
 
 /**
  * Mengirim pembayaran dari dompet yang terhubung.
@@ -203,3 +152,5 @@ export async function unwrapNative(account: Address, weth: Address, amount: bigi
   await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return hash
 }
+
+export { buildPaymentLink, parsePaymentLink, type PaymentRequest } from './paymentLink'
