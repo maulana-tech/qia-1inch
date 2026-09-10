@@ -244,6 +244,12 @@
     background-attachment: fixed;
   }
 
+  /* `overflow-hidden` menjaga sudut membulatnya saat isinya menyentuh tepi.
+   *
+   * Kartu yang memuat dropdown harus mematikannya lewat `overflow-visible`,
+   * kalau tidak daftarnya terguntning di tepi kartu — persis yang terjadi pada
+   * pemilih token sebelum ini. Utility Tailwind menang atas kelas komponen, jadi
+   * cukup ditambahkan di `className`. */
   .card {
     @apply overflow-hidden rounded-2xl bg-ink-850/80 shadow-panel ring-1 ring-spectral/10;
   }
