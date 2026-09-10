@@ -180,7 +180,7 @@ export function DeskPage() {
         {error && (
           <Card>
             <CardContent>
-              <p className="py-4 text-center text-xs text-yellow-300">{error}</p>
+              <p className="py-4 text-center text-xs text-warn">{error}</p>
             </CardContent>
           </Card>
         )}
