@@ -11,7 +11,6 @@
 set -euo pipefail
 
 ENVFILE="$(cd "$(dirname "$0")/../../frontend" && pwd)/.env.local"
-RPC=${RPC:-https://ethereum-sepolia-rpc.publicnode.com}
 
 if ! command -v cast >/dev/null 2>&1; then
   echo "cast tidak ditemukan. export PATH=\"\$PATH:\$HOME/.foundry/bin\""
@@ -28,6 +27,16 @@ if [ ! -f "$ENVFILE" ]; then
 fi
 
 read_env() { grep -E "^$1=" "$ENVFILE" | head -1 | cut -d= -f2-; }
+
+# RPC diambil dari env frontend, bukan dipatok di sini. Dulu default-nya
+# publicnode — dan endpoint itu terukur menjatuhkan hasil `eth_getLogs` pada
+# sekitar separuh panggilan. Menyiarkan transaksi lewat node yang tidak
+# konsisten jauh lebih buruk daripada sekadar salah membaca: `forge script`
+# memverifikasi hasilnya dengan membaca ulang, dan bacaan yang bohong membuat
+# broadcast yang berhasil terlihat gagal.
+RPC=${RPC:-$(read_env VITE_RPC_URL)}
+RPC=${RPC:-https://sepolia.gateway.tenderly.co}
+
 AQUA=$(read_env VITE_AQUA)
 ROUTER=$(read_env VITE_SWAP_VM_ROUTER)
 WETH_ADDR=$(read_env VITE_WETH_ADDRESS)
