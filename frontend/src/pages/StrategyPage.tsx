@@ -372,7 +372,7 @@ export function StrategyPage() {
 
                 {id === 'terkonsentrasi' && (
                   <div>
-                    <p className="text-sm text-zinc-300">Lebar pita harga</p>
+                    <p className="text-sm text-zinc-300">Price band width</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {BAND_PRESETS.map((b) => (
                         <button
@@ -402,7 +402,7 @@ export function StrategyPage() {
 
                 {id === 'anti-arbitrase' && (
                   <div>
-                    <p className="text-sm text-zinc-300">Periode peluruhan</p>
+                    <p className="text-sm text-zinc-300">Catch-up period</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {DECAY_PRESETS.map((d) => (
                         <button
@@ -448,22 +448,22 @@ export function StrategyPage() {
             {step === 3 && id && (
               <>
                 <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-4">
-                  <Row label="Strategi">{strategyMeta(id).name}</Row>
+                  <Row label="Strategy">{strategyMeta(id).name}</Row>
                   {DESK_PAIR.map((t, i) => (
                     <Row key={t.symbol} label={t.symbol}>
                       <span className="font-mono">{fmt(split[i], t.decimals)}</span>
                     </Row>
                   ))}
-                  <Row label="Fee">{feePercent}%</Row>
-                  {id === 'terkonsentrasi' && <Row label="Pita">±{bandBps / 100}%</Row>}
-                  {id === 'anti-arbitrase' && <Row label="Peluruhan">{decayPeriod} detik</Row>}
+                  <Row label="Your fee">{feePercent}%</Row>
+                  {id === 'terkonsentrasi' && <Row label="Band">±{bandBps / 100}%</Row>}
+                  {id === 'anti-arbitrase' && <Row label="Catch-up">{decayPeriod} seconds</Row>}
                   {id === 'meja-privat' && (
-                    <Row label="Penyalur">
+                    <Row label="Flow provider">
                       <span className="font-mono text-xs">{taker}</span>
                     </Row>
                   )}
                   {DESK_SURCHARGE_BPS > 0n && (
-                    <Row label="Penjaga jaminan">maks {asPercent(DESK_SURCHARGE_BPS)}%</Row>
+                    <Row label="Backing guard">up to {asPercent(DESK_SURCHARGE_BPS)}% surcharge</Row>
                   )}
                 </div>
 
