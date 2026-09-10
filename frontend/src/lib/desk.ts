@@ -73,7 +73,19 @@ function requireConfigured() {
 }
 
 /** Harga di muka. Tanpa gas, dan angkanya sama persis dengan hasil swap. */
-export async function quote(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<bigint> {
+/**
+ * @param taker Alamat yang akan mengisi. Penting kalau programnya bergerbang:
+ *   `ExclusiveFill` membandingkan `ctx.query.taker`, jadi mengutip dengan alamat
+ *   lain akan gagal walaupun swap yang sungguhan berhasil. Dulu nilai ini selalu
+ *   `DESK_MAKER` — maker sebagai taker, kekeliruan yang sudah dua kali muncul di
+ *   repo ini.
+ */
+export async function quote(
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  taker: string = DESK_MAKER,
+): Promise<bigint> {
   requireConfigured()
   const [, amountOut] = await readContract(wagmiConfig as any, {
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
@@ -85,7 +97,7 @@ export async function quote(tokenIn: string, tokenOut: string, amountIn: bigint)
       tokenIn as `0x${string}`,
       tokenOut as `0x${string}`,
       amountIn,
-      buildTakerData({ taker: DESK_MAKER, isExactIn: true, useTransferFromAndAquaPush: true }),
+      buildTakerData({ taker, isExactIn: true, useTransferFromAndAquaPush: true }),
     ],
   })
   return amountOut

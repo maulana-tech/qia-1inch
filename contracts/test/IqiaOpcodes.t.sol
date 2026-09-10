@@ -177,6 +177,35 @@ contract IqiaOpcodesTest is Test, IqiaOpcodes {
         router.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(nearMiss, true));
     }
 
+    /// @notice Alamat yang 80 bit terakhirnya identik dengan penyalur yang ditunjuk.
+    ///
+    /// Ini satu-satunya alasan instruksi ini ada dan bukan memakai `PrivateOrder`
+    /// bawaan SwapVM. `PrivateOrder` menyimpan dan membandingkan 10 byte terakhir
+    /// alamat saja — alamat di bawah ini lolos gerbang itu. Di sini ditolak.
+    ///
+    /// Tes ini juga menegaskan bahwa tabrakannya nyata, bukan asumsi: 80 bit
+    /// terakhir kedua alamat dibandingkan langsung dan harus sama.
+    function test_Gate_RejectsHighBitsCollision() public {
+        ISwapVM.Order memory order = _order(_program(true, 0, 4));
+        _ship(order, VIRTUAL_A);
+
+        // Bit ke-152 dibalik: itu di luar 80 bit terakhir, jadi bagian yang
+        // dibandingkan `PrivateOrder` sama sekali tidak tersentuh.
+        address collision = address(uint160(address(desk)) ^ (uint160(1) << 152));
+
+        assertEq(uint80(uint160(collision)), uint80(uint160(address(desk))), "80 bit terakhir harus sama");
+        assertTrue(collision != address(desk), "alamatnya harus tetap berbeda");
+
+        vm.deal(collision, 1 ether);
+        tokenB.mint(collision, SWAP_AMOUNT);
+
+        vm.prank(collision);
+        vm.expectRevert(
+            abi.encodeWithSelector(ExclusiveFill.ExclusiveFillTakerNotAllowed.selector, collision, address(desk))
+        );
+        router.swap(order, address(tokenB), address(tokenA), SWAP_AMOUNT, _takerData(collision, true));
+    }
+
     // ----------------------------------------------------------- SolvencyGuard
 
     function test_Solvency_FullyBackedCostsNothing() public {

@@ -180,6 +180,17 @@ export function strategyProgram(id: StrategyId, p: StrategyParams): Hex {
   // Fee protokol mendahului fee maker. Keduanya memotong dari MASUKAN sebelum
   // kurva, jadi yang berkurang keluaran penukar — bukan bagian maker. Diukur di
   // contracts/test/ProtocolFee.t.sol.
+  //
+  // BATASNYA, dan ini bukan detail kecil: pemungutannya BEST-EFFORT. Fee ditarik
+  // dari saldo Aqua maker untuk tokenIn yang SUDAH ADA sebelum swap, bukan dari
+  // uang penukar yang baru masuk. Kalau makernya tidak sanggup, tarikan gagal
+  // ditangkap, `ProtocolFeeSkipped` dipancarkan, dan swap-nya lanjut tanpa fee.
+  //
+  // Akibat praktisnya: posisi satu sisi — pengguna menyetor WETH saja, tanpa
+  // USDC — tidak menghasilkan apa pun untuk treasury pada arah USDC→WETH, justru
+  // arah yang paling sering dipakai. Jadi pendapatan HARUS diukur dari event
+  // `Pulled` ke treasury, tidak boleh dihitung dari volume × tarif.
+  // Dipatok di test_FeeDilewatiKalauMakerTidakSanggup.
   if (PROTOCOL_FEE_BPS > 0n) head.push(aquaProtocolFee(PROTOCOL_FEE_BPS, TREASURY_ADDRESS))
 
   if (p.feeBps > 0n) head.push(flatFeeIn(p.feeBps))

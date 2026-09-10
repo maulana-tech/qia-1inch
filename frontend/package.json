@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "ship:e2e": "node scripts/ship-e2e.mjs"
+    "ship:e2e": "node scripts/ship-e2e.mjs",
+    "test": "tsx scripts/check-amount.ts"
   },
   "dependencies": {
     "@1inch/aqua-sdk": "^0.3.1",

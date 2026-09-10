@@ -29,10 +29,31 @@ library ExclusiveFillArgsBuilder {
 ///
 /// # Kenapa tidak memakai `PrivateOrder` bawaan SwapVM
 ///
-/// Gerbang itu mencocokkan alamat secara sebagian demi menghemat gas, sehingga
-/// alamat lain bisa ikut lolos — lihat `COLLISION_TAKER` di
-/// `test/PrivateOrder.t.sol` milik SwapVM. Untuk kesepakatan eksklusif,
-/// cocok-sebagian tidak memadai. Di sini perbandingannya penuh 20 byte.
+/// `PrivateOrder` membandingkan **10 byte terakhir** alamat saja, demi menghemat
+/// gas — dan dokumennya sendiri menyebut konsekuensinya:
+///
+/// > Address packing trade-off: only the last 10 bytes of each address are
+/// > compared. […] Birthday attack 80-bit collisions are feasible, however both
+/// > accounts are controlled by a single attacker, not a bypass.
+/// >
+/// > — `contracts/instructions/Whitelist.sol`, 1inch/swap-vm
+///
+/// Argumen "bukan bypass" itu benar untuk kasus yang mereka pikirkan: penyerang
+/// yang menambang dua alamat miliknya sendiri tidak mendapat apa-apa. Tapi
+/// pihak yang dirugikan di sini bukan penyerang, melainkan **maker** — nilai
+/// gerbang ini justru terletak pada jaminan bahwa yang mengisi order adalah
+/// penyalur yang namanya tertulis, bukan pihak lain yang 80 bit terakhirnya
+/// kebetulan sama. Untuk kesepakatan aliran order eksklusif, "hampir pasti dia"
+/// bukan jaminan yang bisa dipakai berunding.
+///
+/// Maka di sini perbandingannya penuh 20 byte. Biayanya 10 byte tambahan per
+/// order. Selisihnya dibuktikan di `test_Gate_RejectsHighBitsCollision`: satu
+/// alamat yang 80 bit terakhirnya identik dengan penyalur yang ditunjuk —
+/// diterima `PrivateOrder`, ditolak di sini.
+///
+/// Instruksi ini ditulis sebelum `PrivateOrder` ada di SwapVM (pin kita,
+/// commit 32c687c, belum memuatnya) dan dipertahankan setelahnya karena
+/// alasan di atas, bukan karena tidak tahu.
 ///
 /// # Keamanan
 ///

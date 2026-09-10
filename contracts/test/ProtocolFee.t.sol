@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import { Test } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 import { TokenMock } from "@1inch/solidity-utils/contracts/mocks/TokenMock.sol";
@@ -69,9 +70,18 @@ contract ProtocolFeeTest is Test, IqiaOpcodes {
     }
 
     function _program(bool withProtocol, uint64 saltValue) internal view returns (bytes memory) {
+        return _program(withProtocol, true, saltValue);
+    }
+
+    /// @dev `withGuard` bisa dimatikan supaya efek fee bisa diukur terpisah:
+    ///   `SolvencyGuard` membaca saldo dan izin maker yang SUNGGUHAN, jadi tes
+    ///   yang mencabut izin akan menggerakkan guard-nya juga kalau ia terpasang.
+    function _program(bool withProtocol, bool withGuard, uint64 saltValue) internal view returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
-            p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
+            withGuard
+                ? p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS))
+                : bytes(""),
             withProtocol
                 ? p.build(
                     Fee._aquaProtocolFeeAmountInXD,
@@ -112,17 +122,29 @@ contract ProtocolFeeTest is Test, IqiaOpcodes {
         }));
     }
 
-    function _shipAndSwap(bytes memory prog) internal returns (uint256 amountOut) {
-        ISwapVM.Order memory o = _order(prog);
+    function _ship(bytes memory prog) internal returns (ISwapVM.Order memory o) {
+        o = _order(prog);
         vm.prank(maker);
         AQUA.ship(address(router), abi.encode(o),
             dynamic([address(weth), address(usdc)]), dynamic([BAL_WETH, BAL_USDC]));
+    }
 
+    /// @dev Dipisah dari `_swap` supaya `vm.expectEmit` bisa dipasang tepat
+    ///   sebelum `router.swap`, bukan menangkap `Approval` dari persiapan ini.
+    function _fundTaker() internal {
         deal(address(usdc), taker, SWAP_IN);
-        vm.startPrank(taker);
+        vm.prank(taker);
         usdc.approve(address(router), type(uint256).max);
+    }
+
+    function _swap(ISwapVM.Order memory o) internal returns (uint256 amountOut) {
+        _fundTaker();
+        vm.prank(taker);
         (, amountOut,) = router.swap(o, address(usdc), address(weth), SWAP_IN, _takerData());
-        vm.stopPrank();
+    }
+
+    function _shipAndSwap(bytes memory prog) internal returns (uint256 amountOut) {
+        amountOut = _swap(_ship(prog));
     }
 
     /// @notice Treasury menerima tepat 0,05% dari masukan, di swap yang sama.
@@ -161,5 +183,102 @@ contract ProtocolFeeTest is Test, IqiaOpcodes {
 
         assertEq(keMaker + keTreasury, SWAP_IN, "seluruh masukan terbagi habis, tanpa sisa");
         assertGt(keMaker, keTreasury * 10, "bagian maker jauh lebih besar");
+    }
+
+    /// @notice Harga yang dikutip sama dengan yang benar-benar dieksekusi.
+    ///
+    /// @dev Invarian #3 SwapVM ("Quote/Swap Consistency"), diuji dengan instruksi
+    ///   fee terpasang. Halaman Swap menaruh `minAmountOut` di atas angka kutipan
+    ///   ini, jadi kalau kutipan dan eksekusi berbeda, batas slippage-nya
+    ///   berbohong dan pengguna kena tanpa sebab yang terlihat.
+    ///
+    ///   Fee protokol punya satu divergensi yang didokumentasikan hulu: di mode
+    ///   kutipan (`isStaticContext`) tarikan ke treasury dilewati, tapi
+    ///   ANGKA-nya tetap dihitung. Jadi jumlahnya harus identik — dan itu yang
+    ///   dipatok di sini.
+    function test_KutipanSamaDenganEksekusi() public {
+        ISwapVM.Order memory o = _ship(_program(true, 4));
+
+        (, uint256 dikutip,) = router.quote(o, address(usdc), address(weth), SWAP_IN, _takerData());
+        uint256 diterima = _swap(o);
+
+        assertEq(diterima, dikutip, "kutipan harus sama persis dengan eksekusi");
+        assertGt(dikutip, 0, "dan bukan nol");
+    }
+
+    /// @notice Kalau maker tidak sanggup menutup fee, swap TETAP jalan dan
+    ///   treasury tidak dapat apa-apa.
+    ///
+    /// @dev Ini batas model bisnisnya, dan ditulis di sini supaya tidak ada yang
+    ///   menganggap pendapatannya terjamin. `_aquaProtocolFeeAmountInXD` memungut
+    ///   secara BEST-EFFORT: tarikan gagal ditangkap `try/catch`, dilaporkan lewat
+    ///   `ProtocolFeeSkipped`, lalu swap-nya diteruskan seolah tidak ada fee.
+    ///
+    ///   Kenapa penting: fee ditarik dari saldo Aqua maker untuk `tokenIn` yang
+    ///   SUDAH ADA sebelum swap — bukan dari uang penukar yang baru masuk. Posisi
+    ///   tabungan satu sisi (pengguna hanya menyetor WETH, tanpa USDC) karena itu
+    ///   tidak menghasilkan apa pun untuk treasury pada arah USDC→WETH, justru
+    ///   arah yang paling sering dipakai. Yang mengukur pendapatan harus membaca
+    ///   `Pulled` ke treasury, bukan mengalikan volume dengan tarif.
+    function test_FeeDilewatiKalauMakerTidakSanggup() public {
+        ISwapVM.Order memory o = _ship(_program(true, false, 5));
+        _fundTaker();
+
+        // Maker menarik izin USDC-nya. Saldo virtualnya tidak berubah, jadi kurva
+        // dan seluruh sisa swap identik — yang gagal hanya tarikan fee.
+        vm.prank(maker);
+        usdc.approve(address(AQUA), 0);
+
+        // Log direkam, bukan `expectEmit`: instruksi fee memancarkan di tengah
+        // `runLoop`, di antara `Pulled`/`Pushed` Aqua dan `Swapped` router, jadi
+        // menuntut ia jadi event BERIKUTNYA cuma memancing tes yang rapuh.
+        vm.recordLogs();
+        vm.prank(taker);
+        (, uint256 diterima,) = router.swap(o, address(usdc), address(weth), SWAP_IN, _takerData());
+
+        assertGt(diterima, 0, "swap tetap berhasil");
+        assertEq(usdc.balanceOf(treasury), 0, "treasury tidak dapat apa-apa");
+
+        uint256 fee = (SWAP_IN * PROTOCOL_BPS) / 1e9;
+        assertTrue(_skipDilaporkan(vm.getRecordedLogs(), fee), "kelewatannya dilaporkan, bukan senyap");
+    }
+
+    /// @notice Fee yang dilewati tidak menggeser angka yang diterima penukar.
+    ///
+    /// @dev Ini yang membuat `minAmountOut` di halaman Swap tetap bisa dipercaya:
+    ///   `quote()` selalu menghitung seolah fee tertarik, dan angka itu tetap
+    ///   benar walaupun tarikannya nanti gagal. Potongan pada masukan terjadi di
+    ///   `_feeAmountIn` tanpa bergantung pada berhasil-tidaknya tarikan, jadi yang
+    ///   berubah cuma siapa yang memegang selisihnya — treasury atau maker.
+    ///
+    ///   Diukur TANPA `SolvencyGuard`, dan itu bukan detail: dengan guard
+    ///   terpasang, keluarannya memang bergeser (276594915768062469 →
+    ///   276967862704952402) — tapi bukan karena fee-nya, melainkan karena guard
+    ///   membaca izin maker yang sungguhan, dan tes ini mencabut izin itu. Dua
+    ///   sebab yang kebetulan bergerak bersamaan; dipisahkan supaya angkanya
+    ///   berarti.
+    function test_FeeYangDilewatiTidakMenggeserKeluaran() public {
+        ISwapVM.Order memory ditarik = _ship(_program(true, false, 6));
+        (, uint256 dikutip,) = router.quote(ditarik, address(usdc), address(weth), SWAP_IN, _takerData());
+        uint256 dengan = _swap(ditarik);
+        assertEq(dengan, dikutip, "saat tarikan berhasil, kutipan tepat");
+
+        ISwapVM.Order memory o = _ship(_program(true, false, 7));
+        vm.prank(maker);
+        usdc.approve(address(AQUA), 0);
+
+        assertEq(_swap(o), dengan, "keluaran penukar sama, fee tertarik atau tidak");
+    }
+
+    /// @dev Mencari `ProtocolFeeSkipped` di antara log sebuah transaksi.
+    function _skipDilaporkan(Vm.Log[] memory logs, uint256 fee) private view returns (bool) {
+        bytes32 topic = keccak256("ProtocolFeeSkipped(bytes32,address,address,uint256)");
+        for (uint256 i; i < logs.length; i++) {
+            if (logs[i].topics.length == 0 || logs[i].topics[0] != topic) continue;
+            (, address token, address to, uint256 amount) =
+                abi.decode(logs[i].data, (bytes32, address, address, uint256));
+            if (token == address(usdc) && to == treasury && amount == fee) return true;
+        }
+        return false;
     }
 }
