@@ -55,9 +55,19 @@ contract MigrateToOfficialAqua is Script, IqiaOpcodes {
 
     constructor() IqiaOpcodes(vm.envAddress("AQUA")) { }
 
+    /**
+     * @dev Dua jalur penandatanganan, dan yang pertama yang seharusnya dipakai.
+     *
+     *   `MAKER` diisi  → keystore Foundry (`--account`). Kunci privatnya tetap
+     *                    terenkripsi di disk, tidak pernah masuk variabel
+     *                    lingkungan, riwayat shell, atau layar siapa pun.
+     *   `DESK_KEY` diisi → kunci mentah. Masih didukung untuk anvil dan CI, di
+     *                    mana kuncinya memang publik dan tak bernilai.
+     */
     function run() external {
-        uint256 key = vm.envUint("DESK_KEY");
-        address maker = vm.addr(key);
+        address maker = vm.envOr("MAKER", address(0));
+        uint256 key = maker == address(0) ? vm.envUint("DESK_KEY") : 0;
+        if (maker == address(0)) maker = vm.addr(key);
 
         IAqua aqua = IAqua(vm.envAddress("AQUA"));
         address weth = vm.envAddress("WETH_ADDR");
@@ -78,7 +88,8 @@ contract MigrateToOfficialAqua is Script, IqiaOpcodes {
         console.log("USDC di dompet   ", usdcBal);
         console.log("");
 
-        vm.startBroadcast(key);
+        if (key == 0) vm.startBroadcast();
+        else vm.startBroadcast(key);
 
         // `weth = address(0)`: pembungkusan otomatis dimatikan. Token WETH kita
         // mock ERC20 biasa, bukan WETH9 — memberi alamatnya di sini akan membuat
