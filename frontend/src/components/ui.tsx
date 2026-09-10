@@ -299,7 +299,7 @@ const BADGE_TONE: Record<BadgeTone, string> = {
   accent: 'bg-spectral/15 text-spectral-soft',
   success: 'bg-patina-500/15 text-patina-300',
   warn: 'bg-zinc-500/15 text-zinc-300',
-  danger: 'bg-red-500/15 text-red-300',
+  danger: 'bg-red-500/15 text-danger',
 }
 
 export function Badge({
@@ -417,7 +417,7 @@ export function TxBanner({
   }
   if (status === 'error') {
     return (
-      <div className="rounded-none border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300 animate-fade-in">
+      <div className="rounded-none border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-danger animate-fade-in">
         {error ?? 'Transaction failed.'}
       </div>
     )
