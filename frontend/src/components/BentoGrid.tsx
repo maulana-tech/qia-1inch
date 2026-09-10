@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useIsDark } from '../hooks/useTheme'
 import { LogoMark } from './Logo'
+import { SAVINGS_FEE_BPS } from '../lib/config'
 
 /**
  * Bento di bawah hero.
@@ -101,7 +102,10 @@ const MODULES: Module[] = [
   {
     href: '/savings',
     name: 'Savings',
-    blurb: 'Put part of your balance to work as liquidity and take 0.3% of every swap through it.',
+    // Tarifnya dibaca dari config, bukan ditulis tangan. Di sini tertulis 0,3%
+    // sementara `SAVINGS_FEE_BPS` sudah lama 0,25% — halaman depan menjanjikan
+    // angka yang tidak akan pernah dipungut posisinya.
+    blurb: `Put part of your balance to work as liquidity and take ${Number(SAVINGS_FEE_BPS) / 1e7}% of every swap through it.`,
   },
   { href: '/pay', name: 'Pay', blurb: 'Send any listed token to a plain address.' },
   { href: '/payment-link', name: 'Payment link', blurb: 'One link and a QR that pre-fills the amount for whoever pays.' },
