@@ -3,6 +3,7 @@ import { useAccount } from 'wagmi'
 import { renderSVG } from 'uqr'
 
 import { CURATED_TOKENS } from '../lib/tokens'
+import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { buildPaymentLink } from '../lib/payments'
 import { Button, Card, CardContent, Field, PageHeader, Select, TextInput } from '../components/ui'
 
@@ -19,7 +20,7 @@ export function PaymentLinkPage() {
     () =>
       address === undefined
         ? ''
-        : buildPaymentLink({ address, name, amount, token }, window.location.origin),
+        : buildPaymentLink({ address, name, amount, token, chainId: ACTIVE_CHAIN_ID }, window.location.origin),
     [address, name, amount, token],
   )
   const qr = useMemo(() => (link === '' ? '' : renderSVG(link)), [link])
