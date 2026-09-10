@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { fetchMarkets, fetchOneInchTokens, type Market, type TokenInfo } from '../lib/markets'
 import { AQUA_CONFIGURED, CHAIN_NAME, SWAP_VM_ROUTER_ADDRESS, explorerContractUrl } from '../lib/config'
 import { cx } from '../lib/cx'
+import { tokenIconUrl } from '../lib/coinIcon'
 import { Card, PageHeader, Spinner } from '../components/ui'
 
 /** Jumlah dalam satuan dasar token, ditampilkan ringkas. */
@@ -15,14 +16,38 @@ function formatUnits(value: bigint, decimals: number): string {
   return frac ? `${grouped}.${frac}` : grouped
 }
 
+/**
+ * Logo token: daftar 1inch dulu, lalu cryptoicons, lalu tiga huruf.
+ *
+ * Daftar 1inch didahulukan karena ia yang paling tahu token di rantai INI —
+ * `logoURI`-nya menunjuk aset yang memang dipasangkan dengan alamat itu.
+ * cryptoicons dicari berdasarkan simbol, dan simbol tidak unik antar rantai.
+ */
 function TokenGlyph({ token }: { token: TokenInfo }) {
-  if (token.logoURI) {
-    return <img src={token.logoURI} alt="" className="h-6 w-6 rounded-full" loading="lazy" />
+  const [src, setSrc] = useState<string | null>(token.logoURI ?? tokenIconUrl(token.symbol))
+
+  if (src === null) {
+    return (
+      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-spectral/20 text-[9px] text-spectral/70">
+        {token.symbol.slice(0, 3)}
+      </span>
+    )
   }
+
   return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-spectral/20 text-[9px] text-spectral/70">
-      {token.symbol.slice(0, 3)}
-    </span>
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="h-6 w-6 rounded-full"
+      // Satu langkah mundur: kalau URL daftar 1inch gagal, coba cryptoicons;
+      // kalau itu juga gagal, menyerah ke huruf. Tanpa penjaga `=== fallback`
+      // ini akan berputar selamanya pada URL yang sama.
+      onError={() => {
+        const fallback = tokenIconUrl(token.symbol)
+        setSrc(src === fallback ? null : fallback)
+      }}
+    />
   )
 }
 
