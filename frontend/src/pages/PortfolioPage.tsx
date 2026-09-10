@@ -6,7 +6,7 @@ import { erc20Abi, formatUnits, parseEther, type Address } from 'viem'
 import { CURATED_TOKENS } from '../lib/tokens'
 import { canWrapNative, tokenDecimals, unwrapNative, wrapNative } from '../lib/payments'
 import { fetchActiveStrategies, fetchPositionTrades, type ActiveStrategy, type PositionTrade } from '../lib/markets'
-import { closePosition, positionBalances } from '../lib/savings'
+import { closePosition, positionBalancesOrZero } from '../lib/savings'
 import { DESK_CONFIGURED, MOCK_WETH_ADDRESS, explorerContractUrl, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader, TextInput } from '../components/ui'
@@ -94,7 +94,7 @@ export function PortfolioPage() {
       for (const s of mine) {
         const tokens = [...s.tokens]
         if (tokens.length < 2) continue
-        const [a, b] = await positionBalances(address, s.hash, tokens[0], tokens[1])
+        const [a, b] = await positionBalancesOrZero(address, s.hash, tokens[0], tokens[1], s.app)
         withLegs.push({
           ...s,
           tokenAddresses: [tokens[0], tokens[1]],
