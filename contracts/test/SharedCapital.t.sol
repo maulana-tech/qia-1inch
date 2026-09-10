@@ -72,7 +72,7 @@ contract SharedCapitalTest is Test, IqiaOpcodes {
         vm.stopPrank();
     }
 
-    function _program(uint64 saltValue) internal view returns (bytes memory) {
+    function _program(uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
