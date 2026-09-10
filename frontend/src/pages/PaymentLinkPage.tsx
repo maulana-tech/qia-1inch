@@ -5,7 +5,8 @@ import { renderSVG } from 'uqr'
 import { CURATED_TOKENS } from '../lib/tokens'
 import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { buildPaymentLink } from '../lib/payments'
-import { Button, Card, CardContent, Field, PageHeader, Select, TextInput } from '../components/ui'
+import { Button, Card, CardContent, Field, PageHeader, TextInput } from '../components/ui'
+import { TokenSelect } from '../components/TokenSelect'
 
 const SENDABLE = CURATED_TOKENS.filter((t) => t.native || t.sac)
 
@@ -39,7 +40,7 @@ export function PaymentLinkPage() {
           caption="Create one link carrying your address and the amount you're asking for. The payer just opens it — the send form is already filled in."
         />
 
-        <Card>
+        <Card className="overflow-visible">
           <CardContent className="space-y-5">
             {address === undefined ? (
               <p className="py-6 text-center text-sm text-zinc-500">
@@ -56,11 +57,7 @@ export function PaymentLinkPage() {
                     />
                   </Field>
                   <Field label="Token">
-                    <Select
-                      value={token}
-                      onChange={(e) => setToken(e.target.value)}
-                      options={SENDABLE.map((t) => ({ value: t.code, label: t.code }))}
-                    />
+                    <TokenSelect value={token} onChange={setToken} options={SENDABLE} />
                   </Field>
                   <Field label="Amount" hint="Leave empty to let the payer fill it in.">
                     <TextInput
