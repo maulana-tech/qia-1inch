@@ -341,7 +341,7 @@ export function StrategyPage() {
                         <span className="text-spectral/60">Good if </span>
                         {s.bestFor.replace(/^You /, 'you ')}
                       </p>
-                      <p className="text-xs leading-relaxed text-yellow-300/70">{s.tradeoff}</p>
+                      <p className="text-xs leading-relaxed text-warn/70">{s.tradeoff}</p>
                       <p className="mt-1 font-mono text-[10px] text-zinc-600">
                         {s.opcodes.join(' → ')}
                       </p>
@@ -391,7 +391,7 @@ export function StrategyPage() {
                         </button>
                       ))}
                     </div>
-                    <p className="mt-2 text-xs text-yellow-300/70">
+                    <p className="mt-2 text-xs text-warn/70">
                       Outside the band your position stops earning and ends up entirely on one
                       side of the pair. A narrower band is also not automatically better: if your
                       two balances are lopsided, the position is born leaning to one edge, and
@@ -437,7 +437,7 @@ export function StrategyPage() {
                       onChange={(e) => setTaker(e.target.value)}
                       className="mt-2"
                     />
-                    <span className="mt-1 block text-xs text-yellow-300/70">
+                    <span className="mt-1 block text-xs text-warn/70">
                       Only this address can fill your position. If they go quiet, your position goes quiet.
                     </span>
                   </label>
@@ -506,7 +506,7 @@ export function StrategyPage() {
                     </a>
                   </p>
                 )}
-                {error && <p className="text-center text-xs text-yellow-300">{error}</p>}
+                {error && <p className="text-center text-xs text-warn">{error}</p>}
               </>
             )}
 
