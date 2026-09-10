@@ -37,6 +37,70 @@ interface Position extends ActiveStrategy {
   trades: PositionTrade[]
 }
 
+/**
+ * Berapa kali lipat modal nyatamu terdaftar sebagai likuiditas.
+ *
+ * # Kenapa baris ini wajib ada di sini
+ *
+ * Daftar di bawahnya menampilkan tiap posisi dengan saldo terdaftarnya. Dengan
+ * tiga posisi beralas WETH yang sama, layarnya menulis "19,93 WETH" tiga kali —
+ * dan pembacanya wajar menyimpulkan ada 60 WETH terkomit. Itu kesan yang salah,
+ * dan yang jadi korban justru properti paling penting Aqua: modalnya TIDAK
+ * terbagi.
+ *
+ * Angkanya dihitung per token: jumlah terdaftar di semua posisi, dibagi saldo
+ * dompet yang sungguhan. Yang tertinggi yang ditampilkan, karena itulah token
+ * yang paling banyak dipakai ulang.
+ *
+ * Diukur di rantai resmi saat ditulis: 19,93 WETH menopang tiga pasar, 3,00×.
+ */
+function SharedCapital({
+  positions,
+  holdings,
+}: {
+  positions: Position[] | null
+  holdings: Holding[] | null
+}) {
+  if (!positions || positions.length < 2 || !holdings) return null
+
+  const registered = new Map<string, bigint>()
+  for (const p of positions) {
+    p.tokenAddresses.forEach((addr, i) => {
+      const key = addr.toLowerCase()
+      registered.set(key, (registered.get(key) ?? 0n) + (p.legs[i]?.balance ?? 0n))
+    })
+  }
+
+  let best: { code: string; multiple: number; registered: bigint; real: bigint } | null = null
+  for (const h of holdings) {
+    const reg = registered.get(h.address.toLowerCase()) ?? 0n
+    // Saldo nyata nol berarti tidak ada pembaginya — dan token yang tidak
+    // dipegang lagi bukan contoh modal bersama, ia contoh sandaran yang hilang.
+    if (reg === 0n || h.balance === 0n) continue
+    const multiple = Number((reg * 100n) / h.balance) / 100
+    if (!best || multiple > best.multiple) {
+      best = { code: h.code, multiple, registered: reg, real: h.balance }
+    }
+  }
+  if (!best || best.multiple <= 1) return null
+
+  return (
+    <div className="mb-3 rounded-xl border border-spectral/12 bg-spectral/[0.04] p-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="coord-label">shared capital</span>
+        <span className="font-mono text-lg tabular-nums text-spectral/90">
+          {best.multiple.toFixed(2)}×
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs leading-relaxed text-spectral/55">
+        Your {best.code} is registered across {positions.length} positions at once. The amounts
+        below are not added up and they are not separate piles — the same tokens back every one of
+        them, because Aqua records an allowance and never takes the tokens.
+      </p>
+    </div>
+  )
+}
+
 export function PortfolioPage() {
   const { address } = useAccount()
   const [holdings, setHoldings] = useState<Holding[] | null>(null)
@@ -299,6 +363,12 @@ export function PortfolioPage() {
                 <CardTitle>Positions in Aqua ({totalPositions})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
+                {/* Tanpa baris ini, tiga posisi yang masing-masing menulis
+                    "19,93 WETH" terbaca seolah 60 WETH terkomit. Itu kesan yang
+                    salah dan mudah sekali terbentuk — dan justru properti paling
+                    penting Aqua yang jadi korban: modalnya TIDAK terbagi, ia
+                    menopang semuanya sekaligus. */}
+                <SharedCapital positions={positions} holdings={holdings} />
                 {positions === null ? (
                   <p className="py-3 text-center text-xs text-zinc-500">Membaca…</p>
                 ) : positions.length === 0 ? (
