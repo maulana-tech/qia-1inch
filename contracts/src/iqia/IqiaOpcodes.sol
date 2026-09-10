@@ -56,6 +56,17 @@ contract IqiaOpcodes is AquaOpcodes, ExclusiveFill, SolvencyGuard {
     ///   Menimpa instruksi yang sudah ada akan mengubah arti setiap program yang
     ///   memakai nomor opcode itu — gagal keras jauh lebih baik.
     ///
+    /// @dev BIAYANYA: `_opcodes()` dipanggil `SwapVM` di dalam `quote()` DAN
+    ///   `swap()`, jadi pemeriksaan ini berjalan pada setiap kutipan dan setiap
+    ///   perdagangan — untuk menjawab pertanyaan yang jawabannya tidak bisa
+    ///   berubah setelah kontraknya ter-deploy. Tempat yang benar adalah
+    ///   konstruktor, atau sebuah test.
+    ///
+    ///   Sengaja TIDAK diubah sekarang: router ini sudah hidup di Sepolia dengan
+    ///   posisi di atasnya, dan sumber yang tidak lagi cocok dengan bytecode
+    ///   ter-deploy lebih berbahaya daripada gas yang terbuang. Pindahkan saat
+    ///   ada alasan lain untuk men-deploy ulang.
+    ///
     /// @dev BATASNYA: perbandingan pointer fungsi internal memicu peringatan solc
     ///   3075 dan akan dilarang sepenuhnya di rilis breaking berikutnya. Risikonya
     ///   tidak berlaku sekarang karena kontrak ini dikompilasi dengan via_ir,
