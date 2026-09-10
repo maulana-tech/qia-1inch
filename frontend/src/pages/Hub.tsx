@@ -65,7 +65,7 @@ function MarketRow({ market }: { market: Market }) {
               {market.official && (
                 <span
                   className="rounded-full bg-ink-700/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-zinc-400"
-                  title="Posisi milik maker lain di router resmi. Bisa dilihat, tidak bisa diisi dari aplikasi ini."
+                  title="Another maker's position on the official router. Readable, but not fillable from this app."
                 >
                   baca saja
                 </span>
@@ -107,7 +107,7 @@ export function Hub() {
         setTokens(Object.values(listed))
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Gagal memuat market.')
+        setError(err instanceof Error ? err.message : 'Failed to load markets.')
         setMarkets([])
       }
     })()
@@ -124,7 +124,7 @@ export function Hub() {
       <section className="space-y-5">
         <PageHeader
           title="Markets"
-          caption={`Likuiditas dari 1inch Aqua di ${CHAIN_NAME}. Setiap market ditopang dompet market maker.`}
+          caption={`Liquidity from 1inch Aqua on ${CHAIN_NAME}. Every market is backed by a market maker's wallet.`}
         />
 
       <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-2">
@@ -144,7 +144,7 @@ export function Hub() {
 
       {markets === null ? (
         <Card className="flex items-center gap-3 p-6 text-sm text-spectral/60">
-          <Spinner className="h-4 w-4" /> Membaca market dari rantai…
+          <Spinner className="h-4 w-4" /> Reading markets from the chain…
         </Card>
       ) : error ? (
         <Card className="p-6 text-sm text-rose-300/90">{error}</Card>
@@ -159,8 +159,8 @@ export function Hub() {
           <div className="text-sm text-spectral/80">Belum ada market aktif.</div>
           <p className="mt-2 text-sm text-spectral/55">
             {AQUA_CONFIGURED
-              ? 'Router sudah dikonfigurasi, tapi belum ada posisi yang dikirim ke Aqua. Market muncul begitu seorang market maker memanggil ship().'
-              : 'Alamat Aqua dan router belum diisi. Jalankan script/DemoIqiaDesk.s.sol, lalu salin env yang dicetaknya ke frontend/.env.local.'}
+              ? 'The router is configured, but no position has been shipped to Aqua yet. Markets appear as soon as a market maker calls ship().'
+              : 'The Aqua and router addresses are not set. Run script/DemoIqiaDesk.s.sol, then copy the env it prints into frontend/.env.local.'}
           </p>
           {AQUA_CONFIGURED ? (
             <a
@@ -177,7 +177,7 @@ export function Hub() {
 
       {tokens.length > 0 ? (
         <section className="mt-12">
-          <div className="coord-label mb-3">token yang dikenali 1inch di {CHAIN_NAME}</div>
+          <div className="coord-label mb-3">tokens 1inch recognises on {CHAIN_NAME}</div>
           <div className="flex flex-wrap gap-2">
             {tokens.slice(0, 60).map((t) => (
               <span
@@ -193,7 +193,7 @@ export function Hub() {
             ))}
             {tokens.length > 60 ? (
               <span className="self-center text-xs text-spectral/40">
-                +{tokens.length - 60} lainnya
+                +{tokens.length - 60} more
               </span>
             ) : null}
           </div>
