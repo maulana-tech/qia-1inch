@@ -35,14 +35,14 @@ export function PaymentLinkPage() {
       <section className="space-y-5">
         <PageHeader
           title="Payment link"
-          caption="Buat satu tautan berisi alamatmu dan nominal yang diminta. Pembayar tinggal membukanya — formulir kirimnya sudah terisi."
+          caption="Create one link carrying your address and the amount you're asking for. The payer just opens it — the send form is already filled in."
         />
 
         <Card>
           <CardContent className="space-y-5">
             {address === undefined ? (
               <p className="py-6 text-center text-sm text-zinc-500">
-                Hubungkan dompetmu untuk membuat tautan.
+                Connect your wallet to create a link.
               </p>
             ) : (
               <>
@@ -82,7 +82,7 @@ export function PaymentLinkPage() {
                     {link}
                   </p>
                   <Button className="shrink-0" onClick={() => void copy()}>
-                    {copied ? 'Tersalin' : 'Salin'}
+                    {copied ? 'Copied' : 'Copy'}
                   </Button>
                 </div>
               </>
