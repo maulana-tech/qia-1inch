@@ -41,20 +41,37 @@ export interface Instruction {
 export class DisassembleError extends Error {}
 
 /**
+ * Format ini HANYA berlaku untuk program SwapVM.
+ *
+ * `app` di Aqua boleh kontrak apa pun — Aqua tidak menuntutnya router SwapVM.
+ * Diukur di registry resmi Sepolia: dari 11 app yang mengirim posisi, hanya
+ * milik kita yang byte-nya berbentuk `[opcode][panjang][argumen]`. Sisanya
+ * 74–234 byte dengan byte awal beentropi tinggi, dan dua di antaranya bahkan
+ * bukan `Order` yang sah menurut ABI.
+ *
+ * Jadi kegagalan di sini biasanya bukan program rusak. Ia program milik mesin
+ * lain, dan menebaknya akan menghasilkan omong kosong yang terlihat percaya
+ * diri.
+ */
+
+/**
  * @throws DisassembleError kalau byte-nya habis di tengah instruksi.
- *   Dilempar, bukan dipotong diam-diam: program yang terpotong berarti kita
- *   salah membaca formatnya, dan menampilkan separuh hasil sebagai kalau itu
- *   program utuh lebih menyesatkan daripada mengaku tidak bisa membacanya.
+ *   Dilempar, bukan dipotong diam-diam: byte yang habis di tengah berarti kita
+ *   salah membaca formatnya — hampir selalu karena programnya milik mesin lain
+ *   — dan menampilkan separuh hasil seolah itu program utuh lebih menyesatkan
+ *   daripada mengaku tidak bisa membacanya.
+ *
+ *   Pesannya berbahasa Inggris karena ia sampai ke layar pengguna apa adanya.
  */
 export function disassemble(program: Hex): Instruction[] {
   const body = program.startsWith('0x') ? program.slice(2) : program
-  if (body.length % 2 !== 0) throw new DisassembleError('panjang program bukan kelipatan byte')
+  if (body.length % 2 !== 0) throw new DisassembleError('program length is not a whole number of bytes')
 
   const out: Instruction[] = []
   let i = 0
   while (i < body.length) {
     if (i + 4 > body.length) {
-      throw new DisassembleError(`byte habis di offset ${i / 2}: header instruksi tidak lengkap`)
+      throw new DisassembleError(`ran out of bytes at offset ${i / 2}: incomplete instruction header`)
     }
     const opcode = parseInt(body.slice(i, i + 2), 16)
     const len = parseInt(body.slice(i + 2, i + 4), 16)
@@ -62,7 +79,7 @@ export function disassemble(program: Hex): Instruction[] {
     const argEnd = argStart + len * 2
     if (argEnd > body.length) {
       throw new DisassembleError(
-        `byte habis di offset ${i / 2}: opcode ${opcode} menuntut ${len} byte argumen`,
+        `ran out of bytes at offset ${i / 2}: opcode ${opcode} claims ${len} bytes of arguments`,
       )
     }
     out.push({
