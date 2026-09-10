@@ -3,6 +3,7 @@ import { useAccount } from 'wagmi'
 import { renderSVG } from 'uqr'
 
 import { CHAIN_NAME } from '../lib/config'
+import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { Button, Card, CardContent, PageHeader } from '../components/ui'
 
 /**
@@ -16,7 +17,20 @@ export function ReceivePage() {
   const { address } = useAccount()
   const [copied, setCopied] = useState(false)
 
-  const qr = useMemo(() => (address ? renderSVG(address) : ''), [address])
+  /**
+   * QR-nya EIP-681, bukan alamat telanjang.
+   *
+   * `ethereum:0x…@11155111` memberi tahu dompet pemindainya dua hal sekaligus:
+   * ke mana kirimannya, dan di RANTAI MANA. Alamat telanjang cuma memberi yang
+   * pertama — dompet akan mengisi penerima lalu memakai rantai apa pun yang
+   * sedang aktif, dan alamat EVM sah di semua rantai, jadi kirimannya tetap
+   * "berhasil" ke tempat yang tidak bisa kamu ambil.
+   *
+   * Dompet yang tidak mengenal skema ini tetap membaca alamatnya dari dalam URI,
+   * jadi tidak ada yang hilang dengan memakainya.
+   */
+  const uri = address ? `ethereum:${address}@${ACTIVE_CHAIN_ID}` : ''
+  const qr = useMemo(() => (uri ? renderSVG(uri) : ''), [uri])
 
   async function copy() {
     if (!address) return
