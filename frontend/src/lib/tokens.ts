@@ -97,6 +97,7 @@ export function tokenBySac(sac: string): TokenMeta | undefined {
 }
 
 import { readContract } from '@wagmi/core'
+import type { Config } from '@wagmi/core'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import { erc20Abi } from 'viem'
 
@@ -110,13 +111,13 @@ export async function resolveCustomToken(sacAddress: string): Promise<TokenMeta>
     throw new Error('Enter a valid ERC20 contract address — starts with "0x".')
   }
   try {
-    const decimals = await readContract(wagmiConfig as any, {
+    const decimals = await readContract(wagmiConfig as Config, {
       address: sac as `0x${string}`,
       abi: erc20Abi,
       functionName: 'decimals',
       chainId: ACTIVE_CHAIN_ID,
     })
-    const symbol = await readContract(wagmiConfig as any, {
+    const symbol = await readContract(wagmiConfig as Config, {
       address: sac as `0x${string}`,
       abi: erc20Abi,
       functionName: 'symbol',
@@ -131,7 +132,10 @@ export async function resolveCustomToken(sacAddress: string): Promise<TokenMeta>
       decimals,
       priceUsd: 0,
     }
-  } catch (e) {
+  } catch {
+    // Sebabnya sengaja tidak diteruskan: pesan viem untuk alamat yang bukan
+    // ERC20 berupa dump ABI panjang, dan yang perlu diketahui penggunanya cuma
+    // bahwa alamat itu bukan token.
     throw new Error('Failed to resolve ERC20 token at that address.')
   }
 }
