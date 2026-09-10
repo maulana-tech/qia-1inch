@@ -70,8 +70,8 @@ export interface MarketLeg extends TokenInfo {
 export interface Market {
   /** Aqua app yang menaungi posisi ini. */
   app: string
-  /** True kalau likuiditas ini milik router SwapVM resmi, bukan meja kita. */
-  official: boolean
+  /** Asal posisi: meja kita, router resmi 1inch, atau app tim lain. */
+  source: AppSource
   strategyHash: string
   maker: string
   legs: MarketLeg[]
@@ -148,8 +148,8 @@ export interface ActiveStrategy {
   strategy: `0x${string}`
   /** Aqua app yang menaungi posisi ini. */
   app: string
-  /** True kalau app-nya router SwapVM resmi 1inch, bukan router kita. */
-  official: boolean
+  /** Asal posisi: meja kita, router resmi 1inch, atau app tim lain. */
+  source: AppSource
 }
 
 /**
@@ -160,17 +160,32 @@ export interface ActiveStrategy {
  * encoder kita. Tanpa ini, halaman Markets di rantai publik selalu kosong,
  * karena router kita belum ter-deploy di mana pun.
  */
-function knownApps(): { address: string; official: boolean }[] {
-  const apps: { address: string; official: boolean }[] = []
+/** Dari mana sebuah posisi berasal. */
+export type AppSource = 'ours' | 'official' | 'other'
+
+/**
+ * Menggolongkan app sebuah posisi, TANPA menyaringnya.
+ *
+ * Sebelumnya fungsi ini daftar putih: hanya router kita dan router SwapVM resmi
+ * yang lolos, sisanya dibuang diam-diam. Itu masuk akal saat kita memakai
+ * registry Aqua sendiri, karena isinya memang cuma posisi kita.
+ *
+ * Sejak meja pindah ke registry Aqua RESMI, daftar putih itu justru membuang
+ * hal yang paling menarik: pada satu jendela pengukuran ada 37 posisi aktif
+ * dari 11 maker dan 12 app berbeda di sana, dan kita cuma menampilkan satu.
+ * Registry itu memang milik bersama — `Shipped` memancarkan seluruh `Order`,
+ * jadi posisi siapa pun bisa dibaca dan dihargai tanpa izin.
+ *
+ * Yang tetap dijaga: ASALNYA disebut terang-terangan. Menampilkan posisi maker
+ * lain seolah milik meja kita akan menyesatkan, dan hanya posisi di router kita
+ * yang benar-benar bisa diisi dari aplikasi ini.
+ */
+export function appSource(app: string): AppSource {
+  const a = app.toLowerCase()
   const ours = SWAP_VM_ROUTER_ADDRESS.toLowerCase()
-  // Alamat nol berarti router kita belum ter-deploy di rantai ini. Memasukkannya
-  // akan mencocokkan app kosong dan menampilkan posisi yang bukan milik siapa pun.
-  if (/^0x[0-9a-f]{40}$/.test(ours) && BigInt(ours) !== 0n) {
-    apps.push({ address: ours, official: false })
-  }
-  const official = OFFICIAL_SWAP_VM_ROUTER.toLowerCase()
-  if (!apps.some((a) => a.address === official)) apps.push({ address: official, official: true })
-  return apps
+  if (/^0x[0-9a-f]{40}$/.test(ours) && BigInt(ours) !== 0n && a === ours) return 'ours'
+  if (a === OFFICIAL_SWAP_VM_ROUTER.toLowerCase()) return 'official'
+  return 'other'
 }
 
 /**
@@ -297,8 +312,6 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
         : 0n
       : BigInt(POOL_DEPLOY_BLOCK)
 
-  const apps = knownApps()
-  const appOf = new Map(apps.map((a) => [a.address, a]))
   const wanted = maker?.toLowerCase()
 
   const shipped = await scanLogs(client, SHIPPED, fromBlock, latest)
@@ -327,26 +340,24 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
     )
   }
 
-  const closed = new Set(
-    docked
-      .filter((l: any) => appOf.has((l.args.app as string)?.toLowerCase()))
-      .map((l: any) => l.args.strategyHash as string),
-  )
+  // `strategyHash` unik lintas app, jadi daftar tutup tidak perlu disaring per
+  // app lagi — dan menyaringnya justru berbahaya sekarang: posisi tim lain yang
+  // sudah di-dock akan tampil sebagai hidup kalau event `Docked`-nya dibuang.
+  const closed = new Set(docked.map((l: any) => l.args.strategyHash as string))
 
   const strategies = new Map<string, ActiveStrategy>()
   for (const log of shipped as any[]) {
     const appAddr = (log.args.app as string)?.toLowerCase()
-    const known = appOf.get(appAddr)
     const hash = log.args.strategyHash as `0x${string}`
     const owner = log.args.maker as string
-    if (!known || closed.has(hash)) continue
+    if (closed.has(hash)) continue
     if (wanted && owner.toLowerCase() !== wanted) continue
     strategies.set(hash, {
       hash,
       maker: owner,
       tokens: new Set(),
       app: appAddr,
-      official: known.official,
+      source: appSource(appAddr),
       strategy: log.args.strategy as `0x${string}`,
     })
   }
@@ -476,54 +487,87 @@ export async function fetchMarkets(): Promise<Market[]> {
    */
   const DOCKED_MARKER = 255
 
-  const markets: Market[] = []
-  for (const { hash: strategyHash, maker, tokens, app, official } of strategies) {
-    const legs: MarketLeg[] = []
-    let dockedOnChain = false
-    for (const token of tokens) {
-      const meta = listed[token] ?? (await readTokenOnChain(token))
-      const [balance] = (await readContracts(wagmiConfig as any, {
-        contracts: [{
-          address: AQUA_ADDRESS as Address,
-          abi: aquaBalancesAbi,
-          functionName: 'rawBalances',
-          // App-nya per posisi, bukan router kita: saldo posisi milik router
-          // resmi hanya terbaca kalau ditanyakan dengan app-nya sendiri.
-          args: [maker as Address, app as Address, strategyHash as `0x${string}`, token as Address],
-          chainId: ACTIVE_CHAIN_ID,
-        }],
-      }))
-      // Pembacaan yang GAGAL tidak boleh menjadi nol. Nol yang sungguhan dan
-      // nol karena panggilan gagal terlihat sama persis di layar, dan yang
-      // kedua membuat orang menyimpulkan likuiditasnya habis padahal tidak.
-      //
-      // Kasus nyatanya: di rantai yang mengaku Base Sepolia tapi tidak punya
-      // Multicall3, viem tetap memakai multicall karena definisi rantainya
-      // menyatakan ada — seluruh pembacaan gagal, dan halamannya menampilkan
-      // market dengan saldo nol tanpa satu pun tanda ada yang salah.
-      if (balance.status !== 'success') {
-        throw new Error(
-          `Failed to read the ${meta.symbol} balance for position ${strategyHash.slice(0, 10)}: ` +
-            String(balance.error).slice(0, 120),
-        )
-      }
-      const result = balance.result as readonly [bigint, number]
-      if (result[1] === DOCKED_MARKER) {
-        dockedOnChain = true
-        break
-      }
-      legs.push({ ...meta, address: token, balance: result[0] })
-    }
-    if (dockedOnChain || legs.length === 0) continue
-    legs.sort((a, b) => a.symbol.localeCompare(b.symbol))
-    markets.push({ strategyHash, maker, app, official, legs, pair: legs.map((l) => l.symbol).join(' / ') })
+  /**
+   * Saldo seluruh posisi dibaca dalam SATU multicall.
+   *
+   * Versi sebelumnya menunggu satu panggilan per token, berurutan. Dengan satu
+   * posisi itu tidak terasa; dengan 37 posisi milik 11 maker di registry resmi
+   * itu 74 perjalanan bolak-balik dan belasan detik layar kosong. Metadata token
+   * juga di-dedup lebih dulu — pasangan yang sama muncul di banyak posisi, dan
+   * tanpa dedup token yang sama dibaca berulang kali.
+   */
+  const wantedReads: { s: ActiveStrategy; token: string }[] = []
+  for (const st of strategies) for (const token of st.tokens) wantedReads.push({ s: st, token })
+
+  const unknown = [...new Set(wantedReads.map((w) => w.token))].filter((t) => !listed[t])
+  const resolved = new Map<string, TokenInfo>()
+  for (const t of unknown) resolved.set(t, await readTokenOnChain(t))
+  const metaOf = (t: string) => listed[t] ?? resolved.get(t)!
+
+  const balances = await readContracts(wagmiConfig as any, {
+    contracts: wantedReads.map((w) => ({
+      address: AQUA_ADDRESS as Address,
+      abi: aquaBalancesAbi,
+      functionName: 'rawBalances',
+      // App-nya per posisi, bukan router kita: saldo posisi milik app lain
+      // hanya terbaca kalau ditanyakan dengan app-nya sendiri.
+      args: [w.s.maker as Address, w.s.app as Address, w.s.hash, w.token as Address],
+      chainId: ACTIVE_CHAIN_ID,
+    })),
+  })
+
+  const perStrategy = new Map<string, MarketLeg[]>()
+  const dockedOnChain = new Set<string>()
+  /**
+   * Posisi yang gagal dibaca DILEWATI, tidak ditampilkan dengan saldo nol.
+   *
+   * Dulu satu pembacaan gagal melempar dan menjatuhkan seluruh halaman. Itu
+   * benar saat semua posisi milik kita sendiri. Sekarang daftarnya memuat posisi
+   * tim lain dengan token yang tidak kita kenal, dan satu token aneh tidak boleh
+   * mengosongkan papan untuk semua orang.
+   *
+   * Yang TIDAK berubah: gagal baca tidak pernah menjadi nol. Nol sungguhan dan
+   * nol karena panggilan gagal terlihat sama persis di layar, dan yang kedua
+   * membuat orang menyimpulkan likuiditasnya habis padahal tidak.
+   */
+  const unreadable = new Set<string>()
+
+  for (const [i, w] of wantedReads.entries()) {
+    const r = balances[i]
+    if (r.status !== 'success') { unreadable.add(w.s.hash); continue }
+    const [amount, tokensCount] = r.result as readonly [bigint, number]
+    if (tokensCount === DOCKED_MARKER) { dockedOnChain.add(w.s.hash); continue }
+    const legs = perStrategy.get(w.s.hash) ?? []
+    legs.push({ ...metaOf(w.token), address: w.token, balance: amount })
+    perStrategy.set(w.s.hash, legs)
   }
 
-  // Yang masih punya likuiditas naik ke atas. Posisi terdaftar tapi sudah
-  // terkuras habis tetap ditampilkan — itu keadaan nyata di rantai, bukan galat —
-  // tapi tidak berguna buat orang yang datang untuk menukar.
-  const punyaLikuiditas = (m: Market) => m.legs.some((l) => l.balance > 0n)
-  markets.sort((a, b) => Number(punyaLikuiditas(b)) - Number(punyaLikuiditas(a)))
+  const markets: Market[] = []
+  for (const { hash: strategyHash, maker, app, source } of strategies) {
+    if (dockedOnChain.has(strategyHash) || unreadable.has(strategyHash)) continue
+    const legs = perStrategy.get(strategyHash)
+    if (!legs || legs.length === 0) continue
+    legs.sort((a, b) => a.symbol.localeCompare(b.symbol))
+    markets.push({ strategyHash, maker, app, source, legs, pair: legs.map((l) => l.symbol).join(' / ') })
+  }
+
+  /**
+   * Yang bisa DIPAKAI naik ke atas, baru yang punya likuiditas.
+   *
+   * Urutannya penting sejak papan ini memuat posisi tim lain: dari 37 baris,
+   * hanya yang di router kita yang benar-benar bisa diisi dari aplikasi ini.
+   * Tanpa aturan pertama, satu-satunya baris yang bisa ditukar terkubur di
+   * tengah selusin posisi yang cuma bisa dibaca.
+   *
+   * Posisi yang terdaftar tapi sudah terkuras tetap ditampilkan — itu keadaan
+   * nyata di rantai, bukan galat — tapi tidak berguna buat orang yang datang
+   * untuk menukar, jadi ia turun.
+   */
+  const bisaDiisi = (m: Market) => Number(m.source === 'ours')
+  const punyaLikuiditas = (m: Market) => Number(m.legs.some((l) => l.balance > 0n))
+  markets.sort(
+    (a, b) => bisaDiisi(b) - bisaDiisi(a) || punyaLikuiditas(b) - punyaLikuiditas(a),
+  )
 
   return markets
 }
