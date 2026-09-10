@@ -5,499 +5,250 @@
 <h1 align="center">Iqia</h1>
 
 <p align="center">
-  A market-making desk on 1inch Aqua, where liquidity never leaves the maker's
-  wallet and the pricing strategy is a SwapVM program you can read before you ship it.
+  Savings that never leave your wallet.<br />
+  A consumer app on 1inch Aqua where the pricing strategy is a SwapVM program you can read.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Ethereum-Sepolia-1b1b1b" alt="Ethereum Sepolia" />
-  <img src="https://img.shields.io/badge/1inch-Aqua%20%C2%B7%20SwapVM-1b1b1b" alt="Aqua / SwapVM" />
-  <img src="https://img.shields.io/badge/License-MIT-1b1b1b" alt="MIT" />
+  <img src="https://img.shields.io/badge/1inch-Official%20Aqua%20registry-1b1b1b" alt="Official Aqua" />
+  <img src="https://img.shields.io/badge/tests-51%20Foundry%20%C2%B7%2023%20encoder-1b1b1b" alt="tests" />
 </p>
 
----
-
-## Status
-
-Aplikasi ini sebelumnya berjalan di chain lain sebagai dark pool ZK. Lapisan itu
-sudah dibuang seluruhnya — sirkuit, kolam, verifier, dan SDK-nya — dan yang
-tersisa adalah meja market making di atas **1inch Aqua + SwapVM**.
-
-| Bagian | Keadaan |
-|---|---|
-| Likuiditas lewat Aqua/SwapVM | ✅ Jalan, terbukti on-chain |
-| Dua opcode SwapVM custom | ✅ 37 test |
-| Empat strategi + wizard | ✅ Jalan, byte-nya terlihat sebelum dikirim |
-| Swap dari UI | ✅ Jalan, lewat `@iqia/swapvm` |
-| Baca likuiditas nyata di Base | ✅ Jalan, dari router SwapVM resmi |
-
-Peta migrasinya di [`docs/migrasi.md`](docs/migrasi.md).
-Rujukan teknis Aqua/SwapVM di [`docs/RESOURCES.md`](docs/RESOURCES.md).
+<p align="center"><em>Powered by SwapVM — © Degensoft Ltd 2025</em></p>
 
 ---
 
-## Masalah
+## The idea in one paragraph
 
-Untuk menyediakan likuiditas on-chain, dananya harus dititipkan ke kolam lebih
-dulu. Modal terkunci di kontrak, tidak bisa dipakai untuk hal lain, dan
-menariknya kembali butuh transaksi tersendiri. Itu ongkos yang ditagih setiap
-AMM sebelum kamu memperoleh satu sen fee pun.
-
-Buat pemilik dompet biasa, ongkos itu terlalu mahal untuk imbalan yang tidak
-seberapa. Jadi mereka tidak ikut, dan likuiditas terkumpul di segelintir pihak.
-
-## Jawaban Iqia
-
-**Token tidak pernah pindah dari dompetmu.**
-
-Aqua mencatat *izin*, bukan setoran. Membuka posisi tidak memindahkan apa pun —
-bandingkan saldo dompet sebelum dan sesudah, angkanya sama persis. Token bergerak
-tepat sekali, pada detik sebuah swap terjadi, langsung dari maker ke taker.
-Modal yang sama bisa menopang beberapa strategi sekaligus.
-
-**Strateginya program, bukan label.** Aturan hargamu dijalankan sebagai bytecode
-di dalam SwapVM. Iqia mendeploy ulang SwapVM dengan dua instruksi buatan sendiri:
-satu membatasi siapa yang boleh mengisi, satu lagi menggerakkan harga saat
-jaminan nyata maker menipis — memburuk bertahap alih-alih gagal mentah.
-
-Instruksi kedua itu hanya punya arti di Aqua. Di kolam biasa pertanyaannya tidak
-ada, sebab dananya sudah disetor.
+Put money in a liquidity pool and it stops being yours to spend. Iqia does the
+opposite: Aqua records an **allowance**, never a deposit, so the same balance
+earns fees from swaps **and stays spendable at any moment**. The price your money
+quotes is not a setting — it is a bytecode program, emitted on chain, that anyone
+can disassemble. Including the strategies of the ten other teams sharing the same
+registry.
 
 ---
 
-## Arsitektur
-
-```
-Maker                              Taker
-   │ ship() — nol transfer            │ swap
-   ▼                                  ▼
-Aqua  (registry izin)  ◄──── Router SwapVM custom
-   │                          program bytecode dijalankan on-chain
-   └── pull / push ──►  token pindah LANGSUNG dari dompet maker
-                        ke dompet taker, tepat saat swap terjadi
-```
-
-Di mode Aqua, argumen `app` pada `aqua.ship()` adalah alamat router SwapVM.
-Jadi router custom kita **sekaligus** menjadi Aqua app-nya — satu kontrak.
-
----
-
-## Struktur repo
-
-```
-contracts/          Kontrak Solidity (Foundry)
-  src/iqia/IqiaSwapVMRouter     SwapVM + dua opcode custom (Aqua app)
-  src/TransferProcessor.sol     Transfer berbasis ZK
-  src/iqia/IqiaSwapVMRouter     Router SwapVM custom, sekaligus Aqua app
-  src/iqia/IqiaAquaTaker        Adapter taker untuk SwapVM
-  src/iqia/instructions/        Dua opcode custom
-protocol/
-  swapvm/                  Perakit program SwapVM + pengkode traits
-frontend/                  React + Vite + wagmi
-docs/                      Peta migrasi dan rujukan Aqua/SwapVM
-```
-
----
-
-## Setup
-
-> Panduan di bawah diuji dari clone bersih: `git clone`, ikuti setiap langkah
-> apa adanya, sampai 108 test lolos dan demo on-chain berjalan.
-
-### Prasyarat
-
-| Alat | Versi yang dipakai | Untuk apa |
-|---|---|---|
-| Node.js | 24.x | Perakit program dan frontend |
-| pnpm | 10.x | Workspace monorepo |
-| Foundry | 1.8.x | Kontrak, test, skrip deploy |
-
-**Foundry wajib, dan tidak ada jalan memutar.** Aqua dan SwapVM tidak
-dipublikasikan ke npm — `@1inch/aqua` dan `@1inch/swap-vm` dua-duanya 404 di
-registry meski README mereka menulis `npm install`. Keduanya proyek Foundry
-dengan remapping sendiri, jadi harus di-vendor lewat `forge install`.
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-### 1. Pasang dependensi
-
-```bash
-git clone https://github.com/maulana-tech/qia-1inch.git
-cd qia-1inch
-
-pnpm install                     # workspace TypeScript
-cd contracts && forge install    # submodule aqua, swap-vm, forge-std
-npm install                      # lihat catatan di bawah
-cd ..
-```
-
-`contracts/` punya `node_modules` sendiri, terpisah dari workspace pnpm. Itu
-disengaja: Aqua dan SwapVM mencari `@openzeppelin/contracts` dan
-`@1inch/solidity-utils` di `node_modules/`, bukan `lib/`, dan versinya dipatok
-mengikuti `package.json` mereka.
-
-### 2. Bangun
-
-```bash
-pnpm --filter @iqia/sdk build
-pnpm --filter @iqia/swapvm build     # WAJIB sebelum frontend
-pnpm --filter @iqia/matcher build
-
-cd contracts && forge build && cd ..
-```
-
-`@iqia/swapvm` harus dibangun lebih dulu. Frontend mengimpornya sebagai paket
-workspace, jadi tanpa `dist/` yang terisi, `pnpm dev` gagal.
-
-Build kontrak memakan waktu karena `via_ir` menyala. Itu tidak bisa dimatikan —
-tanpanya compiler kehabisan stack saat mengompilasi SwapVM.
-
-### 3. Verifikasi
-
-```bash
-cd contracts && forge test && cd ..     # 37 test
-pnpm --filter @iqia/swapvm test         # 15 test
-pnpm --filter frontend typecheck
-```
-
----
-
-## Menjalankan secara lokal
-
-Tiga terminal, atau jalankan yang pertama di latar belakang.
-
-### 1. Rantai lokal
-
-```bash
-anvil
-```
-
-### 2. Deploy dan kirim posisi
-
-```bash
-`
-```
-
-Skrip ini melakukan dua hal. Pertama, menjalankan demo lengkap sebagai transaksi
-sungguhan — deploy, buka posisi, swap, tutup posisi — dengan `require` di setiap
-langkah, jadi ia gagal kalau klaimnya tidak benar. Kedua, mengirim satu posisi
-yang dibiarkan terbuka supaya frontend punya sesuatu untuk diajak berdagang, lalu
-mencetak env yang dibutuhkannya.
-
-Salin blok yang dicetaknya:
-
-```
-=== Salin ke frontend/.env.local ===
-VITE_CHAIN_ID=31337
-VITE_CHAIN_NAME=Anvil
-VITE_SWAP_VM_ROUTER=0x...
-VITE_AQUA=0x...
-VITE_DESK_MAKER=0x...
-VITE_DESK_SALT=2
-VITE_DESK_SURCHARGE_BPS=50000000
-VITE_WETH_ADDRESS=0x...
-VITE_USDC_ADDRESS=0x...
-```
-
-ke `frontend/.env.local`, lalu tambahkan satu baris:
-
-```
-VITE_POOL_DEPLOY_BLOCK=0
-```
-
-Tanpa baris itu, pembacaan event mulai dari blok yang salah dan daftar market
-tampil kosong.
-
-Alamatnya deterministik selama anvil dimulai dari keadaan bersih, jadi env yang
-sama bisa dipakai ulang setelah restart.
-
-### 3. Frontend
-
-```bash
-pnpm --filter frontend dev
-```
-
-Buka `http://localhost:5173`. Halaman `/app` seharusnya menampilkan satu market
-**USDC / WETH** dengan likuiditas 35.000 dan 10 — angka yang sama dengan yang
-dikirim skrip demo.
-
----
-
-## Sudah hidup di testnet publik
-
-Ethereum Sepolia, chain `11155111`. Bukan fork, bukan anvil — siapa pun bisa
-memeriksanya di explorer.
-
-| | Alamat |
-|---|---|
-| Aqua | [`0xbfeE998a…2c11`](https://sepolia.etherscan.io/address/0xbfeE998a404B38E90d5f8fb88Fc0a19279Fe2c11) |
-| IqiaSwapVMRouter | [`0xe7BdB2Ac…F8BE`](https://sepolia.etherscan.io/address/0xe7BdB2AceBB51E678d2fDFBa2bAE8D263cbaF8BE) |
-| Maker (meja) | [`0x3a8d93D5…c84B`](https://sepolia.etherscan.io/address/0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B) |
-| WETH (uji) | `0x1207A026f2D052b9FB8A74F8E01f917BF956bE81` |
-| USDC (uji) | `0x8eed5f3Fb7124A35732e41203cb54C34CbC2fFdf` |
-
-Yang sudah terjadi di sana: **2 posisi dikirim, 1 swap sungguhan tereksekusi, 1
-posisi ditutup.** Posisi yang masih hidup memegang 10 WETH / 35.000 USDC.
-
-```bash
-cp frontend/.env.sepolia.example frontend/.env.local
-pnpm --filter frontend dev
-```
-
-### Menambah pasar dengan modal yang sama
-
-Satu posisi saja belum menunjukkan apa pun yang khas. Tambahkan dua lagi yang
-memakai tumpukan WETH yang SAMA:
-
-```bash
-cd contracts
-DESK_KEY=0x<kunci-yang-men-deploy> ./script/add-markets.sh
-```
-
-Sesudahnya halaman `/desk` menunjukkan **efisiensi modal 2,5x**: 20 WETH nyata
-terdaftar sebagai 50 WETH likuiditas di tiga pasar. Kunci privatnya tidak pernah
-dicetak ke mana pun dan tidak meninggalkan mesinmu.
-
----
-
-## Satu kantong modal, banyak pasar
-
-Ini yang tidak bisa dilakukan AMM mana pun, dan alasan utama aplikasi ini ada.
-
-`ship()` tidak memindahkan token **dan tidak memeriksa saldo**. Jadi 10 WETH yang
-sama bisa terdaftar sebagai likuiditas di beberapa pasar sekaligus. Di Uniswap,
-10 WETH-mu ada di SATU pool.
-
-Yang membuatnya tidak sembrono: `SolvencyGuard` membaca dompet yang sama di
-setiap pasar. Begitu satu pasar menghabiskan sebagian modal bersama, pasar LAIN
-ikut memburuk harganya — tanpa keeper, tanpa oracle, tanpa transaksi yang
-menyentuh mereka.
-
-```bash
-anvil &
-cd contracts && ./script/shared-capital.sh
-```
-
-Keluarannya, diukur di rantai:
-
-```
-WETH nyata di dompet      10.0
-WETH terdaftar (3 pasar)  30.0        efisiensi modal 3x
-
-kutipan SEBELUM ada yang menukar
-  pasar B (WETH/DAI)      0.276968
-  pasar C (WETH/WBTC)     0.276968
-
-sesudah satu swap di pasar A, tanpa menyentuh B dan C
-  WETH tersisa            8.144
-  pasar B jadi            0.274468
-  pasar C jadi            0.274468
-```
-
-Dua pasar yang tidak disentuh siapa pun ikut bergerak.
-
-Modal bersama tidak dibagi rata — ia **direbut**. Penukar yang datang belakangan
-membayar lebih mahal karena jaminannya sudah menipis, dan swap yang terlalu besar
-tetap gagal. Batas kerasnya ada; yang berubah cuma cara ia diberitahukan.
-
-Halaman `/desk` menampilkan ini secara langsung: efisiensi modal, kutipan hidup
-tiap pasar, dan tombol muat ulang untuk melihatnya bergerak setelah ada swap.
-
-Diukur juga di `contracts/test/SharedCapital.t.sol`.
-
----
-
-## Demo di atas fork Base mainnet — kontrak Aqua RESMI
-
-Ini cara yang dipakai untuk demo, dan ia menjawab dua syarat kualifikasi
-sekaligus:
-
-> Official Aqua/SwapVM contracts must be used (redeployments of a modified
-> SwapVM contract is allowed)
->
-> Onchain execution of token transfers should be presented during the final demo
-> (**local forks are ok**)
-
-Aqua ter-deploy di 16 jaringan dan **semuanya mainnet** — tidak ada satu pun
-testnet. Di testnet mana pun kita terpaksa men-deploy Aqua sendiri, padahal kurung
-syaratnya cuma mengizinkan **SwapVM** yang di-deploy ulang, bukan Aqua. Fork
-memberi kontrak resmi yang asli tanpa uang sungguhan, dan syaratnya menyebutnya
-secara eksplisit.
-
-```bash
-# 1. fork Base mainnet
-anvil --fork-url https://mainnet.base.org --port 8546 --chain-id 8453
-
-# 2. danai, deploy router, kirim posisi, dan tukar
-cd contracts && ./script/fork-demo.sh
-
-# 3. arahkan frontend ke fork
-cp frontend/.env.fork frontend/.env.local
-pnpm --filter frontend dev
-```
-
-Yang dipakai:
+## Live on Ethereum Sepolia
+
+Everything below is on the **official 1inch Aqua registry** — the same contract
+address 1inch deploys on 16 chains, byte-identical to the Base mainnet
+deployment (`keccak 0x720bc02d…`).
 
 | | |
 |---|---|
-| Aqua | `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` — kontrak RESMI, tidak di-deploy ulang |
-| Router | `IqiaSwapVMRouter` — SwapVM yang diperluas opcode 22 dan 23 |
-| Token | WETH dan USDC Base yang asli, bukan mock |
+| Aqua registry | [`0x1111113CCf…6a90a`](https://sepolia.etherscan.io/address/0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a) — official 1inch |
+| Our SwapVM router | [`0x072F9Fd7…52F74`](https://sepolia.etherscan.io/address/0x072F9Fd7Aa8F8EA6664fD77F7e264CDeC4052F74) — SwapVM + 2 custom opcodes |
+| Maker | [`0x3a8d93D5…eC84B`](https://sepolia.etherscan.io/address/0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B) |
+| Example swap | [`0x9fe91859…4d91`](https://sepolia.etherscan.io/tx/0x9fe91859a32705c4e0984f5e9e2f532207ee982ffd632d49807fc9973cda4d91) — 250 USDC → 0.0658 WETH |
 
-`fork-demo.sh` menulis `frontend/.env.fork` sendiri. Router-nya di-deploy ulang
-tiap kali skrip jalan, jadi alamat yang ditulis tangan akan basi tanpa gejala
-apa pun selain halaman market yang kosong.
-
-Keluarannya menegaskan yang penting lewat `require`, bukan lewat cetakan:
-`ship()` tidak memindahkan token sepeser pun, swap memindahkannya langsung dari
-**dompet** maker, dan Aqua tidak pernah menahan token.
+Three markets are open right now — WETH/USDC, WETH/DAI, WETH/WBTC — all backed
+by **the same 19.93 WETH**. Capital efficiency **3.00×**, measured on chain.
 
 ---
 
-## Melihat likuiditas nyata di Base
+## Why this could not be built on an AMM
 
-Halaman Markets juga membaca posisi di router SwapVM resmi, tempat market maker
-sungguhan berada. Ini murni pembacaan — tanpa dompet, tanpa transaksi, tanpa
-biaya.
+Three properties, each verified by a test, none of them possible in a pool.
 
-```bash
-cp frontend/.env.base.example frontend/.env.local
-pnpm --filter frontend dev
+### 1. The money never moves
+
+`Aqua.ship()` transfers nothing. It writes an allowance against the maker's own
+wallet. Your balance after opening a position is identical to before, and you can
+spend it the same second.
+
+> `contracts/test/ZapIntoSavings.t.sol` asserts the wallet balance is unchanged
+> across `ship()`, inside the real consumer flow rather than a unit test.
+
+### 2. One balance, many markets
+
+`ship()` does not move tokens **and does not check balances**, so the same stack
+quotes in every market at once. Ours backs three. A pool would force you to split
+it three ways.
+
+> `contracts/test/SharedCapital.t.sol`. Swapping in one market moves the price in
+> the others in the same transaction: `0.787291726987970835 → 0.784435693838646721`.
+
+### 3. The strategy is readable bytecode
+
+Aqua emits the whole order in its `Shipped` event, so any maker's program can be
+disassembled without permission. Open `/market/<hash>` on any of the 40 positions
+on the registry and read it:
+
 ```
-
-RPC publik Base menolak `eth_getLogs` di atas 10.000 blok, jadi sapuannya
-dipotong dan jendelanya dibatasi lewat `VITE_MARKETS_LOOKBACK_BLOCKS`. Dengan
-RPC berbayar, naikkan angkanya.
+000  23  SOLVENCY_GUARD   prices against the maker's real wallet backing
+006  21  FLAT_FEE_IN      takes a flat fee from the input, before the curve
+012  17  XYC_SWAP         constant-product curve, x·y=k
+014  20  SALT             makes the strategy hash unique — no behaviour
+```
 
 ---
 
-## Deploy ke testnet
+## Two opcodes we added to SwapVM
 
-Jaringan yang dipakai proyek ini: **Ethereum Sepolia** (`11155111`). Alamat
-kontraknya ada di bagian atas README.
+Redeploying a modified SwapVM is explicitly allowed by the track rules. We added
+two instructions and kept everything else stock.
 
-```bash
-cd contracts
-RPC=https://ethereum-sepolia-rpc.publicnode.com DESK_KEY=0x<kunci-privat> ./script/deploy.sh
-```
+### `SOLVENCY_GUARD` (23)
 
-Yang dibutuhkan cuma ETH Sepolia di dompet itu — ambil dari faucet mana pun.
-Skripnya men-deploy Aqua, token uji, router, dan adapter; mengirim posisi
-pertama; menjalankan satu swap sungguhan; lalu menulis
-`frontend/.env.11155111` sendiri.
+Reads the maker's **real** wallet backing — `min(balanceOf, allowance)` — on every
+swap, and raises a surcharge in proportion to any shortfall. This is what makes
+shared capital safe: when one market spends the shared backing, every other market
+reprices itself, with no keeper, no oracle, and no extra transaction.
 
-```bash
-cp frontend/.env.11155111 frontend/.env.local
-pnpm --filter frontend dev
-```
+Its placement is load-bearing and the compiler cannot enforce it: the guard must
+run **before** any instruction that shapes balances. Measured — guard after
+`concentrate` gives `4.742`, guard before gives `4.913`, identical to no guard at
+all. Silent failure, no revert.
 
-Perintah yang sama bekerja di anvil tanpa argumen apa pun:
+> `test_GuardHarusSebelumInstruksiPembentukSaldo` in `contracts/test/Strategies.t.sol`
 
-```bash
-anvil &
-cd contracts && ./script/deploy.sh
-```
+### `EXCLUSIVE_FILL` (22)
 
-Rantai lain yang didukung frontend: Base Sepolia (`84532`), Base (`8453`), dan
-anvil (`31337`). Menambah rantai berarti menambahnya ke `SUPPORTED_CHAIN_IDS` di
-`frontend/src/lib/wagmi.ts` — kalau tidak, aplikasinya melempar saat dimuat
-alih-alih diam-diam menembak rantai yang salah.
+Only one named address may fill the order. SwapVM ships its own `PrivateOrder`,
+and we deliberately do not use it: it compares only the **last 10 bytes** of the
+address, and its own documentation says *"Birthday attack 80-bit collisions are
+feasible"*. For an exclusive flow deal, "almost certainly them" is not a guarantee
+you can negotiate against. Ours compares all 20 bytes.
 
-Dua hal yang perlu diketahui:
-
-**Aqua resmi tidak ada di testnet mana pun** — ia ter-deploy di 16 jaringan,
-semuanya mainnet. Jadi di testnet, Aqua-nya kita deploy sendiri. Untuk demo yang
-memakai kontrak Aqua resmi, pakai jalur fork di atas.
-
-**Satu dompet mengerjakan dua peran.** Kalau `MAKER_KEY` tidak diisi terpisah,
-maker dan meja jadi akun yang sama, dan WETH yang keluar langsung kembali ke
-dompet itu juga. Yang dibuktikan tetap sama — token benar-benar berpindah dan
-berpindahnya dari dompet — hanya selisih akhirnya nol. Isi `MAKER_KEY` dengan
-dompet kedua yang juga berisi ETH kalau mau melihat perpindahan antar dua pihak.
+> `test_Gate_RejectsHighBitsCollision` builds an address whose low 80 bits are
+> identical to the named taker. `PrivateOrder` accepts it. We reject it.
 
 ---
 
-## Kalau ada yang tidak jalan
+## The app
 
-**Market muncul tapi saldonya 0 dan simbolnya berupa alamat.**
-Pembacaan kontraknya gagal, bukan likuiditasnya habis — halamannya sekarang
-mengatakan itu apa adanya. Penyebab paling sering: **Multicall3 tidak ada** di
-rantai yang dipakai. viem memakainya untuk rantai yang definisinya menyatakan
-ada (Ethereum Sepolia, Base, Base Sepolia), jadi anvil lokal yang menyamar
-sebagai salah satunya akan gagal seluruh pembacaannya. Salin bytecode-nya ke alamat kanonik:
-
-```bash
-cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 \
-  "$(cast code 0xcA11bde05977b3631167028862bE2a173976CA11 --rpc-url https://mainnet.base.org)" \
-  --rpc-url http://127.0.0.1:8545
-```
-
-Rantai publiknya sendiri sudah punya Multicall3 di alamat kanonik — Ethereum
-Sepolia, Base Sepolia, dan Base semuanya sudah diperiksa — jadi ini hanya soal
-emulasi lokal.
-
-
-**Halaman market kosong, muncul error `eth_getLogs is limited to a 10,000 range`.**
-Pesannya menyesatkan; masalahnya bukan rentang blok melainkan salah jaringan.
-Pastikan `VITE_CHAIN_ID` cocok dengan chain yang berjalan, lalu restart vite —
-berkas env hanya dibaca saat server dimulai.
-
-**`Cannot find module '@iqia/swapvm'`.** Paketnya belum dibangun. Jalankan
-`pnpm --filter @iqia/swapvm build`.
-
-**`forge build` gagal dengan "Stack too deep".** `via_ir` tidak menyala. Periksa
-`contracts/foundry.toml` masih memuat `via_ir = true` beserta kedua blok
-`compilation_restrictions`.
-
-**`forge install` menolak dengan "target or .gitmodules has existing changes".**
-Commit atau stash dulu perubahan di `contracts/lib/`, baru ulangi.
-
-**Swap gagal padahal market terlihat.** Parameter meja di `.env.local` harus sama
-persis dengan yang dipakai maker saat `ship()` — `strategyHash` dihitung dari byte
-order-nya, jadi salt atau fee yang meleset menghasilkan hash berbeda dan Aqua
-tidak menemukan saldonya.
-
----
-
-## Demo transfer on-chain
-
-Yang dibuktikan skrip demo, dengan `require` di setiap langkah:
-
-| Langkah | Bukti |
+| Page | What it answers |
 |---|---|
-| `ship()` | Saldo dompet maker **tidak berubah sedikit pun**, Aqua menahan nol |
-| swap | WETH keluar dari dompet maker, USDC masuk — transfer ERC20 sungguhan |
-| | Harga dari kurva `x*y=k` di dalam bytecode, bukan kode Solidity |
-| `dock()` | Posisi tutup, **nol transfer token** |
+| **Savings** | *Is my money working, and is it safe?* One slider. The machine is shown as reassurance, in plain language. |
+| **Open position** | *How do I want it to behave?* Four strategies, the same machine shown as controls. |
+| **Markets** | Every position on the official registry — ours and 10 other teams'. |
+| **Position** | *Can I verify this?* The program, disassembled. The same machine as evidence. |
+| **My desk** | Capital efficiency across your markets. |
+| **Swap** | On-chain quotes, real slippage bounds. |
+| **Portfolio · Pay · Receive · Payment link · Faucet** | Wallet basics. |
 
-Contoh keluaran: 3.500 USDC masuk, 0,90909… WETH keluar. Sepanjang alur Aqua
-tidak pernah menahan satu token pun.
+Savings hides nothing. Hiding the mechanism would contradict the app's own claim
+and, worse, hide the only reason to choose Aqua at all — *your money never leaves
+your wallet* is a mechanical fact, not a feature bullet.
 
-Untuk memeriksanya sendiri, bukan dari log skrip:
+### One button, even with one token
 
-```bash
-cast logs --rpc-url http://localhost:8545 --from-block 0 \
-  'Pulled(address,address,bytes32,address,uint256)'
+A position needs both sides — `XYCSwap` rejects a zero balance, and a one-sided
+position looks alive while serving nothing. So if you only hold USDC, Savings
+swaps half first and then opens. Two signatures, one decision.
 
-cast call <WETH> 'balanceOf(address)(uint256)' <MAKER> --rpc-url http://localhost:8545
-```
-
-## Catatan teknis
-
-**Desimal.** Angka desimal di `lib/tokens.ts` warisan aplikasi asal dan tidak
-selalu cocok dengan mock yang ter-deploy. Apa pun yang memindahkan token membaca
-`decimals()` dari kontraknya lewat `tokenDecimals()`, bukan dari daftar itu.
-
-**Urutan instruksi mengikat.** `solvencyGuard` harus mendahului `decay` dan
-`xycConcentrate`, dan `flatFeeIn` harus menyusul `xycConcentrate`. Salah urutan
-tidak menimbulkan error apa pun — posisinya tetap melayani swap, hanya
-keuntungan strateginya yang hilang. Dikunci di `contracts/test/Strategies.t.sol`.
+It cannot be one transaction, and that is not a limitation we can engineer away:
+`Aqua.ship()` uses `msg.sender` as the maker, so a helper contract shipping on
+your behalf would become the maker of its own balance. The steps are visible
+because the app refuses custody.
 
 ---
 
-## Lisensi
+## Run it
 
-MIT. Lihat [LICENSE](LICENSE).
+```bash
+pnpm install
+cp frontend/.env.sepolia.example frontend/.env.local   # already points at the official registry
+pnpm --filter frontend dev
+```
+
+Open <http://localhost:5173>. Connect a wallet on Sepolia, mint test tokens on
+**Faucet**, then **Savings → Start**.
+
+Every user action is in the browser — ship, close, swap, send, wrap. The shell
+scripts below are operator tools for deployment, not part of the user flow.
+
+### Checks
+
+```bash
+cd contracts && forge test          # 51 tests
+pnpm --filter @iqia/swapvm test     # 23 golden vectors, byte-for-byte against Solidity
+pnpm --filter frontend test         # amount parsing, payment links, EIP-681
+pnpm --filter frontend lint         # clean
+```
+
+---
+
+## Repo
+
+```
+contracts/
+  src/iqia/                 IqiaSwapVMRouter, IqiaOpcodes
+  src/iqia/instructions/    SolvencyGuard, ExclusiveFill
+  test/                     12 suites, 51 tests
+  script/                   deploy, migrate to official Aqua, add markets
+protocol/swapvm/            TypeScript program encoder + disassembler
+frontend/                   React + viem + wagmi
+```
+
+The encoder is not a convenience wrapper. Every program the app ships is built in
+TypeScript and locked against Solidity output byte-for-byte in
+`protocol/swapvm/test/golden.test.ts` — if the two ever disagree, the tests fail
+before a wrong program reaches a wallet.
+
+---
+
+## Operator scripts
+
+```bash
+# One-time: point the desk at the official Aqua registry
+cast wallet import desk --interactive
+DESK_ACCOUNT=desk ./contracts/script/migrate-to-official-aqua.sh
+
+# Add two more markets from the same WETH capital
+DESK_ACCOUNT=desk ./contracts/script/add-markets.sh
+
+# One real swap through the position, for the demo
+DESK_KEY=0x… node frontend/scripts/demo-swap.mjs
+```
+
+Use the Foundry keystore, not a raw key. A key in an environment variable leaks
+into shell history, the process list, and any log that records the environment.
+
+**RPC:** reads go through `https://sepolia.gateway.tenderly.co`, writes through
+`publicnode`. This split is deliberate. Measured: publicnode returns an empty
+array for `eth_getLogs` on roughly half of all calls — no error, just silence,
+which made the Markets page report "no active markets" on a chain that had live
+positions. Tenderly answered 30 of 30 correctly, but rate-limits
+`eth_sendRawTransaction`. So: read from the honest one, send through the one that
+accepts writes.
+
+---
+
+## Known limits
+
+Stated plainly, because a submission that hides them is worth less than one that
+does not.
+
+- **The protocol fee is best-effort.** `_aquaProtocolFeeAmountInXD` pulls from the
+  maker's *pre-existing* Aqua balance; if it cannot cover it, `ProtocolFeeSkipped`
+  fires and the swap proceeds free. A one-sided position earns the treasury
+  nothing on the common direction. Revenue must be read from `Pulled` events, never
+  computed from volume × rate. Pinned in `contracts/test/ProtocolFee.t.sol`.
+- **No APY anywhere, deliberately.** Earnings are reconstructed from `Pulled` and
+  `Pushed` events. A forecast dressed as a number is worse than no number.
+- **The slot guard costs gas on every swap.** `_opcodes()` runs inside `quote()`
+  and `swap()`, so `_requireFreeSlot` re-answers a question fixed at deploy time.
+  It belongs in the constructor. Left alone on purpose — the router is live with
+  positions on it, and source that no longer matches deployed bytecode is worse
+  than the wasted gas.
+- **Partial withdrawal is not implemented.** Closing is all or nothing.
+
+---
+
+## License
+
+Our contracts extend SwapVM and are therefore derivative work: `IqiaOpcodes.sol`
+and `IqiaSwapVMRouter.sol` fall under **LicenseRef-Degensoft-SwapVM-1.1**, whose
+§3.1 requires derivative sources to carry the same license, preserve notices, and
+attribute *"Powered by SwapVM — © Degensoft Ltd 2025"*. The rest of this
+repository is MIT.
+
+Hackathon use is free under §4. The treasury fee this app can charge is covered by
+the §5.3 enforcement waiver for market-making activity — a waiver, not a license,
+and revocable.
+
+Coin icons are linked from [Cryptofonts/cryptoicons](https://github.com/Cryptofonts/cryptoicons)
+(GPL-3.0) over a CDN rather than bundled, so no GPL asset is redistributed here.
