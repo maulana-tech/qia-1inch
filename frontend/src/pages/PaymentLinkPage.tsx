@@ -47,7 +47,7 @@ export function PaymentLinkPage() {
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Nama" hint="Ditampilkan ke pembayar.">
+                  <Field label="Name" hint="Shown to the payer.">
                     <TextInput
                       placeholder="Toko Kopi"
                       value={name}
@@ -61,7 +61,7 @@ export function PaymentLinkPage() {
                       options={SENDABLE.map((t) => ({ value: t.code, label: t.code }))}
                     />
                   </Field>
-                  <Field label="Nominal" hint="Kosongkan agar pembayar mengisi sendiri.">
+                  <Field label="Amount" hint="Leave empty to let the payer fill it in.">
                     <TextInput
                       mono
                       inputMode="decimal"
