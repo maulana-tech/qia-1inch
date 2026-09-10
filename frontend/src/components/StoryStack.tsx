@@ -84,7 +84,7 @@ function FigureBand() {
       <path d="M78 84C92 84 96 56 126 52" {...S} />
       <circle cx="102" cy="66" r="4" {...S} />
       <text x="102" y="132" textAnchor="middle" fontSize="8" fill="currentColor" opacity="0.6">
-        modal yang sama, di pita yang dipilih
+        the same capital, inside a chosen band
       </text>
     </svg>
   )
