@@ -3,13 +3,14 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { readContract, getBalance } from '@wagmi/core'
 import type { Config } from '@wagmi/core'
-import { erc20Abi, formatUnits, getAddress, isAddress, parseUnits, type Address } from 'viem'
+import { erc20Abi, formatUnits, getAddress, isAddress, type Address } from 'viem'
 
 import { CURATED_TOKENS } from '../lib/tokens'
 import { truncateKey } from '../lib/format'
-import { explorerTxUrl } from '../lib/config'
+import { CHAIN_NAME, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { parsePaymentLink, sendPayment, tokenDecimals } from '../lib/payments'
+import { parseAmountStrict } from '../lib/amount'
 import { Button, Card, CardContent, Field, Select, TextInput } from './ui'
 import { CoinBadge } from './BrandIcons'
 
@@ -35,7 +36,17 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
   const [hash, setHash] = useState<`0x${string}` | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const token = SENDABLE.find((t) => t.code === code) ?? SENDABLE[0]
+  /**
+   * Token yang tidak dikenal TIDAK diganti diam-diam.
+   *
+   * Dulu `?? SENDABLE[0]`: link yang meminta DAI, dibuka di aplikasi yang tidak
+   * mengenal DAI, akan memilih USDC tanpa sepatah kata pun. Pembayarnya menekan
+   * Send dan mengirim aset yang salah ke alamat yang benar — dan itu tidak bisa
+   * ditarik kembali.
+   */
+  const known = SENDABLE.find((t) => t.code === code)
+  const token = known ?? SENDABLE[0]
+  const unknownToken = request?.token !== undefined && known === undefined
 
   useEffect(() => {
     if (!account) {
@@ -70,18 +81,30 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
   }, [account, token, hash])
 
   const recipientValid = isAddress(to)
-  // Nominalnya diurai lebih dulu, bukan cuma dicek angkanya: "0.00000001" USDC
-  // itu angka yang sah tapi nol pada 7 desimal, dan kirimannya jadi sia-sia.
-  const value = useMemo(() => {
-    if (decimals === null) return 0n
-    try {
-      return parseUnits(amount.trim() || '0', decimals)
-    } catch {
-      return 0n
-    }
-  }, [amount, decimals])
+  /**
+   * Nominalnya diurai lebih dulu, bukan cuma dicek angkanya: "0.00000001" USDC
+   * itu angka yang sah tapi nol pada 6 desimal, dan kirimannya jadi sia-sia.
+   *
+   * `parseAmountStrict`, bukan `parseUnits` mentah: viem MEMBULATKAN desimal
+   * berlebih ke ATAS, jadi mengetik 1.9999999 pada token 6 desimal mengirim dua
+   * token penuh. Di halaman swap itu sudah buruk; di halaman kirim, aplikasinya
+   * mengirim lebih banyak daripada yang diminta orangnya.
+   */
+  const value = useMemo(
+    () => (decimals === null ? 0n : (parseAmountStrict(amount, decimals) ?? 0n)),
+    [amount, decimals],
+  )
   const enough = balance === null || value <= balance
-  const ready = Boolean(account) && recipientValid && value > 0n && enough && !busy
+  /**
+   * Link dari rantai lain diblokir, bukan cuma diberi peringatan.
+   *
+   * Alamat EVM sah di setiap rantai, dan "USDC" di rantai lain adalah kontrak
+   * yang sama sekali berbeda. Membiarkan Send tetap aktif berarti membiarkan
+   * pembayaran berhasil ke aset yang salah.
+   */
+  const wrongChain = request?.chainId !== undefined && request.chainId !== ACTIVE_CHAIN_ID
+  const ready =
+    Boolean(account) && recipientValid && value > 0n && enough && !busy && !wrongChain && !unknownToken
 
   async function onSend() {
     if (!account) return
@@ -169,6 +192,23 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
           )}
           {account && to !== '' && !recipientValid && (
             <p className="text-center text-xs text-warn">That recipient address is not valid.</p>
+          )}
+
+          {/* Dua penolakan yang MEMATIKAN tombol Send, bukan sekadar memberi
+              peringatan. Keduanya berakhir pada transfer yang berhasil ke aset
+              yang salah, dan transfer tidak bisa ditarik kembali. */}
+          {wrongChain && (
+            <p className="text-center text-xs leading-relaxed text-danger">
+              This link was created on another chain (id {request?.chainId}) and you are on{' '}
+              {CHAIN_NAME}. The same address exists on every chain, but the token does not — paying
+              from here would deliver the wrong asset.
+            </p>
+          )}
+          {unknownToken && (
+            <p className="text-center text-xs leading-relaxed text-danger">
+              This link asks for {request?.token}, which this app has no address for. Sending a
+              different token to that address is not something anyone can undo.
+            </p>
           )}
 
           <Button className="w-full" disabled={!ready} loading={busy} onClick={() => void onSend()}>
