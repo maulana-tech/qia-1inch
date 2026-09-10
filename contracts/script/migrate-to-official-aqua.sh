@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # Memindahkan meja ke registry Aqua RESMI 1inch.
 #
+# Cara yang dianjurkan — keystore Foundry, kunci tetap terenkripsi di disk:
+#
+#   cast wallet import desk --interactive     # sekali saja, tempel kunci di sini
+#   DESK_ACCOUNT=desk ./script/migrate-to-official-aqua.sh
+#
+# Cara lama, kunci mentah. Hanya untuk anvil atau dompet sekali pakai:
+#
 #   DESK_KEY=0x<kunci-privat> ./script/migrate-to-official-aqua.sh
 #
-# Kunci privatnya tidak pernah keluar dari mesinmu. Skrip ini meneruskannya ke
-# forge sebagai variabel lingkungan, dan tidak mencetaknya ke mana pun.
+# Kunci mentah di variabel lingkungan bocor ke riwayat shell, ke daftar proses,
+# dan ke log mana pun yang merekam lingkungan. Keystore tidak.
 #
 # Yang dilakukan:
 #   1. memastikan Aqua resmi benar-benar ada di rantai yang dipakai env
@@ -28,9 +35,10 @@ if ! command -v cast >/dev/null 2>&1; then
   echo "cast tidak ditemukan. export PATH=\"\$PATH:\$HOME/.foundry/bin\""
   exit 1
 fi
-if [ -z "${DESK_KEY:-}" ]; then
-  echo "DESK_KEY belum diisi. Pakai kunci maker yang sama:"
-  echo "  DESK_KEY=0x<kunci-privat> ./script/migrate-to-official-aqua.sh"
+if [ -z "${DESK_ACCOUNT:-}" ] && [ -z "${DESK_KEY:-}" ]; then
+  echo "Belum ada cara menandatangani. Yang dianjurkan:"
+  echo "  cast wallet import desk --interactive"
+  echo "  DESK_ACCOUNT=desk ./script/migrate-to-official-aqua.sh"
   exit 1
 fi
 if [ ! -f "$ENVFILE" ]; then
@@ -49,7 +57,17 @@ OLD_AQUA=$(read_env VITE_AQUA)
 [ -n "$WETH_ADDR" ] && [ -n "$USDC_ADDR" ] || { echo "VITE_WETH_ADDRESS / VITE_USDC_ADDRESS kosong"; exit 1; }
 
 CHAIN=$(cast chain-id --rpc-url "$RPC")
-DEPLOYER=$(cast wallet address --private-key "$DESK_KEY")
+
+# Argumen penanda tangan dirakit sekali, dipakai di semua panggilan forge.
+if [ -n "${DESK_ACCOUNT:-}" ]; then
+  DEPLOYER=$(cast wallet address --account "$DESK_ACCOUNT")
+  SIGN_ARGS=(--account "$DESK_ACCOUNT" --sender "$DEPLOYER")
+  SIGN_ENV=(MAKER="$DEPLOYER")
+else
+  DEPLOYER=$(cast wallet address --private-key "$DESK_KEY")
+  SIGN_ARGS=(--private-key "$DESK_KEY")
+  SIGN_ENV=(DESK_KEY="$DESK_KEY")
+fi
 
 echo "chain $CHAIN | maker $DEPLOYER"
 echo "Aqua lama  : $OLD_AQUA"
@@ -76,9 +94,9 @@ FROM_BLOCK=$(cast block-number --rpc-url "$RPC")
 
 echo ""
 echo "Men-deploy router dan mengirim posisi…"
-AQUA="$OFFICIAL_AQUA" WETH_ADDR="$WETH_ADDR" USDC_ADDR="$USDC_ADDR" DESK_KEY="$DESK_KEY" \
+AQUA="$OFFICIAL_AQUA" WETH_ADDR="$WETH_ADDR" USDC_ADDR="$USDC_ADDR" "${SIGN_ENV[@]}" \
   forge script script/MigrateToOfficialAqua.s.sol --rpc-url "$RPC" --broadcast \
-  --private-key "$DESK_KEY" | tee /tmp/iqia-migrate.log
+  "${SIGN_ARGS[@]}" | tee /tmp/iqia-migrate.log
 
 NEW_ROUTER=$(grep -o 'VITE_SWAP_VM_ROUTER=0x[0-9a-fA-F]*' /tmp/iqia-migrate.log | tail -1 | cut -d= -f2)
 [ -n "$NEW_ROUTER" ] || { echo "gagal membaca alamat router dari keluaran forge"; exit 1; }
