@@ -376,3 +376,81 @@ export async function sharedCapital(
 
   return { positions: relevant.length, real, committed, multiple: ratios.length ? Math.max(...ratios) : 1 }
 }
+
+/** Sandaran nyata satu sisi posisi, dilihat dari sudut pandang SolvencyGuard. */
+export interface SideBacking {
+  token: string
+  /** Yang tercatat di Aqua saat posisi dibuka. */
+  registered: bigint
+  /** Yang benar-benar bisa ditarik Aqua sekarang. */
+  backing: bigint
+  /** Biaya tambahan yang akan dikenakan pada sisi ini, basis-point 1e9. */
+  surchargeBps: bigint
+}
+
+/**
+ * Menghitung ulang apa yang dilihat `SolvencyGuard`, di luar rantai.
+ *
+ * # Kenapa ini perlu ada
+ *
+ * Angka yang selama ini ditampilkan halaman Savings sebagai "sedang bekerja"
+ * adalah jumlah TERDAFTAR — apa yang dicatat Aqua saat `ship()`. Ia tidak
+ * bergerak sedikit pun ketika penggunanya membelanjakan dompetnya besok. Jadi
+ * layar bisa menulis "20 WETH bekerja" sementara dompetnya tinggal 2, dan tidak
+ * ada apa pun di halaman itu yang menunjukkan selisihnya.
+ *
+ * Inti Aqua justru selisih itu: token tidak pernah pindah, jadi sandarannya
+ * boleh berubah kapan saja. Yang menjaga posisinya tetap waras adalah
+ * `SolvencyGuard`, dan fungsi ini menampilkan pekerjaannya alih-alih
+ * menjanjikannya.
+ *
+ * # Rumusnya disalin dari opcode-nya, bukan dikarang
+ *
+ * `SolvencyGuard._makerBacking` mengambil `min(balanceOf, allowance)` — izin
+ * ikut dihitung karena maker bisa mencabutnya kapan saja tanpa menyentuh saldo.
+ * `_surchargeBps` lalu menghitung `max × (terdaftar − sandaran) / terdaftar`,
+ * nol saat tertutup penuh. Kalau salah satu berubah di Solidity, angka di sini
+ * ikut basi — itu risikonya, dan alasan komentar ini menyebut nama fungsinya.
+ */
+export async function positionBacking(
+  maker: Address,
+  tokens: readonly string[],
+  registered: readonly bigint[],
+  maxSurchargeBps: bigint = DESK_SURCHARGE_BPS,
+): Promise<SideBacking[]> {
+  const res = await readContracts(wagmiConfig as any, {
+    contracts: tokens.flatMap((t) => [
+      {
+        address: t as Address,
+        abi: erc20Abi,
+        functionName: 'balanceOf' as const,
+        args: [maker],
+        chainId: ACTIVE_CHAIN_ID,
+      },
+      {
+        address: t as Address,
+        abi: erc20Abi,
+        functionName: 'allowance' as const,
+        args: [maker, AQUA_ADDRESS as Address],
+        chainId: ACTIVE_CHAIN_ID,
+      },
+    ]),
+  })
+
+  return tokens.map((token, i) => {
+    const balance = res[i * 2]
+    const allowance = res[i * 2 + 1]
+    // Pembacaan gagal TIDAK boleh jadi nol: nol berarti "tidak ada sandaran",
+    // dan itu peringatan paling keras yang bisa ditampilkan halaman ini.
+    if (balance.status !== 'success' || allowance.status !== 'success') {
+      throw new Error(`Could not read the backing for ${token.slice(0, 10)}`)
+    }
+    const b = balance.result as bigint
+    const a = allowance.result as bigint
+    const backing = b < a ? b : a
+    const reg = registered[i] ?? 0n
+    const surchargeBps =
+      reg === 0n || backing >= reg ? 0n : (maxSurchargeBps * (reg - backing)) / reg
+    return { token, registered: reg, backing, surchargeBps }
+  })
+}
