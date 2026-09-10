@@ -104,11 +104,11 @@ export function Faucet() {
             {connected && !onTargetChain && (
               <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3">
                 <p className="mb-2 text-xs text-yellow-300">
-                  Dompetmu ada di chain {chainId}. Pindah ke {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID})
+                  Your wallet is on chain {chainId}. Switch to {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID})
                   to mint tokens.
                 </p>
                 <Button size="sm" variant="outline" onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}>
-                  Pindah ke {CHAIN_NAME}
+                  Switch to {CHAIN_NAME}
                 </Button>
               </div>
             )}
@@ -144,7 +144,7 @@ export function Faucet() {
                       if (USE_MOCK) {
                         setMsg((m) => ({
                           ...m,
-                          [t.code]: `Mode mock: ${DRIP.toLocaleString()} ${t.code} ditambahkan ke saldo.`,
+                          [t.code]: `Mock mode: ${DRIP.toLocaleString()} ${t.code} added to your balance.`,
                         }))
                         return
                       }
