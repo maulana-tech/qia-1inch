@@ -69,3 +69,39 @@ assert.equal(parsePaymentLink('bukan-alamat', new URLSearchParams()), null)
 assert.equal(parsePaymentLink(undefined, new URLSearchParams()), null)
 
 console.log('check-payment-link: semua lolos')
+
+// --- EIP-681 ---------------------------------------------------------------
+//
+// URI inilah yang dibaca dompet orang lain. Salah bentuk berarti dompetnya
+// mengisi layar kirim dengan hal yang salah — dan pengirimnya tidak punya cara
+// tahu, karena yang dilihatnya cuma QR.
+import { buildEip681 } from '../src/lib/paymentLink'
+
+const USDC = '0x8eed5f3Fb7124A35732e41203cb54C34CbC2fFdf'
+
+// Token asli rantai: penerima di depan, nominal sebagai `value`.
+assert.equal(
+  buildEip681({ to: ALICE, chainId: 11155111, amount: 10n ** 18n }),
+  `ethereum:${ALICE}@11155111?value=1000000000000000000`,
+)
+assert.equal(buildEip681({ to: ALICE, chainId: 11155111 }), `ethereum:${ALICE}@11155111`)
+
+// ERC20: yang di DEPAN adalah kontrak tokennya, penerimanya jadi argumen.
+// Menukar keduanya menghasilkan URI yang terlihat benar dan mengirim ETH.
+{
+  const uri = buildEip681({ to: ALICE, chainId: 11155111, token: USDC, amount: 25_000_000n })
+  assert.ok(uri.startsWith('ethereum:0x8eed5f3Fb7124A35732e41203cb54C34CbC2fFdf@11155111/transfer'),
+    'kontrak token harus jadi target, bukan penerima')
+  assert.ok(uri.includes(`address=${ALICE}`), 'penerima jadi argumen')
+  assert.ok(uri.includes('uint256=25000000'), 'nominal dalam satuan dasar')
+}
+
+// Nol berarti "pembayar yang mengisi", bukan "kirim nol".
+assert.ok(!buildEip681({ to: ALICE, chainId: 11155111, token: USDC, amount: 0n }).includes('uint256'))
+
+for (const bad of ['bukan-alamat', '0x1234']) {
+  assert.throws(() => buildEip681({ to: bad, chainId: 1 }), /valid recipient/)
+}
+assert.throws(() => buildEip681({ to: ALICE, chainId: 1, token: 'bukan' }), /valid token/)
+
+console.log('check-eip681: semua lolos')
