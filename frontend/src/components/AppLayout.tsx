@@ -210,7 +210,7 @@ export function AppLayout() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Tutup menu"
+            aria-label="Close menu"
             className="absolute inset-0 bg-black/60"
             onClick={() => setMobileOpen(false)}
           />
@@ -227,7 +227,7 @@ export function AppLayout() {
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                aria-label="Buka menu"
+                aria-label="Open menu"
                 className="rounded-md p-2 text-spectral/60 transition hover:bg-spectral/[0.06] hover:text-spectral lg:hidden"
               >
                 <PanelLeftIcon className="h-4 w-4" />
