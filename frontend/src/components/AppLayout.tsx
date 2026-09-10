@@ -49,12 +49,32 @@ interface NavItem {
   end?: boolean
 }
 
+/**
+ * Dikelompokkan menurut NIAT, bukan menurut kemiripan nama.
+ *
+ * Susunan sebelumnya menaruh Markets, Swap, Savings, Open position, dan My desk
+ * dalam satu grup "markets". Dua yang pertama soal PASAR — tempat orang lain
+ * menaruh harga. Tiga sisanya soal POSISIMU SENDIRI. Menyatukannya membuat
+ * Savings dan Open position terbaca sebagai dua hal setara yang tidak jelas
+ * bedanya, padahal keduanya jalur ke hal yang sama pada tingkat kendali berbeda.
+ *
+ * Urutan di dalam tiap grup mengikuti perjalanan penggunanya: lihat pasarnya,
+ * lalu ikut menaruh harga; lihat saldomu, lalu kirim, lalu terima.
+ */
 const SECTIONS: { heading: string; items: NavItem[] }[] = [
   {
     heading: 'markets',
     items: [
       { to: '/app', label: 'Markets', icon: LayersIcon, end: true },
       { to: '/swap', label: 'Swap', icon: ArrowUpRightIcon },
+    ],
+  },
+  {
+    // Savings dan Open position bersebelahan dan berurutan: yang pertama
+    // memilihkan strateginya, yang kedua menyerahkan pilihannya. My desk
+    // menutup grup ini karena ia yang menunjukkan hasil gabungan keduanya.
+    heading: 'earn',
+    items: [
       { to: '/savings', label: 'Savings', icon: PiggyBankIcon },
       { to: '/strategy', label: 'Open position', icon: SlidersHorizontalIcon },
       { to: '/desk', label: 'My desk', icon: LayoutGridIcon },
@@ -65,8 +85,8 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
     items: [
       { to: '/portfolio', label: 'Portfolio', icon: WalletIcon },
       { to: '/pay', label: 'Pay', icon: SendIcon },
-      { to: '/payment-link', label: 'Payment link', icon: QrCodeIcon },
       { to: '/receive', label: 'Receive', icon: ArrowDownLeftIcon },
+      { to: '/payment-link', label: 'Payment link', icon: QrCodeIcon },
       { to: '/faucet', label: 'Faucet', icon: DropletsIcon },
     ],
   },
@@ -114,7 +134,7 @@ function SidebarContent({
           <button
             type="button"
             onClick={onToggle}
-            aria-label={rail ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+            aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'}
             className="rounded-md p-2 text-spectral/45 transition hover:bg-spectral/[0.06] hover:text-spectral"
           >
             <PanelLeftIcon className="h-4 w-4" />
