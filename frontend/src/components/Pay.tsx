@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { readContract, getBalance } from '@wagmi/core'
+import type { Config } from '@wagmi/core'
 import { erc20Abi, formatUnits, getAddress, isAddress, parseUnits, type Address } from 'viem'
 
 import { CURATED_TOKENS } from '../lib/tokens'
@@ -47,8 +48,8 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
         const dec = await tokenDecimals(token.native ? undefined : (token.sac as Address))
         if (live) setDecimals(dec)
         const value = token.native
-          ? (await getBalance(wagmiConfig as any, { address: account, chainId: ACTIVE_CHAIN_ID })).value
-          : ((await readContract(wagmiConfig as any, {
+          ? (await getBalance(wagmiConfig as Config, { address: account, chainId: ACTIVE_CHAIN_ID })).value
+          : ((await readContract(wagmiConfig as Config, {
               address: token.sac as Address,
               abi: erc20Abi,
               functionName: 'balanceOf',
