@@ -41,7 +41,7 @@ contract GoldenVectorsTest is Test, IqiaOpcodes {
 
     constructor() IqiaOpcodes(address(AQUA)) { }
 
-    function test_PrintGoldenVectors() public view {
+    function test_PrintGoldenVectors() public pure {
         Program memory p = ProgramBuilder.init(_opcodes());
 
         bytes memory program = bytes.concat(
