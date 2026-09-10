@@ -132,27 +132,56 @@ export function splitAmounts(
 }
 
 /** Saldo virtual posisi di Aqua. Nol berarti belum dikirim atau sudah ditutup. */
+/**
+ * @param app Aqua app yang menaungi posisi ini. WAJIB dari posisinya sendiri,
+ *   bukan dari config: papan Markets sekarang memuat posisi tim lain di router
+ *   mereka, dan menanyakan saldo mereka dengan router KITA sebagai app selalu
+ *   menghasilkan nol. Default-nya router kita, untuk pemanggil lama yang memang
+ *   hanya berurusan dengan posisi sendiri.
+ */
 export async function positionBalances(
   maker: Address,
   strategyHash: Hex,
   tokenA: string,
   tokenB: string,
+  app: string = SWAP_VM_ROUTER_ADDRESS,
 ): Promise<[bigint, bigint]> {
   // `safeBalances` membaca kedua kaki sekaligus DAN menolak kalau strateginya
   // tidak aktif — dua hal yang sebelumnya dikerjakan dua panggilan `rawBalances`
   // plus pemeriksaan `tokensCount` tulisan tangan.
+  const res = (await readContract(wagmiConfig as any, {
+    address: AQUA_ADDRESS as Address,
+    abi: aquaAbi,
+    functionName: 'safeBalances',
+    args: [maker, app as Address, strategyHash, tokenA as Address, tokenB as Address],
+    chainId: ACTIVE_CHAIN_ID,
+  })) as readonly [bigint, bigint]
+  return [res[0], res[1]]
+}
+
+/**
+ * Sama, tapi posisi yang tidak aktif dijawab nol alih-alih melempar.
+ *
+ * `safeBalances` menolak strategi yang belum dibuka atau sudah di-dock, dan itu
+ * jawaban yang sah untuk halaman yang memang menanyakan "ada isinya tidak".
+ *
+ * Yang TIDAK boleh dipakai di sini: `catch` telanjang yang mengubah SETIAP
+ * kegagalan jadi nol. Itu yang menyembunyikan bug alamat salah-kapitalisasi
+ * selama satu putaran penuh — halaman menampilkan "0" dengan percaya diri
+ * sementara rantainya menyimpan 20 WETH.
+ */
+export async function positionBalancesOrZero(
+  maker: Address,
+  strategyHash: Hex,
+  tokenA: string,
+  tokenB: string,
+  app?: string,
+): Promise<[bigint, bigint]> {
   try {
-    const res = (await readContract(wagmiConfig as any, {
-      address: AQUA_ADDRESS as Address,
-      abi: aquaAbi,
-      functionName: 'safeBalances',
-      args: [maker, SWAP_VM_ROUTER_ADDRESS as Address, strategyHash, tokenA as Address, tokenB as Address],
-      chainId: ACTIVE_CHAIN_ID,
-    })) as readonly [bigint, bigint]
-    return [res[0], res[1]]
-  } catch {
-    // Strategi belum dibuka atau sudah di-dock. Nol, bukan galat.
-    return [0n, 0n]
+    return await positionBalances(maker, strategyHash, tokenA, tokenB, app)
+  } catch (e) {
+    if (String(e).includes('NotInActiveStrategy') || String(e).includes('reverted')) return [0n, 0n]
+    throw e
   }
 }
 
