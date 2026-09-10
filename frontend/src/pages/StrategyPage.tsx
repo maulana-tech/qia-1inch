@@ -429,7 +429,7 @@ export function StrategyPage() {
 
                 {id === 'meja-privat' && (
                   <label className="block">
-                    <span className="text-sm text-zinc-300">Alamat penyalur</span>
+                    <span className="text-sm text-zinc-300">Flow provider address</span>
                     <TextInput
                       mono
                       placeholder="0x…"
