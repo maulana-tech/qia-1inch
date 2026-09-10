@@ -14,6 +14,7 @@ import {
 } from '@wagmi/core'
 import { erc20Abi, getAddress, isAddress, type Address } from 'viem'
 
+import type { Config } from '@wagmi/core'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 
 export interface PaymentRequest {
@@ -83,7 +84,7 @@ export async function sendPayment(params: {
   amount: bigint
 }): Promise<`0x${string}`> {
   const hash = params.token
-    ? await writeContract(wagmiConfig as any, {
+    ? await writeContract(wagmiConfig as Config, {
         address: params.token,
         abi: erc20Abi,
         functionName: 'transfer',
@@ -92,13 +93,13 @@ export async function sendPayment(params: {
         chain: null,
         account: params.account,
       })
-    : await sendTransaction(wagmiConfig as any, {
+    : await sendTransaction(wagmiConfig as Config, {
         to: params.to,
         value: params.amount,
         chainId: ACTIVE_CHAIN_ID,
         account: params.account,
       })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return hash
 }
 
@@ -121,7 +122,7 @@ export async function tokenDecimals(token?: Address): Promise<number> {
   const cached = decimalsCache.get(key)
   if (cached !== undefined) return cached
   const value = Number(
-    await readContract(wagmiConfig as any, {
+    await readContract(wagmiConfig as Config, {
       address: token,
       abi: erc20Abi,
       functionName: 'decimals',
@@ -153,7 +154,7 @@ const WETH_ABI = [
  */
 export async function canWrapNative(weth: Address): Promise<boolean> {
   try {
-    await simulateContract(wagmiConfig as any, {
+    await simulateContract(wagmiConfig as Config, {
       address: weth,
       abi: WETH_ABI,
       functionName: 'deposit',
@@ -175,7 +176,7 @@ export async function canWrapNative(weth: Address): Promise<boolean> {
  * di rantai sungguhan tidak bisa berbuat apa-apa.
  */
 export async function wrapNative(account: Address, weth: Address, amount: bigint): Promise<`0x${string}`> {
-  const hash = await writeContract(wagmiConfig as any, {
+  const hash = await writeContract(wagmiConfig as Config, {
     address: weth,
     abi: WETH_ABI,
     functionName: 'deposit',
@@ -184,13 +185,13 @@ export async function wrapNative(account: Address, weth: Address, amount: bigint
     chain: null,
     account,
   })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return hash
 }
 
 /** Membuka bungkus WETH kembali jadi ETH. */
 export async function unwrapNative(account: Address, weth: Address, amount: bigint): Promise<`0x${string}`> {
-  const hash = await writeContract(wagmiConfig as any, {
+  const hash = await writeContract(wagmiConfig as Config, {
     address: weth,
     abi: WETH_ABI,
     functionName: 'withdraw',
@@ -199,6 +200,6 @@ export async function unwrapNative(account: Address, weth: Address, amount: bigi
     chain: null,
     account,
   })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return hash
 }
