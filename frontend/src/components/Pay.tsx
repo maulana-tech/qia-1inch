@@ -109,7 +109,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
         <CardContent className="space-y-4">
           {locked ? (
             <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-3">
-              <p className="text-xs text-spectral/60">Bayar ke</p>
+              <p className="text-xs text-spectral/60">Pay to</p>
               {request?.name && (
                 <p className="mt-1 text-sm font-medium text-zinc-100">{request.name}</p>
               )}
