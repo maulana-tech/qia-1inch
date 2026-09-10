@@ -1,4 +1,5 @@
 export * from './hex.js'
 export * from './opcodes.js'
 export * from './program.js'
+export * from './disasm.js'
 export * from './traits.js'
