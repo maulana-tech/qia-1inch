@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { readContracts } from '@wagmi/core'
+import type { Config } from '@wagmi/core'
 import { erc20Abi, formatUnits, type Address } from 'viem'
 
 import { fetchActiveStrategies } from '../lib/markets'
@@ -119,7 +120,7 @@ export function DeskPage() {
       }
       setRows(out)
 
-      const wallet = await readContracts(wagmiConfig as any, {
+      const wallet = await readContracts(wagmiConfig as Config, {
         contracts: [...tally.keys()].map((t) => ({
           address: t as Address,
           abi: erc20Abi,
