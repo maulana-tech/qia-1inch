@@ -43,7 +43,7 @@ export function Faucet() {
 
   async function mint(code: string, token: string) {
     if (!walletClient || !publicClient) {
-      setMsg((m) => ({ ...m, [code]: `Pindahkan dompet ke ${CHAIN_NAME} dulu.` }))
+      setMsg((m) => ({ ...m, [code]: `Switch your wallet to ${CHAIN_NAME} first.` }))
       return
     }
     setBusy(code)
@@ -71,9 +71,9 @@ export function Faucet() {
       }))
     } catch (e) {
       console.error(e)
-      const errMsg = e instanceof Error ? e.message : 'Pencetakan gagal.'
+      const errMsg = e instanceof Error ? e.message : 'Minting failed.'
       if (errMsg.includes('contract') || errMsg.includes('deploy') || errMsg.includes('code')) {
-        setMsg((m) => ({ ...m, [code]: 'Kontrak tokennya belum ada. Jalankan script/Deploy.s.sol dulu.' }))
+        setMsg((m) => ({ ...m, [code]: 'The token contract is not deployed yet. Run script/Deploy.s.sol first.' }))
       } else {
         setMsg((m) => ({ ...m, [code]: errMsg }))
       }
@@ -87,17 +87,17 @@ export function Faucet() {
       <section className="space-y-5">
         <PageHeader
           title="Faucet"
-          caption={`Cetak token mock ke dompetmu untuk mencoba swap dan tabungan di ${CHAIN_NAME}. Ini token testnet terbuka — bukan aset sungguhan.`}
+          caption={`Mint mock tokens to your wallet to try swaps and savings on ${CHAIN_NAME}. These are open testnet tokens — not real assets.`}
         />
 
         <Card>
           <CardHeader>
-            <CardTitle>Token uji</CardTitle>
+            <CardTitle>Test tokens</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!connected && (
               <p className="rounded-xl border border-ink-700 bg-ink-900/50 px-3.5 py-3 text-center text-sm text-zinc-500">
-                Hubungkan dompetmu untuk mencetak.
+                Connect your wallet to mint.
               </p>
             )}
 
@@ -105,7 +105,7 @@ export function Faucet() {
               <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3">
                 <p className="mb-2 text-xs text-yellow-300">
                   Dompetmu ada di chain {chainId}. Pindah ke {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID})
-                  untuk mencetak token.
+                  to mint tokens.
                 </p>
                 <Button size="sm" variant="outline" onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}>
                   Pindah ke {CHAIN_NAME}
@@ -115,12 +115,12 @@ export function Faucet() {
 
             {connected && !MOCK_TOKENS_DEPLOYED && !USE_MOCK && (
               <p className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3 text-xs text-yellow-300">
-                Alamat token mock belum diisi. Deploy dulu:
+                Mock token addresses are not set. Deploy them first:
                 <span className="mt-1 block font-mono">
                   cd contracts &amp;&amp; forge script script/Deploy.s.sol --broadcast
                 </span>
-                lalu tempel alamatnya ke <span className="font-mono">VITE_USDC_ADDRESS</span> dan
-                seterusnya di <span className="font-mono">frontend/.env.local</span>.
+                then paste the addresses into <span className="font-mono">VITE_USDC_ADDRESS</span> and
+                the rest in <span className="font-mono">frontend/.env.local</span>.
               </p>
             )}
 
@@ -149,7 +149,7 @@ export function Faucet() {
                         return
                       }
                       if (!t.sac) {
-                        setMsg((m) => ({ ...m, [t.code]: 'Alamat kontraknya belum ada.' }))
+                        setMsg((m) => ({ ...m, [t.code]: 'That contract address is not set.' }))
                         return
                       }
                       void mint(t.code, t.sac)
