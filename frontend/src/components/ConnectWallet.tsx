@@ -91,7 +91,7 @@ export function ConnectWallet() {
   return (
     <div className="flex items-center gap-3">
       {wallet.error && wallet.status === 'disconnected' && (
-        <span className="hidden text-xs text-red-300 sm:inline">{wallet.error}</span>
+        <span className="hidden text-xs text-danger sm:inline">{wallet.error}</span>
       )}
       <Button onClick={() => void wallet.connect()} loading={busy}>
         {busy ? 'Connecting…' : 'Connect Wallet'}
