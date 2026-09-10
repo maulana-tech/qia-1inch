@@ -10,7 +10,11 @@ import { CHAIN_NAME } from '../lib/config'
 import { ThemeToggle } from './ThemeToggle'
 import { useIsDark } from '../hooks/useTheme'
 
-const STACK_MARKS = ['1inch Aqua', 'SwapVM', 'Base', 'viem · wagmi', 'Foundry']
+// Rantainya dibaca dari env, bukan ditulis tangan. Dulu di sini tertulis
+// "Base" — dan aplikasinya sudah pindah ke Ethereum Sepolia berminggu-minggu
+// sebelumnya, jadi halaman depannya menyebut rantai yang salah kepada setiap
+// orang yang membukanya.
+const STACK_MARKS = ['1inch Aqua', 'SwapVM', CHAIN_NAME, 'viem · wagmi', 'Foundry']
 
 const ROTATING = ['in your wallet', 'unlocked', 'yours', 'never pooled', 'put to work']
 
@@ -191,7 +195,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           <span
             className={`block font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#ffffff]/55' : 'text-[#191919]/55'}`}
           >
-            [ Base · 1inch Aqua · SwapVM ]
+            [ {CHAIN_NAME} · 1inch Aqua · SwapVM ]
           </span>
 
           {/* lg:w-2/3 seperti pada sumbernya — tanpa itu tombolnya terlempar
