@@ -141,7 +141,7 @@ export function DeskPage() {
       }
       setCommitted(summary)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal membaca meja.')
+      setError(e instanceof Error ? e.message : 'Failed to read the desk.')
     } finally {
       setBusy(false)
     }
@@ -163,15 +163,15 @@ export function DeskPage() {
     <div className="mx-auto w-full max-w-4xl px-5 pb-16 pt-8">
       <section className="space-y-5">
         <PageHeader
-          title="Meja kamu"
-          caption="Modal yang sama mengutip di beberapa pasar sekaligus. Di AMM mana pun modalmu terkunci di satu pool — di Aqua ia tidak pernah meninggalkan dompetmu, jadi ia bisa bekerja di banyak tempat."
+          title="Your desk"
+          caption="The same capital quotes in several markets at once. In any AMM your capital is locked into one pool — in Aqua it never leaves your wallet, so it can work in many places."
         />
 
         {!address && (
           <Card>
             <CardContent>
               <p className="py-6 text-center text-sm text-zinc-500">
-                Hubungkan dompetmu untuk melihat meja.
+                Connect your wallet to see the desk.
               </p>
             </CardContent>
           </Card>
@@ -192,15 +192,15 @@ export function DeskPage() {
                 <div className="flex flex-wrap items-end justify-between gap-6">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] text-spectral/60">
-                      efisiensi modal
+                      capital efficiency
                     </p>
                     <p className="font-display text-4xl font-medium text-spectral-soft">
                       {efficiency.toFixed(2)}×
                     </p>
                   </div>
                   <p className="max-w-md text-xs leading-relaxed text-zinc-500">
-                    {rows.length} pasar mengutip dari dompet yang sama. Angka ini berapa kali lipat
-                    modal nyatamu terdaftar sebagai likuiditas.
+                    {rows.length} markets quoting from the same wallet. This is how many times over your real
+                    capital is registered as liquidity.
                   </p>
                 </div>
 
@@ -212,7 +212,7 @@ export function DeskPage() {
                         <span className="text-zinc-200">
                           {formatUnits(c.committed, c.decimals)}
                         </span>
-                        <span className="text-zinc-600"> terdaftar dari </span>
+                        <span className="text-zinc-600"> registered out of </span>
                         <span className="text-zinc-200">{formatUnits(c.real, c.decimals)}</span>
                         <span className="text-zinc-600"> nyata</span>
                       </span>
@@ -231,9 +231,9 @@ export function DeskPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  Harga untuk {String(QUOTE_UNITS)} unit token kedua di tiap pasar. Tukar di salah
-                  satu pasar lalu muat ulang — yang lain ikut bergerak, karena mereka membaca dompet
-                  yang sama.
+                  The price for {String(QUOTE_UNITS)} units of the second token in each market. Swap in one
+                  market and reload — the others move too, because they read the same
+                  wallet.
                 </p>
                 {rows.map((r) => (
                   <div
@@ -248,7 +248,7 @@ export function DeskPage() {
                     </div>
                     <span className="font-mono text-sm tabular-nums text-zinc-200">
                       {r.quote === null ? (
-                        <span className="text-zinc-600">tidak mengutip</span>
+                        <span className="text-zinc-600">not quoting</span>
                       ) : (
                         <>
                           {String(QUOTE_UNITS)} {codeOf(r.tokenIn)}
@@ -263,9 +263,9 @@ export function DeskPage() {
             </Card>
 
             <p className="text-xs leading-relaxed text-zinc-500">
-              Modal bersama tidak dibagi rata — ia direbut. Penukar yang datang belakangan membayar
-              lebih mahal karena jaminannya sudah menipis, dan swap yang terlalu besar tetap gagal.
-              Batas kerasnya ada; yang berubah cuma cara ia diberitahukan.
+              Shared capital is not split evenly — it is competed for. Swappers who arrive later pay
+              more because the backing has thinned, and a swap that is too large still fails.
+              The hard limit is still there; only how it is announced changes.
             </p>
           </>
         )}
@@ -274,8 +274,8 @@ export function DeskPage() {
           <Card>
             <CardContent>
               <p className="py-6 text-center text-sm text-zinc-500">
-                Belum ada posisi. Buka satu lewat halaman Open position, lalu buka lagi di pasangan
-                lain — modal yang sama akan menopang keduanya.
+                No positions yet. Open one from the Open position page, then open another on a
+                different pair — the same capital will back both.
               </p>
             </CardContent>
           </Card>
