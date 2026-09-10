@@ -21,7 +21,7 @@ import { BrandCanvas } from './BrandCanvas'
 import { ConnectWallet } from './ConnectWallet'
 import { Logo, LogoMark } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
-import { useT } from '../lib/settings'
+import { useT } from '../lib/settingsContext'
 import {
   CHAIN_NAME,
   DESK_CONFIGURED,
