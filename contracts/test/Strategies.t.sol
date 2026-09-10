@@ -81,7 +81,7 @@ contract StrategiesTest is Test, IqiaOpcodes {
 
     // ===== program per strategi =====
 
-    function _santai(uint64 saltValue) internal view returns (bytes memory) {
+    function _santai(uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
@@ -91,7 +91,7 @@ contract StrategiesTest is Test, IqiaOpcodes {
         );
     }
 
-    function _terkonsentrasi(uint64 saltValue) internal view returns (bytes memory) {
+    function _terkonsentrasi(uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
@@ -103,7 +103,7 @@ contract StrategiesTest is Test, IqiaOpcodes {
         );
     }
 
-    function _antiArbitrase(uint64 saltValue) internal view returns (bytes memory) {
+    function _antiArbitrase(uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(SolvencyGuard._solvencyGuardXD, SolvencyGuardArgsBuilder.build(SURCHARGE_BPS)),
@@ -114,7 +114,7 @@ contract StrategiesTest is Test, IqiaOpcodes {
         );
     }
 
-    function _mejaPrivat(address only, uint64 saltValue) internal view returns (bytes memory) {
+    function _mejaPrivat(address only, uint64 saltValue) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(only)),
