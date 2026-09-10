@@ -48,7 +48,7 @@ export function ConnectWallet() {
         </button>
 
         {open && (
-          <div className="absolute right-0 z-40 mt-2 w-72 rounded-none border border-ink-700 bg-ink-850 p-3 shadow-panel animate-fade-in">
+          <div className="absolute right-0 z-40 mt-2 w-72 rounded-xl border border-ink-700 bg-ink-850 p-3 shadow-panel animate-fade-in">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-400">Connected</span>
               <Badge tone={wallet.isTestnet ? 'success' : 'warn'}>{wallet.network ?? 'Unknown'}</Badge>
@@ -57,7 +57,7 @@ export function ConnectWallet() {
             <button
               type="button"
               onClick={copyAddress}
-              className="flex w-full items-center gap-2 rounded-none border border-ink-700 bg-ink-900/70 px-3 py-2 text-left transition hover:border-spectral/40 hover:bg-ink-800/60"
+              className="flex w-full items-center gap-2 rounded-lg border border-ink-700 bg-ink-900/70 px-3 py-2 text-left transition hover:border-spectral/40 hover:bg-ink-800/60"
             >
               <span className="break-all font-mono text-xs text-zinc-300">{wallet.address}</span>
               <CopyIcon className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
