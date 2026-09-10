@@ -3,6 +3,7 @@ import { Landing } from './components/Landing'
 import { AppLayout } from './components/AppLayout'
 import { Faucet } from './components/Faucet'
 import { Hub } from './pages/Hub'
+import { MarketPage } from './pages/MarketPage'
 import { PortfolioPage } from './pages/PortfolioPage'
 import { PayPage } from './pages/PayPage'
 import { PaymentLinkPage } from './pages/PaymentLinkPage'
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/" element={<LandingRoute />} />
       <Route element={<AppLayout />}>
         <Route path="/app" element={<Hub />} />
+        <Route path="/market/:hash" element={<MarketPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/pay" element={<PayPage />} />
         <Route path="/pay/:address" element={<PayPage />} />
