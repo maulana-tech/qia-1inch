@@ -64,7 +64,7 @@ export function deskOrder() {
 
 export class DeskNotConfiguredError extends Error {
   constructor() {
-    super('Meja Aqua belum dikonfigurasi. Isi VITE_SWAP_VM_ROUTER dan VITE_DESK_MAKER.')
+    super('The Aqua desk is not configured. Set VITE_SWAP_VM_ROUTER and VITE_DESK_MAKER.')
   }
 }
 
@@ -202,7 +202,7 @@ export async function quotePosition(
   taker: string,
 ): Promise<bigint> {
   const order = decodeOrder(strategy)
-  if (!order) throw new Error('Byte strategi tidak bisa dibaca sebagai Order.')
+  if (!order) throw new Error('These strategy bytes cannot be read as an Order.')
   const [, amountOut] = await readContract(wagmiConfig as any, {
     address: app as `0x${string}`,
     abi: swapVmAbi,
