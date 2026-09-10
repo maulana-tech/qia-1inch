@@ -34,6 +34,7 @@ const { AQUA_ABI } = ABI
 
 import { strategyProgram } from './strategies'
 import { fetchPositionTrades } from './markets'
+import { quote, swap } from './desk'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import {
@@ -453,4 +454,105 @@ export async function positionBacking(
       reg === 0n || backing >= reg ? 0n : (maxSurchargeBps * (reg - backing)) / reg
     return { token, registered: reg, backing, surchargeBps }
   })
+}
+
+/** Langkah yang sedang berjalan, untuk ditampilkan selagi menunggu tanda tangan. */
+export interface ZapStep {
+  phase: 'swapping' | 'opening'
+  detail: string
+}
+
+export interface ZapOptions {
+  /** Toleransi slippage untuk tukar penyeimbangnya, basis-point 1e4. */
+  slippageBps?: number
+  onStep?: (step: ZapStep) => void
+}
+
+/**
+ * Membuka posisi tabungan dari SATU token, dengan menukar separuhnya lebih dulu.
+ *
+ * # Masalah yang diselesaikan
+ *
+ * Posisi Aqua butuh kedua sisi terisi — `XYCSwap` menolak `balanceIn = 0` dengan
+ * `XYCSwapRequiresBothBalancesNonZero`, jadi posisi satu sisi terlihat hidup dan
+ * tidak pernah melayani satu swap pun. Halaman Savings karena itu memblokir
+ * pengguna yang cuma memegang satu token, dan menyuruhnya menukar sendiri di
+ * halaman lain lalu kembali. Itu pekerjaan aplikasi yang dilempar ke pengguna.
+ *
+ * # Kenapa TIDAK bisa satu transaksi
+ *
+ * Kontrak yang mengerjakan tukar-lalu-kirim sekaligus tidak mungkin dibuat:
+ * `Aqua.ship()` memakai `msg.sender` sebagai maker, jadi kontrak yang mencoba
+ * mengirim untuk pengguna akan menjadi maker atas saldonya sendiri. `ship()`
+ * WAJIB datang dari dompet penggunanya.
+ *
+ * Jadi langkahnya tidak bisa disembunyikan. Yang bisa: menjadikannya satu
+ * keputusan, dan melaporkan progresnya apa adanya lewat `onStep`.
+ *
+ * # Kenapa separuh, dan kenapa separuh menurut NILAI
+ *
+ * Rasio kedua sisi itulah yang menetapkan harga posisi. Membagi rata menurut
+ * nilai menaruh harga pembukaan dekat harga pasar; membagi menurut JUMLAH akan
+ * melahirkan posisi yang langsung salah harga dan jadi sasaran arbitrase.
+ */
+export async function zapAndOpen(
+  account: Address,
+  tokenA: string,
+  tokenB: string,
+  wallet: [bigint, bigint],
+  percent: number,
+  order: ReturnType<typeof savingsOrder>,
+  opts: ZapOptions = {},
+): Promise<{ hash: `0x${string}`; strategyHash: Hex }> {
+  requireConfigured()
+  const { slippageBps = 100, onStep } = opts
+
+  const aside = splitAmounts(wallet, percent)
+  const tokens = [tokenA, tokenB] as const
+
+  // Dua sisi sudah terisi: tidak ada yang perlu ditukar.
+  if (aside[0] > 0n && aside[1] > 0n) {
+    onStep?.({ phase: 'opening', detail: 'Opening position…' })
+    return openPosition(account, tokenA, tokenB, aside[0], aside[1], order)
+  }
+
+  const have = aside[0] > 0n ? 0 : 1
+  const want = have === 0 ? 1 : 0
+  if (aside[have] === 0n) throw new Error('Nothing to set aside — your wallet is empty.')
+
+  const toSwap = aside[have] / 2n
+  if (toSwap === 0n) throw new Error('That share is too small to split into a position.')
+
+  // Diperiksa SEBELUM transaksi pertama, bukan di tengah. Kutipan yang gagal di
+  // sini berarti meja tidak bisa melayani tukarnya — dan mengetahuinya setelah
+  // pengguna menandatangani satu transaksi adalah cara terburuk menyampaikannya.
+  const expected = await quote(tokens[have], tokens[want], toSwap, account)
+  if (expected === 0n) {
+    throw new Error('The desk cannot price this swap right now — try a larger share.')
+  }
+
+  const minOut = (expected * BigInt(10_000 - slippageBps)) / 10_000n
+  onStep?.({ phase: 'swapping', detail: 'Balancing your position…' })
+  await swap(account, tokens[have], tokens[want], toSwap, minOut)
+
+  /**
+   * Saldo dibaca ULANG, bukan diambil dari kutipan.
+   *
+   * Kutipan itu perkiraan sebelum transaksi; yang benar-benar diterima bisa
+   * lebih kecil kalau harganya bergeser. Mendaftarkan angka kutipan berarti
+   * `ship()` mengalokasikan jumlah yang mungkin tidak dimiliki penggunanya —
+   * dan Aqua TIDAK memeriksa saldo saat `ship`, jadi kesalahannya tidak akan
+   * ketahuan sampai swap pertama gagal.
+   */
+  const after = await walletBalances(account, tokenA, tokenB)
+
+  const ship: [bigint, bigint] = [0n, 0n]
+  ship[have] = aside[have] - toSwap
+  ship[want] = after[want] < wallet[want] ? 0n : after[want] - wallet[want]
+  if (ship[want] === 0n) {
+    throw new Error('The swap produced nothing to pair with. Your tokens are still in your wallet.')
+  }
+
+  onStep?.({ phase: 'opening', detail: 'Opening position…' })
+  return openPosition(account, tokenA, tokenB, ship[0], ship[1], order)
 }
