@@ -26,3 +26,46 @@ for (const bad of ['', '.', 'abc', '1e-7', '-1', '1.2.3', ' ', '0', '0.0']) {
 assert.equal(parse('0.0000001', 6), null, 'di bawah satuan terkecil bukan angka positif')
 
 console.log('check-amount: semua lolos')
+
+// --- payment link ----------------------------------------------------------
+//
+// Bolak-balik antara "permintaan bayar" dan "URL", diperiksa sebagai satu jalur.
+// Link inilah yang menentukan siapa dibayar berapa, dan ia berpindah tangan
+// lewat chat dan QR — jadi apa pun yang selamat dari perjalanan itu harus
+// persis apa yang dimaksud pembuatnya.
+import { buildPaymentLink, parsePaymentLink } from '../src/lib/paymentLink'
+
+const ALICE = '0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B'
+const round = (req: Parameters<typeof buildPaymentLink>[0]) => {
+  const url = new URL(buildPaymentLink(req, 'https://x.test'))
+  return parsePaymentLink(url.pathname.split('/').pop(), url.searchParams)
+}
+
+{
+  const back = round({ address: ALICE, amount: '25.5', token: 'USDC', chainId: 11155111 })
+  assert.equal(back?.address, ALICE)
+  assert.equal(back?.amount, '25.5')
+  assert.equal(back?.token, 'USDC')
+  assert.equal(back?.chainId, 11155111, 'rantainya harus selamat menyeberang')
+}
+
+// Rantai adalah alasan link ini bisa membayar aset yang salah. Ia tidak boleh
+// hilang diam-diam, dan link lama tanpa rantai harus terbaca sebagai "tidak
+// tahu" — bukan sebagai rantai yang sedang aktif.
+{
+  const back = parsePaymentLink(ALICE, new URLSearchParams(''))
+  assert.equal(back?.chainId, undefined, 'link tanpa rantai jangan mengarang rantai')
+}
+
+// Nominal yang tidak masuk akal dibuang, bukan diteruskan sebagai sampah yang
+// baru ketahuan saat transaksinya gagal.
+for (const bad of ['abc', '0', '-5', '']) {
+  const back = parsePaymentLink(ALICE, new URLSearchParams(`amount=${bad}`))
+  assert.equal(back?.amount, undefined, `amount=${bad} harus dibuang`)
+}
+
+// Alamat yang bukan alamat berarti bukan permintaan bayar sama sekali.
+assert.equal(parsePaymentLink('bukan-alamat', new URLSearchParams()), null)
+assert.equal(parsePaymentLink(undefined, new URLSearchParams()), null)
+
+console.log('check-payment-link: semua lolos')
