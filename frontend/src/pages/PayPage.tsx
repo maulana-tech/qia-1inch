@@ -7,7 +7,7 @@ export function PayPage() {
       <section className="space-y-5">
         <PageHeader
           title="Pay"
-          caption="Kirim token langsung ke alamat mana pun. Kalau kamu membuka payment link, penerima dan nominalnya sudah terisi."
+          caption="Send tokens straight to any address. If you opened a payment link, the recipient and amount are already filled in."
         />
         <Pay embedded />
       </section>
