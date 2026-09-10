@@ -44,7 +44,14 @@ import {
   type Hex,
 } from '@iqia/swapvm'
 
-import { MOCK_USDC_ADDRESS, MOCK_WETH_ADDRESS, PROTOCOL_FEE_BPS, TREASURY_ADDRESS } from './config'
+import {
+  MOCK_DAI_ADDRESS,
+  MOCK_USDC_ADDRESS,
+  MOCK_WBTC_ADDRESS,
+  MOCK_WETH_ADDRESS,
+  PROTOCOL_FEE_BPS,
+  TREASURY_ADDRESS,
+} from './config'
 
 /**
  * Pasangan yang dilayani meja ini.
@@ -58,6 +65,36 @@ export const DESK_PAIR = [
   { symbol: 'WETH', address: MOCK_WETH_ADDRESS, decimals: 18 },
   { symbol: 'USDC', address: MOCK_USDC_ADDRESS, decimals: 6 },
 ] as const
+
+/**
+ * Pasangan yang bisa dibuka penabung, semuanya beralas WETH.
+ *
+ * # Kenapa selalu ada WETH di satu sisi
+ *
+ * Bukan keterbatasan Aqua — Aqua menerima pasangan apa pun. Ini keputusan
+ * produk, dan konsekuensi langsung dari sifat yang membuat aplikasi ini ada:
+ * `ship()` tidak memindahkan token dan tidak memeriksa saldo, jadi tumpukan
+ * WETH yang SAMA bisa mengutip di ketiga pasar sekaligus. Terukur di rantai:
+ * 19,93 WETH menopang tiga pasar, efisiensi modal 3,00×.
+ *
+ * Kalau tiap pasar memakai alas berbeda, angka itu tidak pernah lahir — modalnya
+ * terbagi, persis seperti di kolam biasa.
+ *
+ * # Kenapa hanya yang alamatnya terisi
+ *
+ * Token yang belum di-deploy disaring keluar, bukan ditampilkan sebagai pilihan
+ * yang gagal saat ditekan. Sebelum `add-markets.sh` dijalankan, hanya USDC yang
+ * ada — dan menawarkan DAI di situ berarti menjanjikan pasar yang tidak bisa
+ * dibuka.
+ */
+export const SAVINGS_PAIRS = [
+  { symbol: 'USDC', address: MOCK_USDC_ADDRESS, decimals: 6 },
+  { symbol: 'DAI', address: MOCK_DAI_ADDRESS, decimals: 18 },
+  { symbol: 'WBTC', address: MOCK_WBTC_ADDRESS, decimals: 6 },
+].filter((t) => /^0x[0-9a-f]{40}$/i.test(t.address))
+
+/** Alas semua pasangan tabungan. */
+export const SAVINGS_BASE = { symbol: 'WETH', address: MOCK_WETH_ADDRESS, decimals: 18 } as const
 
 export type StrategyId = 'santai' | 'terkonsentrasi' | 'anti-arbitrase' | 'meja-privat'
 
