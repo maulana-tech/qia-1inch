@@ -224,7 +224,7 @@ export function DeskPage() {
 
             <Card>
               <CardHeader className="flex items-center justify-between">
-                <CardTitle>Kutipan hidup</CardTitle>
+                <CardTitle>Live quotes</CardTitle>
                 <Button size="sm" variant="outline" loading={busy} onClick={() => void load()}>
                   Reload
                 </Button>
