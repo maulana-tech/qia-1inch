@@ -76,3 +76,50 @@ export function parsePaymentLink(
   }
 }
 
+
+/**
+ * URI pembayaran EIP-681 — yang dibaca dompet, bukan browser.
+ *
+ * # Kenapa ini berbeda dari payment link
+ *
+ * `buildPaymentLink` menghasilkan URL ke aplikasi ini. Yang memindainya harus
+ * punya browser, dan yang terbuka adalah formulir kirim kita.
+ *
+ * Yang ini menghasilkan `ethereum:…` — skema yang dikenali MetaMask, Rainbow,
+ * Trust, dan dompet lain. Pemindainya langsung membuka layar kirim dompetnya
+ * sendiri, dengan penerima, rantai, token, dan nominal sudah terisi. Tidak perlu
+ * browser dan tidak perlu mengenal aplikasi ini sama sekali.
+ *
+ * Dua-duanya berguna, untuk pemindai yang berbeda. Yang tidak berguna adalah
+ * memilih satu tanpa memberi tahu penggunanya mana yang mana.
+ *
+ * # Bentuknya
+ *
+ *   native : ethereum:<penerima>@<chain>?value=<wei>
+ *   ERC20  : ethereum:<token>@<chain>/transfer?address=<penerima>&uint256=<jumlah>
+ *
+ * Perhatikan targetnya berpindah: untuk ERC20 yang ditulis di depan adalah
+ * alamat KONTRAK TOKEN, dan penerimanya jadi argumen. Menaruh alamat penerima di
+ * depan untuk ERC20 adalah kesalahan yang menghasilkan URI yang terlihat benar
+ * dan mengirim token asli rantai.
+ */
+export function buildEip681(params: {
+  to: string
+  chainId: number
+  /** Alamat kontrak ERC20; kosongkan untuk token asli rantai. */
+  token?: string
+  /** Jumlah dalam satuan dasar. Nol atau kosong berarti pembayar yang mengisi. */
+  amount?: bigint
+}): string {
+  const { to, chainId, token, amount } = params
+  if (!isAddress(to)) throw new Error('EIP-681 needs a valid recipient address')
+
+  if (!token) {
+    const base = `ethereum:${getAddress(to)}@${chainId}`
+    return amount && amount > 0n ? `${base}?value=${amount}` : base
+  }
+
+  if (!isAddress(token)) throw new Error('EIP-681 needs a valid token address')
+  const call = `ethereum:${getAddress(token)}@${chainId}/transfer?address=${getAddress(to)}`
+  return amount && amount > 0n ? `${call}&uint256=${amount}` : call
+}
