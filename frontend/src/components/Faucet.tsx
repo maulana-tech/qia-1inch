@@ -103,7 +103,7 @@ export function Faucet() {
 
             {connected && !onTargetChain && (
               <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3">
-                <p className="mb-2 text-xs text-yellow-300">
+                <p className="mb-2 text-xs text-warn">
                   Your wallet is on chain {chainId}. Switch to {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID})
                   to mint tokens.
                 </p>
@@ -114,7 +114,7 @@ export function Faucet() {
             )}
 
             {connected && !MOCK_TOKENS_DEPLOYED && !USE_MOCK && (
-              <p className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3 text-xs text-yellow-300">
+              <p className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3.5 py-3 text-xs text-warn">
                 Mock token addresses are not set. Deploy them first:
                 <span className="mt-1 block font-mono">
                   cd contracts &amp;&amp; forge script script/Deploy.s.sol --broadcast
