@@ -14,6 +14,7 @@ import { positionBalancesOrZero } from '../lib/savings'
 import { tokenDecimals } from '../lib/payments'
 import { CHAIN_NAME, explorerContractUrl, explorerTxUrl } from '../lib/config'
 import { cx } from '../lib/cx'
+import { WHAT_IT_DOES } from '../lib/instructions'
 import { Button, Card, CardContent, PageHeader, Separator, Spinner } from '../components/ui'
 
 /**
@@ -41,20 +42,6 @@ const SOURCE_LABEL = {
   official: '1inch SwapVM',
   other: 'other app',
 } as const
-
-/** Penjelasan singkat tiap instruksi, untuk yang belum hafal nomornya. */
-const WHAT_IT_DOES: Record<string, string> = {
-  SOLVENCY_GUARD: "prices against the maker's real wallet backing",
-  EXCLUSIVE_FILL: 'only one named address may fill this order',
-  FLAT_FEE_IN: 'takes a flat fee from the input, before the curve',
-  AQUA_PROTOCOL_FEE_IN: 'routes a share of the input to a third address',
-  XYC_SWAP: 'constant-product curve, x·y=k',
-  XYC_CONCENTRATE: 'concentrates liquidity into a price band',
-  DECAY: 'lets the quote catch up gradually after a price move',
-  SALT: 'makes the strategy hash unique — no behaviour',
-  DEADLINE: 'refuses to execute after a timestamp',
-  JUMP: 'control flow',
-}
 
 function short(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`
