@@ -78,11 +78,6 @@ contract DemoIqiaDeskScript is Script, IqiaOpcodes {
         return existing;
     }
 
-    function vmSafeComputeCreateAddress(address deployer, uint256 nonce) internal pure returns (address) {
-        // RLP untuk nonce 0
-        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), deployer, bytes1(0x80))))));
-    }
-
     function run() external {
         uint256 deskKey = _deskKey();
         uint256 makerKey = _makerKey();
@@ -251,7 +246,7 @@ contract DemoIqiaDeskScript is Script, IqiaOpcodes {
         console.log(string.concat("# adapter (kolam): ", vm.toString(address(adapter))));
     }
 
-    function _buildProgram(address exclusiveTaker) internal view returns (bytes memory) {
+    function _buildProgram(address exclusiveTaker) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(exclusiveTaker)),
