@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildOrder, buildTakerData } from '../src/traits.js'
+import { disassemble } from '../src/disasm.js'
 import {
   aquaProtocolFee,
   decay,
@@ -246,3 +247,30 @@ describe('mengenali jenis posisi', () => {
     expect(withoutSalt(p)).toBe(p)
   })
 })
+
+describe('membongkar program', () => {
+  it('membalik program() persis', () => {
+    const p = program(solvencyGuard(50_000_000n), flatFeeIn(2_500_000n), xycSwap(), salt(7n))
+    const ins = disassemble(p)
+
+    expect(ins.map((i) => i.name)).toEqual(['SOLVENCY_GUARD', 'FLAT_FEE_IN', 'XYC_SWAP', 'SALT'])
+    expect(ins.map((i) => i.offset)).toEqual([0, 6, 12, 14])
+    expect(ins[3].args).toBe('0x0000000000000007')
+  })
+
+  it('menamai opcode yang tidak dikenal sebagai null, bukan menebak', () => {
+    // 0xfe bukan milik siapa pun di tabel kita. Program tim lain akan memuat
+    // opcode yang tidak kita kenal, dan menebak namanya lebih buruk daripada
+    // mengaku tidak tahu.
+    const [ins] = disassemble('0xfe020102')
+    expect(ins.opcode).toBe(0xfe)
+    expect(ins.name).toBeNull()
+    expect(ins.args).toBe('0x0102')
+  })
+
+  it('menolak program yang terpotong alih-alih mengembalikan separuh', () => {
+    // opcode 0x11, mengaku punya 4 byte argumen, tapi cuma ada 2.
+    expect(() => disassemble('0x11040102')).toThrow(/byte habis/)
+  })
+})
+
