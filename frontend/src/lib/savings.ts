@@ -36,6 +36,7 @@ import { strategyProgram } from './strategies'
 import { fetchPositionTrades } from './markets'
 import { quote, swap } from './desk'
 
+import type { Config } from '@wagmi/core'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
 import {
   AQUA_ADDRESS,
@@ -114,7 +115,7 @@ export async function walletBalances(
   tokenA: string,
   tokenB: string,
 ): Promise<[bigint, bigint]> {
-  const res = await readContracts(wagmiConfig as any, {
+  const res = await readContracts(wagmiConfig as Config, {
     contracts: [
       { address: tokenA as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId: ACTIVE_CHAIN_ID },
       { address: tokenB as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId: ACTIVE_CHAIN_ID },
@@ -150,7 +151,7 @@ export async function positionBalances(
   // `safeBalances` membaca kedua kaki sekaligus DAN menolak kalau strateginya
   // tidak aktif — dua hal yang sebelumnya dikerjakan dua panggilan `rawBalances`
   // plus pemeriksaan `tokensCount` tulisan tangan.
-  const res = (await readContract(wagmiConfig as any, {
+  const res = (await readContract(wagmiConfig as Config, {
     address: AQUA_ADDRESS as Address,
     abi: aquaAbi,
     functionName: 'safeBalances',
@@ -205,7 +206,7 @@ export async function openPosition(
   requireConfigured()
 
   for (const token of [tokenA, tokenB]) {
-    const allowance = await readContract(wagmiConfig as any, {
+    const allowance = await readContract(wagmiConfig as Config, {
       address: token as Address,
       abi: erc20Abi,
       functionName: 'allowance',
@@ -213,7 +214,7 @@ export async function openPosition(
       args: [account, AQUA_ADDRESS as Address],
     })
     if ((allowance as bigint) === 0n) {
-      const approveHash = await writeContract(wagmiConfig as any, {
+      const approveHash = await writeContract(wagmiConfig as Config, {
         address: token as Address,
         abi: erc20Abi,
         functionName: 'approve',
@@ -222,7 +223,7 @@ export async function openPosition(
         chain: null,
         account,
       })
-      await waitForTransactionReceipt(wagmiConfig as any, { hash: approveHash })
+      await waitForTransactionReceipt(wagmiConfig as Config, { hash: approveHash })
     }
   }
 
@@ -237,14 +238,14 @@ export async function openPosition(
     ],
   })
 
-  const hash = await sendTransaction(wagmiConfig as any, {
+  const hash = await sendTransaction(wagmiConfig as Config, {
     to: to as Address,
     data: data as Hex,
     value,
     chainId: ACTIVE_CHAIN_ID,
     account,
   })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return { hash, strategyHash: strategyHashOf(order) }
 }
 
@@ -262,14 +263,14 @@ export async function closePosition(
     tokens: [new AquaAddress(tokenA), new AquaAddress(tokenB)],
   })
 
-  const hash = await sendTransaction(wagmiConfig as any, {
+  const hash = await sendTransaction(wagmiConfig as Config, {
     to: to as Address,
     data: data as Hex,
     value,
     chainId: ACTIVE_CHAIN_ID,
     account,
   })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
   return hash
 }
 
@@ -419,7 +420,7 @@ export async function positionBacking(
   registered: readonly bigint[],
   maxSurchargeBps: bigint = DESK_SURCHARGE_BPS,
 ): Promise<SideBacking[]> {
-  const res = await readContracts(wagmiConfig as any, {
+  const res = await readContracts(wagmiConfig as Config, {
     contracts: tokens.flatMap((t) => [
       {
         address: t as Address,
