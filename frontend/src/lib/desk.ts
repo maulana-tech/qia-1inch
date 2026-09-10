@@ -15,6 +15,7 @@
 // wagmiConfig di-cast saat dipakai: tipe Config generiknya tidak menyatu antar
 // salinan @wagmi/core yang ter-hoist. Pola yang sama dipakai real-sdk.ts.
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
+import type { Config } from '@wagmi/core'
 import { erc20Abi, parseAbi } from 'viem'
 import {
   buildOrder,
@@ -87,7 +88,7 @@ export async function quote(
   taker: string = DESK_MAKER,
 ): Promise<bigint> {
   requireConfigured()
-  const [, amountOut] = await readContract(wagmiConfig as any, {
+  const [, amountOut] = await readContract(wagmiConfig as Config, {
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'quote',
@@ -125,7 +126,7 @@ export async function swap(
 ): Promise<SwapResult> {
   requireConfigured()
 
-  const allowance = await readContract(wagmiConfig as any, {
+  const allowance = await readContract(wagmiConfig as Config, {
     address: tokenIn as `0x${string}`,
     abi: erc20Abi,
     functionName: 'allowance',
@@ -134,7 +135,7 @@ export async function swap(
   })
 
   if (allowance < amountIn) {
-    const approveHash = await writeContract(wagmiConfig as any, {
+    const approveHash = await writeContract(wagmiConfig as Config, {
       address: tokenIn as `0x${string}`,
       abi: erc20Abi,
       functionName: 'approve',
@@ -143,7 +144,7 @@ export async function swap(
       chain: null,
       account,
     })
-    await waitForTransactionReceipt(wagmiConfig as any, { hash: approveHash })
+    await waitForTransactionReceipt(wagmiConfig as Config, { hash: approveHash })
   }
 
   const takerData = buildTakerData({
@@ -163,7 +164,7 @@ export async function swap(
 
   // Simulasi lebih dulu supaya kegagalan muncul sebagai pesan, bukan sebagai
   // transaksi gagal yang tetap memakan gas.
-  const [quotedIn, quotedOut] = await readContract(wagmiConfig as any, {
+  const [quotedIn, quotedOut] = await readContract(wagmiConfig as Config, {
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'quote',
@@ -171,7 +172,7 @@ export async function swap(
     args,
   })
 
-  const hash = await writeContract(wagmiConfig as any, {
+  const hash = await writeContract(wagmiConfig as Config, {
     address: SWAP_VM_ROUTER_ADDRESS as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'swap',
@@ -180,7 +181,7 @@ export async function swap(
     chain: null,
     account,
   })
-  await waitForTransactionReceipt(wagmiConfig as any, { hash })
+  await waitForTransactionReceipt(wagmiConfig as Config, { hash })
 
   return { hash, amountIn: quotedIn, amountOut: quotedOut }
 }
@@ -203,7 +204,7 @@ export async function quotePosition(
 ): Promise<bigint> {
   const order = decodeOrder(strategy)
   if (!order) throw new Error('These strategy bytes cannot be read as an Order.')
-  const [, amountOut] = await readContract(wagmiConfig as any, {
+  const [, amountOut] = await readContract(wagmiConfig as Config, {
     address: app as `0x${string}`,
     abi: swapVmAbi,
     functionName: 'quote',
