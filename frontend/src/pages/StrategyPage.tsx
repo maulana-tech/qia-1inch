@@ -17,7 +17,7 @@ import { DESK_CONFIGURED, DESK_SURCHARGE_BPS, explorerTxUrl } from '../lib/confi
 import { cx } from '../lib/cx'
 import { Button, Card, CardContent, PageHeader, TextInput } from '../components/ui'
 
-const STEPS = ['Modal', 'Strategi', 'Setelan', 'Kirim'] as const
+const STEPS = ['Capital', 'Strategy', 'Settings', 'Ship'] as const
 const PERCENT_PRESETS = [10, 25, 50, 75] as const
 /**
  * Pita sempit TIDAK otomatis lebih menghasilkan.
@@ -30,10 +30,10 @@ const PERCENT_PRESETS = [10, 25, 50, 75] as const
  * justru memberi hasil lebih kecil daripada pita 25%.
  */
 const BAND_PRESETS = [
-  { bps: 500, label: '±5%', note: 'Paling padat, tapi paling cepat keluar pita dan paling condong kalau saldomu timpang.' },
-  { bps: 1000, label: '±10%', note: 'Titik awal yang wajar untuk pasangan yang bergerak biasa.' },
-  { bps: 2500, label: '±25%', note: 'Longgar. Jarang keluar pita, dan lebih tahan saldo timpang.' },
-  { bps: 5000, label: '±50%', note: 'Nyaris rentang penuh. Keuntungannya tipis, risikonya juga.' },
+  { bps: 500, label: '±5%', note: 'Tightest, but the quickest to fall out of band and the most lopsided when your balances are.' },
+  { bps: 1000, label: '±10%', note: 'A reasonable starting point for a pair that moves normally.' },
+  { bps: 2500, label: '±25%', note: 'Loose. Rarely falls out of band, and tolerates lopsided balances better.' },
+  { bps: 5000, label: '±50%', note: 'Nearly the full range. Thin upside, thin risk.' },
 ] as const
 const DECAY_PRESETS = [
   { s: 60, label: '1 menit' },
@@ -176,7 +176,7 @@ export function StrategyPage() {
       const order = strategyOrder(address, id, params)
       return { order, hash: strategyHashOf(order) }
     } catch (e) {
-      return { error: e instanceof Error ? e.message : 'Gagal merakit program.' } as const
+      return { error: e instanceof Error ? e.message : 'Failed to assemble the program.' } as const
     }
   }, [address, id, params])
 
@@ -188,20 +188,20 @@ export function StrategyPage() {
    * butuh dompet cuma pengirimannya, dan itu dijaga di langkah terakhir.
    */
   const blocked = useMemo(() => {
-    if (step === 1) return id ? null : 'Pilih satu strategi.'
+    if (step === 1) return id ? null : 'Pick one strategy.'
     if (step === 2 && id === 'meja-privat' && !isAddress(taker)) {
-      return 'Masukkan alamat penyalur yang valid.'
+      return 'Enter a valid flow provider address.'
     }
     return null
   }, [step, id, taker])
 
   /** Kenapa posisinya belum bisa dikirim. */
   const shipBlocked = useMemo(() => {
-    if (!address) return 'Hubungkan dompetmu untuk mengirim posisi.'
-    if (balances === null) return 'Saldo belum terbaca.'
-    if (!hasCapital) return 'Kamu butuh saldo di kedua token untuk membuka posisi.'
+    if (!address) return 'Connect your wallet to ship a position.'
+    if (balances === null) return 'Balances have not loaded yet.'
+    if (!hasCapital) return 'You need a balance in both tokens to open a position.'
     if (built && 'error' in built) return built.error
-    if (!built) return 'Program belum bisa dirakit.'
+    if (!built) return 'The program cannot be assembled yet.'
     return null
   }, [address, balances, hasCapital, built])
 
@@ -220,7 +220,7 @@ export function StrategyPage() {
       setTxHash(hash)
       await refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal mengirim posisi.')
+      setError(e instanceof Error ? e.message : 'Failed to ship the position.')
     } finally {
       setBusy(false)
     }
@@ -229,11 +229,11 @@ export function StrategyPage() {
   if (!DESK_CONFIGURED) {
     return (
       <div className="mx-auto w-full max-w-3xl px-5 pb-16 pt-8">
-        <PageHeader title="Buka posisi" caption="Pilih strategi untuk modal yang kamu sisihkan." />
+        <PageHeader title="Open position" caption="Pick a strategy for the capital you set aside." />
         <Card>
           <CardContent>
             <p className="py-6 text-center text-sm text-zinc-500">
-              Aqua belum dikonfigurasi. Isi <span className="font-mono">VITE_AQUA</span> dan{' '}
+              Aqua is not configured. Set <span className="font-mono">VITE_AQUA</span> and{' '}
               <span className="font-mono">VITE_SWAP_VM_ROUTER</span> di{' '}
               <span className="font-mono">frontend/.env.local</span>.
             </p>
@@ -247,8 +247,8 @@ export function StrategyPage() {
     <div className="mx-auto w-full max-w-3xl px-5 pb-16 pt-8">
       <section className="space-y-5">
         <PageHeader
-          title="Buka posisi"
-          caption="Strategimu bukan label — ia program bytecode yang benar-benar mengubah harga yang dikutip posisimu. Langkah terakhir menampilkan programnya apa adanya."
+          title="Open position"
+          caption="Your strategy is not a label — it is a bytecode program that genuinely changes the price your position quotes. The last step shows you that program as it is."
         />
 
         <Stepper at={step} done={furthest} onJump={go} />
@@ -258,10 +258,10 @@ export function StrategyPage() {
             {step === 0 && (
               <>
                 <div>
-                  <p className="text-sm text-zinc-300">Berapa banyak saldomu yang ikut bekerja?</p>
+                  <p className="text-sm text-zinc-300">How much of your balance goes to work?</p>
                   <p className="mt-1 text-xs text-spectral/60">
-                    Token tidak pindah ke mana pun. Aqua hanya mencatat alokasinya, dan kamu bisa
-                    menutupnya kapan saja.
+                    Tokens move nowhere. Aqua only records the allocation, and you can
+                    close it at any time.
                   </p>
                 </div>
 
@@ -297,17 +297,17 @@ export function StrategyPage() {
 
                 {!address && (
                   <p className="rounded-xl border border-ink-800 bg-ink-900/40 p-3 text-xs text-zinc-500">
-                    Dompetmu belum terhubung, jadi angkanya masih kosong. Kamu tetap bisa membaca
+                    Your wallet is not connected, so the numbers are empty. You can still read
                     keempat strategi dulu — hubungkan saat mau mengirim.
                   </p>
                 )}
 
                 <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-4">
                   {DESK_PAIR.map((t, i) => (
-                    <Row key={t.symbol} label={`${t.symbol} disisihkan`}>
+                    <Row key={t.symbol} label={`${t.symbol} set aside`}>
                       <span className="font-mono">{fmt(split[i], t.decimals)}</span>
                       <span className="ml-2 text-xs text-zinc-500">
-                        dari {balances ? fmt(balances[i], t.decimals) : '—'}
+                        of {balances ? fmt(balances[i], t.decimals) : '—'}
                       </span>
                     </Row>
                   ))}
@@ -338,8 +338,8 @@ export function StrategyPage() {
                       </div>
                       <p className="text-xs leading-relaxed text-zinc-400">{s.summary}</p>
                       <p className="text-xs leading-relaxed text-zinc-500">
-                        <span className="text-spectral/60">Cocok kalau </span>
-                        {s.bestFor.replace(/^Kamu /, 'kamu ')}
+                        <span className="text-spectral/60">Good if </span>
+                        {s.bestFor.replace(/^You /, 'you ')}
                       </p>
                       <p className="text-xs leading-relaxed text-yellow-300/70">{s.tradeoff}</p>
                       <p className="mt-1 font-mono text-[10px] text-zinc-600">
@@ -354,7 +354,7 @@ export function StrategyPage() {
             {step === 2 && id && (
               <>
                 <label className="block">
-                  <span className="text-sm text-zinc-300">Fee yang kamu pungut: {feePercent}%</span>
+                  <span className="text-sm text-zinc-300">The fee you take: {feePercent}%</span>
                   <input
                     type="range"
                     min={0.05}
@@ -365,8 +365,8 @@ export function StrategyPage() {
                     className="mt-2 w-full accent-spectral"
                   />
                   <span className="mt-1 block text-xs text-spectral/60">
-                    Dari tiap 1.000 USDC yang lewat, {(feePercent * 10).toFixed(1)} USDC jadi milikmu.
-                    Makin tinggi fee-nya, makin sedikit swap yang memilih posisimu.
+                    Out of every 1,000 USDC that passes through, {(feePercent * 10).toFixed(1)} USDC is yours.
+                    The higher the fee, the fewer swaps choose your position.
                   </span>
                 </label>
 
@@ -392,10 +392,10 @@ export function StrategyPage() {
                       ))}
                     </div>
                     <p className="mt-2 text-xs text-yellow-300/70">
-                      Di luar pita posisimu berhenti menghasilkan dan berakhir seluruhnya di satu
-                      sisi aset. Pita lebih sempit juga tidak otomatis lebih menghasilkan: kalau
-                      saldo kedua tokenmu timpang, posisinya lahir condong ke satu sisi pita, dan
-                      makin sempit pitanya makin tajam kecondongan itu.
+                      Outside the band your position stops earning and ends up entirely on one
+                      side of the pair. A narrower band is also not automatically better: if your
+                      two balances are lopsided, the position is born leaning to one edge, and
+                      the narrower the band, the sharper that lean.
                     </p>
                   </div>
                 )}
@@ -421,8 +421,8 @@ export function StrategyPage() {
                       ))}
                     </div>
                     <p className="mt-2 text-xs text-spectral/60">
-                      Makin panjang, makin sedikit yang bisa diambil arbitrase — tapi makin lama
-                      juga harga wajarmu pulih untuk penukar biasa.
+                      The longer it is, the less arbitrage can take — but the longer your fair
+                      price also takes to recover for ordinary swappers.
                     </p>
                   </div>
                 )}
@@ -438,7 +438,7 @@ export function StrategyPage() {
                       className="mt-2"
                     />
                     <span className="mt-1 block text-xs text-yellow-300/70">
-                      Hanya alamat ini yang bisa mengisi posisimu. Kalau mereka diam, posisimu diam.
+                      Only this address can fill your position. If they go quiet, your position goes quiet.
                     </span>
                   </label>
                 )}
@@ -476,7 +476,7 @@ export function StrategyPage() {
                 {built && !('error' in built) && (
                   <div className="space-y-2">
                     <p className="text-xs text-spectral/60">
-                      Program yang akan dikirim — inilah strateginya, apa adanya:
+                      The program about to be shipped — this is the strategy, as it is:
                     </p>
                     <pre className="max-h-40 overflow-auto rounded-xl border border-ink-800 bg-ink-950/60 p-3 font-mono text-[10px] leading-relaxed text-zinc-400">
                       {built.order.encoded.data}
@@ -488,19 +488,19 @@ export function StrategyPage() {
                 )}
 
                 <p className="rounded-xl border border-ink-800 bg-ink-900/40 p-3 text-xs leading-relaxed text-zinc-500">
-                  Penghasilanmu hanya berasal dari fee swap yang lewat posisimu — tidak ada lending,
-                  staking, atau farming di balik ini. Kalau tidak ada yang menukar, penghasilannya
-                  nol. Sebagai maker kamu juga akan cenderung memegang lebih banyak aset yang sedang
+                  Your earnings come only from fees on swaps through your position — there is no lending,
+                  staking, or farming behind this. If nobody swaps, the earnings are
+                  zero. As a maker you will also tend to hold more of whichever asset is
                   turun.
                 </p>
 
                 <Button className="w-full" disabled={busy || shipBlocked !== null} loading={busy} onClick={() => void ship()}>
-                  {busy ? 'Mengirim…' : 'Kirim posisi'}
+                  {busy ? 'Shipping…' : 'Ship position'}
                 </Button>
 
                 {txHash && (
                   <p className="text-center text-xs text-patina-300">
-                    Posisi terkirim ·{' '}
+                    Position shipped ·{' '}
                     <a href={explorerTxUrl(txHash)} target="_blank" rel="noreferrer" className="hover:underline">
                       lihat transaksi
                     </a>
