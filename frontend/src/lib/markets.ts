@@ -40,7 +40,7 @@ import {
  */
 function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked' | 'Pulled') {
   const found = ABI.AQUA_ABI.find((x) => x.type === 'event' && x.name === name)
-  if (!found) throw new Error(`Event ${name} tidak ada di ABI Aqua resmi`)
+  if (!found) throw new Error(`Event ${name} is missing from the official Aqua ABI`)
   return found
 }
 
@@ -120,7 +120,7 @@ async function readTokenOnChain(address: string): Promise<TokenInfo> {
   return {
     address,
     symbol: (symbol.result as string) ?? short,
-    name: (name.result as string) ?? 'Token tidak dikenal',
+    name: (name.result as string) ?? 'Unknown token',
     decimals: (decimals.result as number) ?? 18,
     listed: false,
   }
@@ -217,7 +217,7 @@ async function scanLogs(
         await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
       }
     }
-    throw new Error(`Gagal membaca log blok ${from}–${to}: ${String(lastError).slice(0, 120)}`)
+    throw new Error(`Failed to read logs for blocks ${from}–${to}: ${String(lastError).slice(0, 120)}`)
   }
 
   const out: any[] = []
@@ -440,7 +440,7 @@ export async function fetchMarkets(): Promise<Market[]> {
       // market dengan saldo nol tanpa satu pun tanda ada yang salah.
       if (balance.status !== 'success') {
         throw new Error(
-          `Gagal membaca saldo ${meta.symbol} untuk posisi ${strategyHash.slice(0, 10)}: ` +
+          `Failed to read the ${meta.symbol} balance for position ${strategyHash.slice(0, 10)}: ` +
             String(balance.error).slice(0, 120),
         )
       }
