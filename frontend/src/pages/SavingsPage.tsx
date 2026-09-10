@@ -446,7 +446,7 @@ export function SavingsPage() {
                 </p>
               </div>
 
-              {error ? <p className="text-sm text-rose-300/90">{error}</p> : null}
+              {error ? <p className="text-sm text-danger/90">{error}</p> : null}
               {txHash ? (
                 <a
                   className="inline-block text-xs text-spectral/60 underline underline-offset-4 hover:text-spectral"
