@@ -62,7 +62,7 @@ contract IqiaAquaTakerTest is Test, IqiaOpcodes {
         vm.stopPrank();
     }
 
-    function _program(bool gated, address allowedTaker, uint256 salt) internal view returns (bytes memory) {
+    function _program(bool gated, address allowedTaker, uint256 salt) internal pure returns (bytes memory) {
         Program memory p = ProgramBuilder.init(_opcodes());
         return bytes.concat(
             gated ? p.build(ExclusiveFill._onlyExclusiveTaker, ExclusiveFillArgsBuilder.build(allowedTaker)) : bytes(""),
