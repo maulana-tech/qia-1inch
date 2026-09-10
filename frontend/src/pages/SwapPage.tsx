@@ -7,7 +7,7 @@ export function SwapPage() {
       <section className="space-y-5">
         <PageHeader
           title="Swap"
-          caption="Berdagang langsung ke dompet market maker lewat 1inch Aqua. Harganya dihitung program bytecode di dalam SwapVM."
+          caption="Trade straight against a market maker's wallet via 1inch Aqua. The price is computed by a bytecode program inside SwapVM."
         />
         <Swap embedded />
       </section>
