@@ -65,7 +65,7 @@ export function ConnectWallet() {
             {copied && <p className="mt-1.5 text-xs text-patina-300">Copied to clipboard</p>}
 
             {!wallet.isTestnet && (
-              <p className="mt-2 text-xs text-zinc-400">Pindahkan dompetmu ke {CHAIN_NAME} untuk demo ini.</p>
+              <p className="mt-2 text-xs text-zinc-400">Switch your wallet to {CHAIN_NAME} for this demo.</p>
             )}
 
             <Button
