@@ -11,7 +11,8 @@
  * dengan data yang dibaca langsung dari kontraknya.
  */
 import { getPublicClient, readContracts } from '@wagmi/core'
-import { decodeAbiParameters, erc20Abi, type Address } from 'viem'
+import type { Config } from '@wagmi/core'
+import { decodeAbiParameters, erc20Abi, type AbiEvent, type Address, type PublicClient } from 'viem'
 import { ABI } from '@1inch/aqua-sdk'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
@@ -43,6 +44,41 @@ function aquaEvent(name: 'Shipped' | 'Pushed' | 'Docked' | 'Pulled') {
   if (!found) throw new Error(`Event ${name} is missing from the official Aqua ABI`)
   return found
 }
+
+/**
+ * Bentuk argumen event Aqua, ditulis eksplisit.
+ *
+ * Tanda tangan event-nya di-resolve saat RUNTIME dari ABI resmi SDK, jadi viem
+ * tidak bisa menyimpulkan tipe `args`-nya — dan tanpa deklarasi ini seluruh
+ * pembacaan log jatuh ke `any`. Akibatnya bukan teoretis: salah ketik
+ * `args.strategyhash` akan diam-diam bernilai `undefined`, dan yang memutuskan
+ * pasar mana yang hidup adalah kode ini.
+ *
+ * Field-nya disalin dari `IAqua.sol`; kalau kontraknya bergerak, yang gagal
+ * lebih dulu adalah `aquaEvent()` di atas — ia melempar kalau nama event-nya
+ * hilang dari ABI.
+ */
+interface ShippedArgs {
+  maker: string
+  app: string
+  strategyHash: `0x${string}`
+  strategy: `0x${string}`
+}
+interface DockedArgs {
+  maker: string
+  app: string
+  strategyHash: `0x${string}`
+}
+interface TransferArgs {
+  maker: string
+  app: string
+  strategyHash: `0x${string}`
+  token: string
+  amount: bigint
+}
+
+/** Log dengan `args` yang sudah diurai viem. */
+type AquaLog<A> = { args: A; blockNumber: bigint; transactionHash: `0x${string}` }
 
 const SHIPPED = aquaEvent('Shipped')
 const PUSHED = aquaEvent('Pushed')
@@ -108,7 +144,7 @@ export function fetchOneInchTokens(): Promise<Record<string, TokenInfo>> {
 
 /** Metadata token yang tidak ada di daftar 1inch, dibaca dari kontraknya. */
 async function readTokenOnChain(address: string): Promise<TokenInfo> {
-  const results = await readContracts(wagmiConfig as any, {
+  const results = await readContracts(wagmiConfig as Config, {
     contracts: [
       { address: address as Address, abi: erc20Abi, functionName: 'symbol', chainId: ACTIVE_CHAIN_ID },
       { address: address as Address, abi: erc20Abi, functionName: 'name', chainId: ACTIVE_CHAIN_ID },
@@ -196,12 +232,12 @@ export function appSource(app: string): AppSource {
  * seperti masalah jaringan. Anvil tidak punya batas itu, tapi jalur yang sama
  * dipakai supaya yang diuji lokal adalah yang berjalan di produksi.
  */
-async function scanLogs(
-  client: any,
+async function scanLogs<A>(
+  client: PublicClient,
   event: unknown,
   fromBlock: bigint,
   toBlock: bigint,
-): Promise<any[]> {
+): Promise<AquaLog<A>[]> {
   const chunk = BigInt(Math.max(1, LOGS_CHUNK_BLOCKS))
   const ranges: [bigint, bigint][] = []
   for (let start = fromBlock; start <= toBlock; start += chunk) {
@@ -220,12 +256,12 @@ async function scanLogs(
   const readOnce = (from: bigint, to: bigint) =>
     client.getLogs({
       address: AQUA_ADDRESS as Address,
-      event: event as any,
+      event: event as AbiEvent,
       fromBlock: from,
       toBlock: to,
-    })
+    }) as Promise<AquaLog<A>[]>
 
-  const fetchRange = async ([from, to]: [bigint, bigint]): Promise<any[]> => {
+  const fetchRange = async ([from, to]: [bigint, bigint]): Promise<AquaLog<A>[]> => {
     let lastError: unknown
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
@@ -276,7 +312,7 @@ async function scanLogs(
     throw new Error(`Failed to read logs for blocks ${from}–${to}: ${String(lastError).slice(0, 120)}`)
   }
 
-  const out: any[] = []
+  const out: AquaLog<A>[] = []
   // Dua sekaligus, bukan empat. RPC publik Base membatasi jauh lebih cepat dari
   // dugaan: tiga sapuan event yang berjalan serentak, masing-masing empat
   // paralel, berarti dua belas permintaan sekali tembak — dan itu langsung
@@ -301,7 +337,7 @@ async function scanLogs(
 export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrategy[]> {
   if (!AQUA_CONFIGURED) return []
 
-  const client = getPublicClient(wagmiConfig as any, { chainId: ACTIVE_CHAIN_ID as any })
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
   if (!client) return []
 
   const latest = await client.getBlockNumber()
@@ -314,9 +350,9 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
 
   const wanted = maker?.toLowerCase()
 
-  const shipped = await scanLogs(client, SHIPPED, fromBlock, latest)
-  const pushed = await scanLogs(client, PUSHED, fromBlock, latest)
-  const docked = await scanLogs(client, DOCKED, fromBlock, latest)
+  const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest)
+  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest)
+  const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest)
 
   /**
    * Tiga sapuan itu harus konsisten satu sama lain, dan kalau tidak, RPC-nya
@@ -343,10 +379,10 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
   // `strategyHash` unik lintas app, jadi daftar tutup tidak perlu disaring per
   // app lagi — dan menyaringnya justru berbahaya sekarang: posisi tim lain yang
   // sudah di-dock akan tampil sebagai hidup kalau event `Docked`-nya dibuang.
-  const closed = new Set(docked.map((l: any) => l.args.strategyHash as string))
+  const closed = new Set(docked.map((l) => l.args.strategyHash as string))
 
   const strategies = new Map<string, ActiveStrategy>()
-  for (const log of shipped as any[]) {
+  for (const log of shipped) {
     const appAddr = (log.args.app as string)?.toLowerCase()
     const hash = log.args.strategyHash as `0x${string}`
     const owner = log.args.maker as string
@@ -361,7 +397,7 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
       strategy: log.args.strategy as `0x${string}`,
     })
   }
-  for (const log of pushed as any[]) {
+  for (const log of pushed) {
     const entry = strategies.get(log.args.strategyHash as string)
     if (entry) entry.tokens.add((log.args.token as string).toLowerCase())
   }
@@ -425,7 +461,7 @@ export interface PositionTrade {
  */
 export async function fetchPositionTrades(strategyHash: string): Promise<PositionTrade[]> {
   if (!AQUA_CONFIGURED) return []
-  const client = getPublicClient(wagmiConfig as any, { chainId: ACTIVE_CHAIN_ID as any })
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
   if (!client) return []
 
   const latest = await client.getBlockNumber()
@@ -436,23 +472,24 @@ export async function fetchPositionTrades(strategyHash: string): Promise<Positio
         : 0n
       : BigInt(POOL_DEPLOY_BLOCK)
 
-  const pulled = await scanLogs(client, PULLED, fromBlock, latest)
-  const pushed = await scanLogs(client, PUSHED, fromBlock, latest)
+  const pulled = await scanLogs<TransferArgs>(client, PULLED, fromBlock, latest)
+  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest)
 
-  const mine = (l: any) => (l.args.strategyHash as string)?.toLowerCase() === strategyHash.toLowerCase()
+  const mine = (l: AquaLog<TransferArgs>) =>
+    l.args.strategyHash?.toLowerCase() === strategyHash.toLowerCase()
 
   const byTx = new Map<string, { block: bigint; out?: [string, bigint]; in?: [string, bigint] }>()
-  for (const l of (pulled as any[]).filter(mine)) {
+  for (const l of (pulled).filter(mine)) {
     byTx.set(l.transactionHash, {
-      block: l.blockNumber as bigint,
-      out: [(l.args.token as string).toLowerCase(), l.args.amount as bigint],
+      block: l.blockNumber,
+      out: [l.args.token.toLowerCase(), l.args.amount],
     })
   }
-  for (const l of (pushed as any[]).filter(mine)) {
+  for (const l of (pushed).filter(mine)) {
     const entry = byTx.get(l.transactionHash)
     // Tanpa `Pulled` di transaksi yang sama, ini `ship()` — bukan swap.
     if (!entry) continue
-    entry.in = [(l.args.token as string).toLowerCase(), l.args.amount as bigint]
+    entry.in = [l.args.token.toLowerCase(), l.args.amount]
   }
 
   const trades: PositionTrade[] = []
@@ -504,7 +541,7 @@ export async function fetchMarkets(): Promise<Market[]> {
   for (const t of unknown) resolved.set(t, await readTokenOnChain(t))
   const metaOf = (t: string) => listed[t] ?? resolved.get(t)!
 
-  const balances = await readContracts(wagmiConfig as any, {
+  const balances = await readContracts(wagmiConfig as Config, {
     contracts: wantedReads.map((w) => ({
       address: AQUA_ADDRESS as Address,
       abi: aquaBalancesAbi,
