@@ -57,7 +57,7 @@ export function Faucet() {
         ...m,
         [code]: (
           <span>
-            {DRIP.toLocaleString()} {code} dicetak ·{' '}
+            {DRIP.toLocaleString()} {code} minted ·{' '}
             <a
               href={explorerTxUrl(hash)}
               target="_blank"
@@ -155,7 +155,7 @@ export function Faucet() {
                       void mint(t.code, t.sac)
                     }}
                   >
-                    {busy === t.code ? 'Mencetak…' : `Cetak ${DRIP.toLocaleString()}`}
+                    {busy === t.code ? 'Minting…' : `Mint ${DRIP.toLocaleString()}`}
                   </Button>
                 </div>
               ))}
