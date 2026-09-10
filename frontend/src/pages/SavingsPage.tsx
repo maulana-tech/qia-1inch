@@ -86,7 +86,7 @@ function PresetOption({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-spectral/85">{percent}%</span>
-        <span className="block text-xs text-spectral/45">disisihkan</span>
+        <span className="block text-xs text-spectral/45">set aside</span>
       </span>
       {selected ? <CircleCheckIcon className="size-5 shrink-0 text-spectral/70" /> : null}
     </button>
@@ -106,9 +106,9 @@ function Earnings({ earnings }: { earnings: SavingsEarnings | null }) {
   if (earnings.swaps === 0) {
     return (
       <div className="space-y-1">
-        <p className="text-sm font-medium text-spectral/80">Hasil terkumpul</p>
+        <p className="text-sm font-medium text-spectral/80">Earned so far</p>
         <p className="text-sm text-spectral/50">
-          Belum ada yang menukar lewat posisimu. Hasilnya muncul di sini begitu ada.
+          Nobody has swapped through your position yet. Earnings show up here as soon as they do.
         </p>
       </div>
     )
@@ -117,9 +117,9 @@ function Earnings({ earnings }: { earnings: SavingsEarnings | null }) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm font-medium text-spectral/80">Hasil terkumpul</p>
+        <p className="text-sm font-medium text-spectral/80">Earned so far</p>
         <p className="text-xs text-spectral/45">
-          {earnings.swaps} swap sejak blok {earnings.sinceBlock?.toString()}
+          {earnings.swaps} swaps since block {earnings.sinceBlock?.toString()}
         </p>
       </div>
       <div className="flex flex-wrap gap-8">
@@ -133,7 +133,7 @@ function Earnings({ earnings }: { earnings: SavingsEarnings | null }) {
               <div className="font-mono text-lg tabular-nums text-spectral/90">
                 +{fmt(earned, t.decimals)}
               </div>
-              <div className="text-xs text-spectral/40">dari volume {fmt(volume, t.decimals)}</div>
+              <div className="text-xs text-spectral/40">on {fmt(volume, t.decimals)} of volume</div>
             </div>
           )
         })}
@@ -153,7 +153,7 @@ function SharedCapitalNote({ shared }: { shared: SharedCapital | null }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <p className="text-sm text-spectral/55">
-        Saldo yang sama menopang {shared.positions} pasar sekaligus.
+        The same balance backs {shared.positions} markets at once.
       </p>
       <p className="font-mono text-lg tabular-nums text-spectral/90">
         {shared.multiple.toFixed(2)}×
@@ -228,7 +228,7 @@ export function SavingsPage() {
       setEarnings(mine ? await savingsEarnings(mine) : null)
       setShared(active.length ? await sharedCapital(address, active, TOKENS[0].address, TOKENS[1].address) : null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membaca saldo.')
+      setError(err instanceof Error ? err.message : 'Failed to read balances.')
     } finally {
       setLoading(false)
     }
@@ -251,7 +251,7 @@ export function SavingsPage() {
       setTxHash(hash)
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membuka posisi.')
+      setError(err instanceof Error ? err.message : 'Failed to open the position.')
     } finally {
       setBusy(null)
     }
@@ -264,7 +264,7 @@ export function SavingsPage() {
       setTxHash(await closePosition(address, strategyHash, TOKENS[0].address, TOKENS[1].address))
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menutup posisi.')
+      setError(err instanceof Error ? err.message : 'Failed to close the position.')
     } finally {
       setBusy(null)
     }
@@ -274,11 +274,11 @@ export function SavingsPage() {
     return (
       <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-8">
         <section className="space-y-5">
-          <PageHeader title="Savings" caption="Sisihkan sebagian saldo jadi likuiditas." />
+          <PageHeader title="Savings" caption="Set aside part of your balance as liquidity." />
           <Card>
             <CardContent className="text-sm text-spectral/60">
-              Aqua belum dikonfigurasi. Jalankan <code>script/DemoIqiaDesk.s.sol</code>, lalu salin
-              env yang dicetaknya ke <code>frontend/.env.local</code>.
+              Aqua is not configured. Run <code>script/DemoIqiaDesk.s.sol</code>, then copy
+              the env it prints into <code>frontend/.env.local</code>.
             </CardContent>
           </Card>
         </section>
@@ -290,13 +290,13 @@ export function SavingsPage() {
     return (
       <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-8">
         <section className="space-y-5">
-          <PageHeader title="Savings" caption="Sisihkan sebagian saldo jadi likuiditas." />
+          <PageHeader title="Savings" caption="Set aside part of your balance as liquidity." />
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
               <span className="flex size-11 items-center justify-center rounded-full bg-spectral/[0.07]">
                 <WalletIcon className="size-5 text-spectral/60" />
               </span>
-              <p className="text-sm text-spectral/60">Hubungkan dompet untuk mulai menabung.</p>
+              <p className="text-sm text-spectral/60">Connect a wallet to start saving.</p>
             </CardContent>
           </Card>
         </section>
@@ -309,13 +309,13 @@ export function SavingsPage() {
       <section className="space-y-5">
         <PageHeader
           title="Savings"
-          caption="Uangnya tetap di dompetmu dan tetap bisa dibelanjakan — yang tercatat cuma izin."
+          caption="The money stays in your wallet and stays spendable — only the allowance is recorded."
         />
 
         {loading ? (
           <Card>
             <CardContent className="flex items-center gap-3 text-sm text-spectral/60">
-              <Spinner className="h-4 w-4" /> Membaca saldo…
+              <Spinner className="h-4 w-4" /> Reading balances…
             </CardContent>
           </Card>
         ) : (
@@ -323,7 +323,7 @@ export function SavingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PiggyBankIcon className="size-4 text-spectral/70" />
-                {isOpen ? 'Posisi tabungan' : 'Atur tabungan'}
+                {isOpen ? 'Savings position' : 'Set up savings'}
               </CardTitle>
             </CardHeader>
 
@@ -331,7 +331,7 @@ export function SavingsPage() {
               {isOpen ? (
                 <>
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-spectral/80">Sedang bekerja</p>
+                    <p className="text-sm font-medium text-spectral/80">Currently working</p>
                     <div className="flex flex-wrap gap-8">
                       {TOKENS.map((t, i) => (
                         <div key={t.symbol}>
@@ -350,14 +350,14 @@ export function SavingsPage() {
 
                   <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-spectral/55">
-                        Tiap swap lewat posisimu memungut {Number(SAVINGS_FEE_BPS) / 1e7}% untukmu
+                        Every swap through your position takes {Number(SAVINGS_FEE_BPS) / 1e7}% for you
                         {PROTOCOL_FEE_BPS > 0n
-                          ? `, dan ${Number(PROTOCOL_FEE_BPS) / 1e7}% untuk aplikasi ini`
+                          ? `, and ${Number(PROTOCOL_FEE_BPS) / 1e7}% for this app`
                           : ''}
                         .
                       </p>
                       <Button size="sm" variant="ghost" disabled={anyBusy} onClick={handleClose}>
-                        {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Tutup'}
+                        {busy === 'close' ? <Spinner className="h-4 w-4" /> : 'Close'}
                       </Button>
                     </div>
                   </div>
@@ -366,7 +366,7 @@ export function SavingsPage() {
                 <>
                   <div className="space-y-3">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-medium text-spectral/80">Bagian yang disisihkan</p>
+                      <p className="text-sm font-medium text-spectral/80">Share set aside</p>
                       <p className="font-mono text-2xl font-semibold tracking-tight tabular-nums text-spectral/90">
                         {percent}%
                       </p>
@@ -383,10 +383,10 @@ export function SavingsPage() {
                     />
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-spectral/55">
-                        {percent}% dari saldomu bekerja, {100 - percent}% tetap bebas dibelanjakan.
+                        {percent}% of your balance works, {100 - percent}% stays free to spend.
                       </p>
                       <Button size="sm" disabled={!canOpen || anyBusy} onClick={handleOpen}>
-                        {busy === 'open' ? <Spinner className="h-4 w-4" /> : 'Mulai'}
+                        {busy === 'open' ? <Spinner className="h-4 w-4" /> : 'Start'}
                       </Button>
                     </div>
                   </div>
@@ -408,7 +408,7 @@ export function SavingsPage() {
               <Separator />
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-spectral/80">Saldo dompet</p>
+                <p className="text-sm font-medium text-spectral/80">Wallet balance</p>
                 <div className="flex flex-wrap gap-8">
                   {TOKENS.map((t, i) => (
                     <div key={t.symbol}>
@@ -418,7 +418,7 @@ export function SavingsPage() {
                       </div>
                       {!isOpen ? (
                         <div className="mt-0.5 text-xs text-spectral/45">
-                          {fmt(split[i], t.decimals)} disisihkan
+                          {fmt(split[i], t.decimals)} set aside
                         </div>
                       ) : null}
                     </div>
@@ -426,7 +426,7 @@ export function SavingsPage() {
                 </div>
                 {!canOpen && !isOpen && !anyBusy ? (
                   <p className="text-xs text-spectral/45">
-                    Saldo dompetmu masih nol. Ambil token uji di halaman Deposit lebih dulu.
+                    Your wallet balance is still zero. Grab test tokens on the Deposit page first.
                   </p>
                 ) : null}
               </div>
@@ -434,15 +434,15 @@ export function SavingsPage() {
               <Separator />
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-spectral/80">Yang perlu kamu tahu</p>
+                <p className="text-sm font-medium text-spectral/80">What you should know</p>
                 <p className="text-sm text-spectral/55">
-                  Menabung di sini tidak mengunci apa pun. Membuka posisi nol transfer token, dan
-                  menutupnya juga. Yang berpindah hanya saat ada orang menukar lewat posisimu.
+                  Saving here locks nothing. Opening a position transfers zero tokens, and so does
+                  closing it. Tokens only move when someone swaps through your position.
                 </p>
                 <p className="text-sm text-spectral/55">
-                  Karena saldonya bisa kamu belanjakan kapan saja, harga posisimu ikut menyesuaikan
-                  saat saldo menipis — biaya tambahan hingga {Number(DESK_SURCHARGE_BPS) / 1e7}% saat
-                  sandaran habis. Itu yang membuat posisinya tetap aman meski dompetmu berubah.
+                  Because you can spend the balance at any time, your position's price adjusts as
+                  the balance thins — a surcharge of up to {Number(DESK_SURCHARGE_BPS) / 1e7}% once the
+                  backing runs out. That is what keeps the position safe even as your wallet changes.
                 </p>
               </div>
 
