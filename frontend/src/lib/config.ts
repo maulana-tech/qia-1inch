@@ -28,6 +28,21 @@ const ZERO = '0x0000000000000000000000000000000000000000'
 
 const isValidAddress = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a)
 
+/**
+ * Alamat dari env dijadikan huruf kecil.
+ *
+ * viem memvalidasi checksum EIP-55 pada alamat yang HURUF BESAR-KECILNYA
+ * bercampur, dan melempar `InvalidAddressError` kalau tidak cocok. Alamat yang
+ * disalin tangan dari log deploy sangat mudah salah kapitalisasi — dan
+ * gejalanya menyesatkan: bukan "alamat salah", melainkan pembacaan yang gagal
+ * di satu tempat sementara tempat lain yang memakai alamat dari event tetap
+ * bekerja. Persis itu yang terjadi: papan Markets benar, saldo di halaman posisi
+ * nol.
+ *
+ * Huruf kecil semua selalu sah, jadi kapitalisasi tidak bisa lagi jadi bug.
+ */
+const addr = (a: string) => (isValidAddress(a) ? a.toLowerCase() : a)
+
 // ---------------------------------------------------------------------------
 // Jaringan
 // ---------------------------------------------------------------------------
@@ -96,13 +111,14 @@ export const explorerContractUrl = (address: string): string | undefined =>
  * `VITE_AQUA` tetap menang kalau diisi, supaya fork lokal dari rantai yang
  * didukung tetap bisa menunjuk alamat lain.
  */
-export const AQUA_ADDRESS =
+export const AQUA_ADDRESS = addr(
   env('VITE_AQUA', '') ||
-  AQUA_CONTRACT_ADDRESSES[CHAIN_ID as NetworkEnum]?.toString() ||
-  ZERO
+    AQUA_CONTRACT_ADDRESSES[CHAIN_ID as NetworkEnum]?.toString() ||
+    ZERO,
+)
 
 /** Router SwapVM custom milik Iqia. Sekaligus berperan sebagai Aqua app. */
-export const SWAP_VM_ROUTER_ADDRESS = env('VITE_SWAP_VM_ROUTER', ZERO)
+export const SWAP_VM_ROUTER_ADDRESS = addr(env('VITE_SWAP_VM_ROUTER', ZERO))
 
 // --- Posisi meja ---
 //
@@ -111,7 +127,7 @@ export const SWAP_VM_ROUTER_ADDRESS = env('VITE_SWAP_VM_ROUTER', ZERO)
 // Aqua tidak menemukan saldonya.
 
 /** Market maker yang menopang meja. */
-export const DESK_MAKER = env('VITE_DESK_MAKER', '')
+export const DESK_MAKER = addr(env('VITE_DESK_MAKER', ''))
 
 /** Pembeda strategi. Harus sama dengan yang dipakai saat ship(). */
 export const DESK_SALT = BigInt(env('VITE_DESK_SALT', '1'))
@@ -143,7 +159,7 @@ export const SAVINGS_FEE_BPS = BigInt(env('VITE_SAVINGS_FEE_BPS', '2500000'))
  * sekali. Kontraknya menolak penerima alamat nol, jadi separuh konfigurasi akan
  * menggagalkan setiap swap alih-alih diam-diam mengambil ke mana-mana.
  */
-export const TREASURY_ADDRESS = env('VITE_TREASURY', '')
+export const TREASURY_ADDRESS = addr(env('VITE_TREASURY', ''))
 
 export const PROTOCOL_FEE_BPS = isValidAddress(TREASURY_ADDRESS)
   ? BigInt(env('VITE_PROTOCOL_FEE_BPS', '500000'))
@@ -175,10 +191,10 @@ export const DESK_CONFIGURED = AQUA_CONFIGURED && isValidAddress(SWAP_VM_ROUTER_
 // `tokenDecimals()` di lib/payments.ts.
 // ---------------------------------------------------------------------------
 
-export const MOCK_WETH_ADDRESS = env('VITE_WETH_ADDRESS', '')
-export const MOCK_USDC_ADDRESS = env('VITE_USDC_ADDRESS', '')
-export const MOCK_WBTC_ADDRESS = env('VITE_WBTC_ADDRESS', '')
-export const MOCK_DAI_ADDRESS = env('VITE_DAI_ADDRESS', '')
+export const MOCK_WETH_ADDRESS = addr(env('VITE_WETH_ADDRESS', ''))
+export const MOCK_USDC_ADDRESS = addr(env('VITE_USDC_ADDRESS', ''))
+export const MOCK_WBTC_ADDRESS = addr(env('VITE_WBTC_ADDRESS', ''))
+export const MOCK_DAI_ADDRESS = addr(env('VITE_DAI_ADDRESS', ''))
 
 /** Apakah token mock sudah dideploy dan dikonfigurasi. */
 /**
@@ -214,7 +230,7 @@ export const POOL_DEPLOY_BLOCK = Number(env('VITE_POOL_DEPLOY_BLOCK', '0'))
  * bisa membacanya. Yang tidak bisa cuma mengirim strategi ke sana: opcode 22 dan
  * 23 milik kita tidak ada di set instruksinya.
  */
-export const OFFICIAL_SWAP_VM_ROUTER = '0x111111338c5091E8440b67B168bAe16a668AC0De'
+export const OFFICIAL_SWAP_VM_ROUTER = '0x111111338c5091e8440b67b168bae16a668ac0de'
 
 /**
  * Seberapa jauh ke belakang event Aqua disapu, dalam blok.
