@@ -66,6 +66,11 @@
   --wash-core: 0.18;
   --wash-deep: 0.09;
   --wash-lift: 0.12;
+
+  /* Status. Terukur terhadap kartu tema terang (#FBFDFF):
+     amber-700 4,93:1 dan rose-700 6,16:1 — dua-duanya lolos ambang 4,5:1. */
+  --warn: 180 83 9;      /* amber-700 */
+  --danger: 190 18 60;   /* rose-700 */
 }
 
 /* Lapisan cahaya, didefinisikan SEKALI.
@@ -135,6 +140,10 @@
   --wash-core: 0.22;
   --wash-deep: 0.13;
   --wash-lift: 0.11;
+
+  /* Terhadap kartu tema gelap (#181B1E): 13,12:1 dan 9,15:1. */
+  --warn: 253 224 71;    /* yellow-300 */
+  --danger: 253 164 175; /* rose-300 */
 }
 
 @layer base {
