@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { getBalance, readContracts } from '@wagmi/core'
+import type { Config } from '@wagmi/core'
 import { erc20Abi, formatUnits, parseEther, type Address } from 'viem'
 
 import { CURATED_TOKENS } from '../lib/tokens'
@@ -122,10 +123,10 @@ export function PortfolioPage() {
     }
     setError(null)
     try {
-      setNativeBalance((await getBalance(wagmiConfig as any, { address, chainId: ACTIVE_CHAIN_ID })).value)
+      setNativeBalance((await getBalance(wagmiConfig as Config, { address, chainId: ACTIVE_CHAIN_ID })).value)
       setWrappable(await canWrapNative(MOCK_WETH_ADDRESS as Address))
 
-      const results = await readContracts(wagmiConfig as any, {
+      const results = await readContracts(wagmiConfig as Config, {
         contracts: HOLDINGS.map((t) => ({
           address: t.sac as Address,
           abi: erc20Abi,
