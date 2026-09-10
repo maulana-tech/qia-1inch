@@ -1,5 +1,7 @@
-import type { FC, SVGProps } from 'react'
+import { useEffect, useState, type FC, type SVGProps } from 'react'
+
 import { cx } from '../lib/cx'
+import { tokenIconUrl } from '../lib/coinIcon'
 
 
 /**
@@ -98,9 +100,26 @@ const SIZES = {
 } as const
 
 /**
- * A chain or token logo inside a round monochrome chip. `name` is a chain id
- * (`ethereum`/`iqia`) or a token code (`ETH`, `USDC`, `WBTC`, …).
- * Unknown names fall back to a short mono label so nothing renders empty.
+ * Nama yang TIDAK boleh dicari di cryptoicons.
+ *
+ * `iqia` adalah lambang aplikasi ini sendiri dan `ethereum` dipakai sebagai id
+ * rantai, bukan simbol token. Keduanya akan 404 di CDN, dan 404 itu berarti
+ * satu permintaan sia-sia lalu kedipan ke fallback pada tiap render.
+ */
+const LOCAL_ONLY = new Set(['iqia', 'ethereum'])
+
+/**
+ * Logo rantai atau token. `name` boleh id rantai (`ethereum`/`iqia`) atau kode
+ * token (`ETH`, `USDC`, `WBTC`, …).
+ *
+ * Urutan usahanya: ikon berwarna dari cryptoicons → glyph monokrom lokal →
+ * tiga huruf. Rantai itu penting karena daftar token 1inch memuat ribuan simbol
+ * yang tidak mungkin semuanya ada di set ikon mana pun, dan yang tidak ada
+ * harus mendarat di sesuatu yang tetap terbaca, bukan kotak kosong.
+ *
+ * Ikonnya cakram berwarna penuh, jadi saat ia yang tampil chip-nya melepas
+ * border dan latarnya — kalau tidak, ada dua lingkaran bertumpuk dengan tepi
+ * yang tidak pernah benar-benar sejajar.
  */
 export function CoinBadge({
   name,
@@ -111,20 +130,40 @@ export function CoinBadge({
   size?: keyof typeof SIZES
   className?: string
 }) {
+  const [failed, setFailed] = useState(false)
+
+  // Tanpa ini, satu simbol yang gagal membuat SETIAP simbol berikutnya di slot
+  // yang sama ikut memakai fallback — React memakai ulang instansnya, dan
+  // `failed` ikut terbawa ke token yang ikonnya sebenarnya ada.
+  useEffect(() => setFailed(false), [name])
+
   const Glyph = GLYPHS[name]
   const s = SIZES[size]
+  const remote = !LOCAL_ONLY.has(name) && !failed
+
   return (
     <span
       className={cx(
-        'inline-flex shrink-0 items-center justify-center rounded-full border border-ink-700 bg-ink-800 text-zinc-100',
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full text-zinc-100',
+        remote ? '' : 'border border-ink-700 bg-ink-800',
         s.chip,
         className,
       )}
     >
-      {Glyph ? (
+      {remote ? (
+        <img
+          src={tokenIconUrl(name)}
+          alt=""
+          loading="lazy"
+          className="h-full w-full"
+          onError={() => setFailed(true)}
+        />
+      ) : Glyph ? (
         <Glyph className={s.glyph} />
       ) : (
-        <span className="font-mono text-[8px] font-bold leading-none">{name.replace(/^b/, '').slice(0, 3)}</span>
+        <span className="font-mono text-[8px] font-bold leading-none">
+          {name.replace(/^b/, '').slice(0, 3)}
+        </span>
       )}
     </span>
   )
