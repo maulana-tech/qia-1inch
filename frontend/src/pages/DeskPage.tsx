@@ -4,7 +4,7 @@ import { readContracts } from '@wagmi/core'
 import { erc20Abi, formatUnits, type Address } from 'viem'
 
 import { fetchActiveStrategies } from '../lib/markets'
-import { positionBalances } from '../lib/savings'
+import { positionBalancesOrZero } from '../lib/savings'
 import { quotePosition } from '../lib/desk'
 import { tokenDecimals } from '../lib/payments'
 import { CURATED_TOKENS } from '../lib/tokens'
@@ -80,7 +80,7 @@ export function DeskPage() {
       for (const s of mine) {
         const tokens = [...s.tokens]
         if (tokens.length < 2) continue
-        const [a, b] = await positionBalances(address, s.hash, tokens[0], tokens[1])
+        const [a, b] = await positionBalancesOrZero(address, s.hash, tokens[0], tokens[1], s.app)
         const [decA, decB] = [
           await tokenDecimals(tokens[0] as `0x${string}`),
           await tokenDecimals(tokens[1] as `0x${string}`),
