@@ -106,7 +106,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
       setTxHash(hash)
       setAmount('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Swap gagal.')
+      setError(e instanceof Error ? e.message : 'Swap failed.')
     } finally {
       setBusy(false)
     }
@@ -116,8 +116,8 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
     return (
       <Card>
         <div className="p-6 text-sm text-zinc-500">
-          Meja belum dikonfigurasi. Isi <code>VITE_AQUA</code> dan{' '}
-          <code>VITE_SWAP_VM_ROUTER</code> di <code>frontend/.env.local</code>.
+          The desk is not configured. Set <code>VITE_AQUA</code> and{' '}
+          <code>VITE_SWAP_VM_ROUTER</code> in <code>frontend/.env.local</code>.
         </div>
       </Card>
     )
@@ -128,7 +128,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
       {!embedded && (
         <PageIntro
           title="Swap"
-          subtitle="Likuiditas dari dompet market maker lewat 1inch Aqua. Tidak ada kontrak yang menahan dana."
+          subtitle="Liquidity straight from a market maker's wallet via 1inch Aqua. No contract holds your funds."
         />
       )}
 
@@ -157,7 +157,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                     <span className="font-mono text-base font-semibold tabular-nums text-zinc-100">
                       {formatPrice(refPrice)}
                     </span>
-                    <span className="text-xs text-zinc-500">pasar</span>
+                    <span className="text-xs text-zinc-500">market</span>
                     <span
                       className={cx(
                         'px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em]',
@@ -174,7 +174,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                 <button
                   type="button"
                   onClick={() => setShowChart(false)}
-                  aria-label="Sembunyikan grafik"
+                  aria-label="Hide chart"
                   className="ml-auto flex h-7 w-7 items-center justify-center text-zinc-600 transition hover:bg-ink-800 hover:text-zinc-300"
                 >
                   <XIcon className="h-3.5 w-3.5" />
@@ -192,12 +192,12 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
             <button
               type="button"
               onClick={() => setShowChart(true)}
-              aria-label="Tampilkan grafik"
+              aria-label="Show chart"
               className="flex h-full w-full flex-col items-center justify-center gap-3 border border-ink-700 bg-ink-900/40 py-4 transition hover:border-spectral/40 hover:bg-ink-800/60"
             >
               <ChartIcon className="h-4 w-4 shrink-0 text-spectral/70" />
               <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 rotate-180 [writing-mode:vertical-rl]">
-                Grafik
+                Chart
               </span>
             </button>
           )}
@@ -221,7 +221,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
 
             <div className="flex flex-col gap-4 p-5">
               {/* Kamu bayar */}
-              <Field label={`Kamu bayar (${pay.symbol})`}>
+              <Field label={`You pay (${pay.symbol})`}>
                 <TextInput
                   mono
                   inputMode="decimal"
@@ -238,14 +238,14 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                   onClick={() => setFlipped((f) => !f)}
                   className="border border-ink-700 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 transition hover:border-spectral/40 hover:text-zinc-300"
                 >
-                  balik arah
+                  flip
                 </button>
                 <span className="h-px flex-1 bg-ink-700/60" />
               </div>
 
               {/* Kamu terima — dari rantai */}
               <Field
-                label={`Kamu terima (${receive.symbol})`}
+                label={`You receive (${receive.symbol})`}
                 hint={
                   deskPrice !== null ? (
                     <span>
@@ -253,7 +253,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                       <span className="font-mono tabular-nums text-zinc-300">
                         {formatPrice(deskPrice)}
                       </span>{' '}
-                      {receive.symbol} · dari rantai
+                      {receive.symbol} · on-chain
                       {deviation !== null && (
                         <>
                           {' · '}
@@ -263,7 +263,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                             }
                           >
                             {deviation >= 0 ? '+' : ''}
-                            {deviation.toFixed(1)}% vs pasar
+                            {deviation.toFixed(1)}% vs market
                           </span>
                         </>
                       )}
@@ -281,7 +281,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
               </Field>
 
               {/* Slippage */}
-              <Field label="Toleransi slippage">
+              <Field label="Slippage tolerance">
                 <ToggleGroup
                   value={String(slippageBps)}
                   onChange={(v) => setSlippageBps(Number(v))}
@@ -295,28 +295,28 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
               {/* Rincian — semuanya angka, tidak ada janji */}
               <div className="space-y-1.5 border border-ink-700/50 bg-ink-900/50 px-4 py-3 text-xs">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-zinc-500">Minimum diterima</span>
+                  <span className="text-zinc-500">Minimum received</span>
                   <span className="font-mono tabular-nums text-zinc-200">
                     {show(minOut, q.decOut)} {receive.symbol}
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-zinc-500">Fee maker</span>
+                  <span className="text-zinc-500">Maker fee</span>
                   <span className="font-mono tabular-nums text-zinc-400">
                     {Number(SAVINGS_FEE_BPS) / 1e7}%
                   </span>
                 </div>
                 {PROTOCOL_FEE_BPS > 0n && (
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-zinc-500">Fee protokol</span>
+                    <span className="text-zinc-500">Protocol fee</span>
                     <span className="font-mono tabular-nums text-zinc-400">
                       {Number(PROTOCOL_FEE_BPS) / 1e7}%
                     </span>
                   </div>
                 )}
                 <p className="pt-1 text-[11px] leading-relaxed text-zinc-600">
-                  Kedua fee sudah termasuk dalam angka di atas — keduanya dipotong dari masukan
-                  sebelum kurva, jadi kutipannya sudah bersih.
+                  Both fees are already inside the number above — each is taken from the input
+                  before the curve, so the quote is already net of them.
                 </p>
               </div>
 
@@ -327,22 +327,22 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
                 onClick={() => void onSwap()}
               >
                 {!address
-                  ? 'Hubungkan dompetmu'
+                  ? 'Connect your wallet'
                   : busy
-                    ? 'Menukar…'
-                    : `Tukar ${pay.symbol} ke ${receive.symbol}`}
+                    ? 'Swapping…'
+                    : `Swap ${pay.symbol} for ${receive.symbol}`}
               </Button>
 
               {txHash && (
                 <p className="text-center text-xs text-patina-300">
-                  Terkirim ·{' '}
+                  Sent ·{' '}
                   <a
                     href={explorerTxUrl(txHash)}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline"
                   >
-                    lihat transaksi
+                    view transaction
                   </a>
                 </p>
               )}
