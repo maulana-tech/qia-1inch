@@ -82,11 +82,16 @@ function MarketRow({ market }: { market: Market }) {
   const tradable = market.source === 'ours'
   return (
     <Link
-      // Hanya posisi di router KITA yang bisa diisi dari sini. Program milik app
-      // lain memuat instruksi yang panggilan dari dompet biasa tidak bisa penuhi
-      // — `quote` pun ditolak — jadi menautkannya ke halaman Swap akan
-      // menjanjikan sesuatu yang pasti gagal.
-      to={tradable ? '/swap' : '/app'}
+      // Tiap baris menuju halaman posisinya sendiri, termasuk milik tim lain.
+      //
+      // Dulu baris yang tidak bisa ditukar menaut ke `/app` — halaman yang
+      // sedang dibuka. Ia terlihat seperti tautan, berperilaku seperti tautan,
+      // dan tidak melakukan apa pun; dari 38 baris, 37 begitu.
+      //
+      // Halaman tujuannya membongkar programnya, bukan menawarkan menukar. Itu
+      // yang jujur untuk posisi yang memang tidak bisa diisi dari sini, dan
+      // kebetulan juga hal yang paling menarik untuk dilihat.
+      to={`/market/${market.strategyHash}`}
       className="card block p-4 transition-shadow hover:ring-spectral/30"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
