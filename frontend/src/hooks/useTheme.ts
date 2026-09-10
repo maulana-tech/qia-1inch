@@ -5,7 +5,7 @@ export type Theme = 'light' | 'dark'
 
 /** The theme the pre-paint script (index.html) already resolved onto <html>. */
 function currentTheme(): Theme {
-  if (typeof document === 'undefined') return 'dark'
+  if (typeof document === 'undefined') return 'light'
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
@@ -35,7 +35,8 @@ export function useTheme() {
  * matter who flips it — so ambient visuals re-render the moment the user toggles.
  */
 export function useIsDark(): boolean {
-  const read = () => (typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true)
+  const read = () =>
+    typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false
   const [dark, setDark] = useState<boolean>(read)
   useEffect(() => {
     const el = document.documentElement
