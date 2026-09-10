@@ -40,7 +40,7 @@ import {
 import { cx } from '../lib/cx'
 import { decodeOrder, fetchActiveStrategies, type ActiveStrategy } from '../lib/markets'
 import { WHY_IT_PROTECTS_YOU } from '../lib/instructions'
-import { DESK_PAIR, isSavingsProgram } from '../lib/strategies'
+import { DESK_PAIR, SAVINGS_BASE, SAVINGS_PAIRS, isSavingsProgram } from '../lib/strategies'
 import { disassemble } from '@iqia/swapvm'
 
 /** Format satuan dasar jadi angka yang enak dibaca. */
@@ -149,36 +149,96 @@ function Earnings({ earnings }: { earnings: SavingsEarnings | null }) {
 }
 
 /**
- * Tabunganmu tidak eksklusif — dan itu fiturnya, bukan celahnya.
+ * Pasar mana yang ditopang saldomu, dan mana yang belum.
  *
- * Saldo yang sama menopang setiap posisi yang kamu buka. Ditampilkan di sini
- * supaya jelas bahwa "disisihkan" tidak berarti "terkunci di satu tempat".
+ * # Kenapa ini bukan "alokasi"
+ *
+ * Di aplikasi mana pun, "taruh di mana" berarti MEMBAGI: 400 di sini, 600 di
+ * sana, dan uang yang sudah masuk satu kolam tidak bisa ikut bekerja di kolam
+ * lain. Panel ini sengaja tidak punya slider pembagian, karena membaginya tidak
+ * perlu.
+ *
+ * `ship()` tidak memindahkan token dan tidak memeriksa saldo, jadi tumpukan WETH
+ * yang sama mengutip di setiap pasar yang kamu centang. Diukur di rantai resmi:
+ * 19,93 WETH menopang tiga pasar sekaligus, 3,00×.
+ *
+ * Jadi pertanyaannya berubah bentuk — bukan "berapa persen ke mana", tapi "di
+ * berapa banyak pasar kamu mau mengutip". Yang menjaganya waras adalah
+ * `SolvencyGuard`: begitu satu pasar menghabiskan sandaran bersama, pasar lain
+ * ikut memburuk harganya, tanpa keeper dan tanpa transaksi tambahan.
  */
-function SharedCapitalNote({ shared }: { shared: SharedCapital | null }) {
-  if (!shared || shared.positions < 2) return null
+function Markets({
+  shared,
+  openPairs,
+  busyPair,
+  onAdd,
+}: {
+  shared: SharedCapital | null
+  /** Simbol sisi lawan dari pasar yang sudah terbuka. */
+  openPairs: Set<string>
+  busyPair: string | null
+  onAdd: (quote: (typeof SAVINGS_PAIRS)[number]) => void
+}) {
+  if (SAVINGS_PAIRS.length === 0) return null
+  const missing = SAVINGS_PAIRS.filter((p) => !openPairs.has(p.symbol))
+
   return (
-    <div className="flex items-baseline justify-between gap-4">
-      <p className="text-sm text-spectral/55">
-        The same balance backs {shared.positions} markets at once.
-      </p>
-      <p className="font-mono text-lg tabular-nums text-spectral/90">
-        {shared.multiple.toFixed(2)}×
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-medium text-spectral/80">Markets your balance backs</p>
+        {shared && shared.positions > 1 && (
+          <span className="font-mono text-sm tabular-nums text-spectral/85">
+            {shared.multiple.toFixed(2)}×
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        {SAVINGS_PAIRS.map((p) => {
+          const open = openPairs.has(p.symbol)
+          return (
+            <div
+              key={p.symbol}
+              className="flex items-center justify-between gap-3 border-b border-spectral/[0.07] py-2 last:border-0"
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <span
+                  aria-hidden
+                  className={cx(
+                    'size-1.5 rounded-full',
+                    open ? 'bg-spectral/60' : 'bg-spectral/15',
+                  )}
+                />
+                <span className={open ? 'text-spectral/85' : 'text-spectral/45'}>
+                  {SAVINGS_BASE.symbol} / {p.symbol}
+                </span>
+              </span>
+              {open ? (
+                <span className="coord-label">quoting</span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busyPair !== null}
+                  onClick={() => onAdd(p)}
+                >
+                  {busyPair === p.symbol ? <Spinner className="h-3.5 w-3.5" /> : 'Also quote here'}
+                </Button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="max-w-2xl text-xs leading-relaxed text-spectral/45">
+        {missing.length === 0
+          ? 'The same balance is quoting in every market on offer. Nothing was divided — it backs all of them at once, and SolvencyGuard keeps that honest: when one market spends the shared backing, the others reprice too.'
+          : 'Adding a market does not split your balance. The same tokens back every market you quote in — that is the number on the right, and it is not possible in a pool.'}
       </p>
     </div>
   )
 }
 
-/**
- * Terdaftar versus yang benar-benar menyandarinya.
- *
- * Angka kiri adalah yang dicatat Aqua saat posisi dibuka; ia tidak bergerak
- * ketika dompetnya dibelanjakan. Angka kanan yang bergerak, dan itulah yang
- * dibaca `SolvencyGuard` pada setiap swap.
- *
- * Menampilkan keduanya berdampingan adalah satu-satunya cara jujur menyajikan
- * posisi Aqua: token tidak pernah pindah, jadi "sedang bekerja" tidak pernah
- * berarti "sedang dipegang".
- */
 function Backing({ backing }: { backing: SideBacking[] | null }) {
   if (!backing || backing.length === 0) return null
   const thinnest = backing.reduce((a, b) => (a.surchargeBps > b.surchargeBps ? a : b))
@@ -302,6 +362,9 @@ export function SavingsPage() {
   const [shared, setShared] = useState<SharedCapital | null>(null)
   const [backing, setBacking] = useState<SideBacking[] | null>(null)
   const [step, setStep] = useState<ZapStep | null>(null)
+  /** Sisi lawan dari pasar yang sudah kita buka, mis. {'USDC','DAI'}. */
+  const [openPairs, setOpenPairs] = useState<Set<string>>(new Set())
+  const [busyPair, setBusyPair] = useState<string | null>(null)
 
   const configured = DESK_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
@@ -354,6 +417,19 @@ export function SavingsPage() {
       const mine = found?.hash ?? null
       setMineStrategy(found)
       setStrategyHash(mine)
+
+      // Sisi lawan tiap posisi kita yang beralas WETH. Dicocokkan dari ALAMAT,
+      // bukan simbol: simbol tidak unik, alamat yang menentukan pasar mana.
+      const base = SAVINGS_BASE.address.toLowerCase()
+      const held = new Set<string>()
+      for (const st of active) {
+        const toks = [...st.tokens].map((t) => t.toLowerCase())
+        if (!toks.includes(base)) continue
+        const other = toks.find((t) => t !== base)
+        const pair = SAVINGS_PAIRS.find((p) => p.address.toLowerCase() === other)
+        if (pair) held.add(pair.symbol)
+      }
+      setOpenPairs(held)
       setPosition(
         mine ? await positionBalancesOrZero(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
       )
@@ -420,6 +496,38 @@ export function SavingsPage() {
       setError(err instanceof Error ? err.message : 'Failed to open the position.')
     } finally {
       setBusy(null)
+      setStep(null)
+    }
+  }
+
+  /**
+   * Membuka pasar tambahan dengan modal yang SAMA.
+   *
+   * Tidak ada yang dibagi: `zapAndOpen` menyisihkan persentase yang sama dari
+   * saldo dompet, dan karena `ship()` tidak memindahkan token, WETH yang sudah
+   * menopang pasar lain tetap menopangnya. Yang perlu ditukar cuma sisi lawan
+   * pasar baru itu.
+   */
+  async function handleAddMarket(quote: (typeof SAVINGS_PAIRS)[number]) {
+    if (!address) return
+    setBusyPair(quote.symbol); setError(null); setTxHash(null); setStep(null)
+    try {
+      const balances = await walletBalances(address, SAVINGS_BASE.address, quote.address)
+      const { hash } = await zapAndOpen(
+        address,
+        SAVINGS_BASE.address,
+        quote.address,
+        balances,
+        percent,
+        savingsOrder(address, freshSalt()),
+        { onStep: setStep },
+      )
+      setTxHash(hash)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to open the ${quote.symbol} market.`)
+    } finally {
+      setBusyPair(null)
       setStep(null)
     }
   }
@@ -521,7 +629,14 @@ export function SavingsPage() {
 
                   <Backing backing={backing} />
 
-                  <SharedCapitalNote shared={shared} />
+                  <Separator />
+
+                  <Markets
+                    shared={shared}
+                    openPairs={openPairs}
+                    busyPair={busyPair}
+                    onAdd={handleAddMarket}
+                  />
 
                   <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-spectral/55">
