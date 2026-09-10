@@ -43,6 +43,19 @@ const patina = {
   500: v('--patina-500'),
 }
 
+/**
+ * Dua warna status, dan keduanya HARUS berganti per tema.
+ *
+ * Sebelumnya `text-yellow-300` dan `text-rose-300` ditulis langsung di 20 tempat.
+ * Keduanya dipilih untuk latar near-black, dan di tema terang — yang sekarang
+ * default — kontrasnya 1,29:1 terhadap kartu. WCAG menuntut 4,5:1 untuk teks,
+ * jadi peringatan yang paling perlu dibaca justru yang paling tidak terbaca.
+ *
+ * Nilainya di `index.css`: gelap-pekat di tema terang, terang di tema gelap.
+ */
+const warn = v('--warn')
+const danger = v('--danger')
+
 // Re-point the default grey text scale at the themed neutral ramp so existing
 // `text-zinc-*` follows light/dark. Deep-merges with Tailwind's zinc.
 const themedZinc = {
@@ -70,6 +83,8 @@ export default {
         ink: mist, // alias — existing bg-ink-*/border-ink-* follow the neutral ramp.
         spectral: halo, // alias — existing text-spectral/bg-spectral read as the foreground ink.
         patina,
+        warn,
+        danger,
         zinc: themedZinc,
       },
       fontFamily: {
