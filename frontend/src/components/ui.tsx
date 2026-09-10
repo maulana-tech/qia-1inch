@@ -370,7 +370,7 @@ export function ToggleGroup<T extends string>({
     // sendirian. Ditulis inline karena `grid-cols-${n}` tidak bisa dipindai
     // Tailwind saat build.
     <div
-      className="grid gap-1 rounded-none border border-ink-700 bg-ink-900/60 p-1"
+      className="grid gap-1 rounded-xl border border-ink-700 bg-ink-900/60 p-1"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       {options.map((option) => {
@@ -381,7 +381,7 @@ export function ToggleGroup<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cx(
-              'rounded-none py-2 text-sm font-semibold transition',
+              'rounded-lg py-2 text-sm font-semibold transition',
               active
                 ? (option.activeClassName ?? 'toggle-active text-zinc-100')
                 : 'text-zinc-400 hover:text-zinc-200',
@@ -408,7 +408,7 @@ export function TxBanner({
 }) {
   if (status === 'done' && hash) {
     return (
-      <div className="flex items-center gap-2 rounded-none border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-sm text-emerald-300 animate-fade-in">
+      <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-sm text-emerald-300 animate-fade-in">
         <CheckIcon className="h-4 w-4 shrink-0" />
         <span>{successLabel}</span>
         <span className="ml-auto font-mono text-xs text-emerald-400/70">{truncateKey(hash, 6, 6)}</span>
@@ -417,7 +417,7 @@ export function TxBanner({
   }
   if (status === 'error') {
     return (
-      <div className="rounded-none border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-danger animate-fade-in">
+      <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-danger animate-fade-in">
         {error ?? 'Transaction failed.'}
       </div>
     )
