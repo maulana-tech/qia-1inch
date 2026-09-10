@@ -7,12 +7,13 @@ import { erc20Abi, formatUnits, getAddress, isAddress, type Address } from 'viem
 
 import { CURATED_TOKENS } from '../lib/tokens'
 import { truncateKey } from '../lib/format'
+import { cx } from '../lib/cx'
 import { CHAIN_NAME, explorerTxUrl } from '../lib/config'
 import { wagmiConfig, ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import { parsePaymentLink, sendPayment, tokenDecimals } from '../lib/payments'
 import { parseAmountStrict } from '../lib/amount'
-import { Button, Card, CardContent, Field, Select, TextInput } from './ui'
-import { CoinBadge } from './BrandIcons'
+import { Button, Card, CardContent, Field, TextInput } from './ui'
+import { TokenSelect } from './TokenSelect'
 
 /** Hanya token yang benar-benar bisa dikirim di jaringan ini. */
 const SENDABLE = CURATED_TOKENS.filter((t) => t.native || t.sac)
@@ -129,7 +130,7 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
 
   return (
     <div className={embedded ? 'space-y-5' : 'space-y-6'}>
-      <Card className={embedded ? '' : 'mx-auto max-w-xl'}>
+      <Card className={cx('overflow-visible', embedded ? '' : 'mx-auto max-w-xl')}>
         <CardContent className="space-y-4">
           {locked ? (
             <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-3">
@@ -152,12 +153,13 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Token">
-              <Select
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                options={SENDABLE.map((t) => ({ value: t.code, label: t.code }))}
-              />
-            </Field>
+                  <TokenSelect
+                    value={code}
+                    onChange={setCode}
+                    options={SENDABLE}
+                    disabled={locked && request?.token !== undefined}
+                  />
+                </Field>
             <Field
               label="Amount"
               hint={
@@ -174,14 +176,6 @@ export function Pay({ embedded }: { embedded?: boolean } = {}) {
                 onChange={(e) => setAmount(e.target.value)}
               />
             </Field>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-xl border border-ink-800 bg-ink-900/40 p-3">
-            <CoinBadge name={token.icon} size="lg" />
-            <div className="min-w-0">
-              <div className="text-sm font-semibold tracking-tight text-zinc-100">{token.code}</div>
-              <div className="truncate text-xs text-zinc-400">{token.name}</div>
-            </div>
           </div>
 
           {!account && (
