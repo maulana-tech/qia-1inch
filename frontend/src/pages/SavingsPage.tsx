@@ -238,7 +238,16 @@ export function SavingsPage() {
 
   const isOpen = position[0] > 0n || position[1] > 0n
   const split = splitAmounts(wallet, percent)
-  const canOpen = !isOpen && (split[0] > 0n || split[1] > 0n)
+  /**
+   * KEDUA sisi harus terisi, bukan salah satu.
+   *
+   * Dulu `||`, dan posisi satu sisi yang lolos dari situ tidak bisa melayani
+   * satu swap pun: `XYCSwap` menolak dengan `XYCSwapRequiresBothBalancesNonZero`
+   * sebelum menghitung apa pun. Posisinya tetap terlihat hidup di setiap layar,
+   * saldonya terdaftar, dan penghasilannya nol selamanya — tanpa satu pun tanda
+   * ada yang salah. Dipatok di contracts/test/OneSidedSavings.t.sol.
+   */
+  const canOpen = !isOpen && split[0] > 0n && split[1] > 0n
   const anyBusy = busy !== null
 
   async function handleOpen() {
@@ -426,7 +435,11 @@ export function SavingsPage() {
                 </div>
                 {!canOpen && !isOpen && !anyBusy ? (
                   <p className="text-xs text-spectral/45">
-                    Your wallet balance is still zero. Grab test tokens on the Deposit page first.
+                    {wallet[0] === 0n && wallet[1] === 0n
+                      ? 'Your wallet balance is still zero. Grab test tokens on the Faucet page first.'
+                      : `A position needs both sides. You are short on ${
+                          split[0] === 0n ? TOKENS[0].symbol : TOKENS[1].symbol
+                        } — a one-sided position cannot serve a single swap.`}
                   </p>
                 ) : null}
               </div>
