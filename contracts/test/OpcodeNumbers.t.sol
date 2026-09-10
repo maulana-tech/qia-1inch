@@ -29,7 +29,7 @@ contract OpcodeNumbersTest is Test, IqiaOpcodes {
 
     constructor() IqiaOpcodes(address(AQUA)) { }
 
-    function test_OpcodeNumbersMatchTypeScriptConstants() public view {
+    function test_OpcodeNumbersMatchTypeScriptConstants() public pure {
         Program memory p = ProgramBuilder.init(_opcodes());
 
         assertEq(p.findOpcode(Controls._jump), 10, "JUMP");
