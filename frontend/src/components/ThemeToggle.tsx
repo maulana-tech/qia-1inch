@@ -10,7 +10,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={isDark ? 'Light theme' : 'Dark theme'}
       className={
-        'inline-flex h-8 w-8 items-center justify-center rounded-none text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-950 dark:text-spectral/60 dark:hover:bg-ink-800 dark:hover:text-spectral transition focus:outline-none focus-visible:ring-2 focus-visible:ring-spectral/40 ' +
+        'inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-950 dark:text-spectral/60 dark:hover:bg-ink-800 dark:hover:text-spectral transition focus:outline-none focus-visible:ring-2 focus-visible:ring-spectral/40 ' +
         (className ?? '')
       }
     >
