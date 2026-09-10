@@ -1,23 +1,13 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+/**
+ * Provider dompet, dan HANYA itu. Tipe dan hook-nya di `walletContext.ts`.
+ */
+import { useMemo, type ReactNode } from 'react'
 import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi'
 import { injected } from 'wagmi/connectors'
+
 import { CHAIN_NAME } from '../lib/config'
 import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
-
-export type WalletStatus = 'checking' | 'not-installed' | 'disconnected' | 'connecting' | 'connected'
-
-export interface WalletState {
-  status: WalletStatus
-  address: string | null
-  network: string | null
-  isTestnet: boolean
-  installed: boolean
-  error: string | null
-  connect: () => Promise<void>
-  disconnect: () => void
-}
-
-const WalletContext = createContext<WalletState | null>(null)
+import { WalletContext, type WalletState, type WalletStatus } from './walletContext'
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const { address, isConnecting, isConnected } = useAccount()
@@ -51,10 +41,4 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
-}
-
-export function useWallet(): WalletState {
-  const ctx = useContext(WalletContext)
-  if (!ctx) throw new Error('useWallet must be used within a WalletProvider')
-  return ctx
 }
