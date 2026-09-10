@@ -86,6 +86,15 @@ export function PaymentLinkPage() {
                     {copied ? 'Copied' : 'Copy'}
                   </Button>
                 </div>
+
+                {/* Perbedaannya disebut, bukan dibiarkan ditebak. Dua halaman
+                    menghasilkan QR, dan yang menentukan mana yang dipakai adalah
+                    siapa yang memindainya — bukan selera. */}
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  This code opens this app with the form filled in, so the payer needs a browser —
+                  and it is the only one that can carry your name. For a code that any wallet can
+                  read on its own, use the Receive page.
+                </p>
               </>
             )}
           </CardContent>
