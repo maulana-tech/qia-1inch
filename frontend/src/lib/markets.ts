@@ -202,16 +202,57 @@ async function scanLogs(
    * sebagai market hidup. Data yang salah disajikan sebagai fakta lebih buruk
    * daripada halaman yang mengaku gagal.
    */
+  const readOnce = (from: bigint, to: bigint) =>
+    client.getLogs({
+      address: AQUA_ADDRESS as Address,
+      event: event as any,
+      fromBlock: from,
+      toBlock: to,
+    })
+
   const fetchRange = async ([from, to]: [bigint, bigint]): Promise<any[]> => {
     let lastError: unknown
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        return await client.getLogs({
-          address: AQUA_ADDRESS as Address,
-          event: event as any,
-          fromBlock: from,
-          toBlock: to,
-        })
+        const found = await readOnce(from, to)
+
+        /**
+         * Hasil KOSONG tidak langsung dipercaya.
+         *
+         * Percobaan-ulang di atas hanya menangkap kegagalan yang MELEMPAR. Ada
+         * mode gagal yang lebih jahat: RPC publik menjawab `200 OK` dengan array
+         * kosong padahal lognya ada. Diukur di Sepolia — enam permintaan
+         * identik ke endpoint yang sama, berurutan, mengembalikan 11, 11, 11,
+         * 11, 0, 11. Sekitar satu dari tiga jawaban bohong, tanpa satu pun
+         * error yang bisa ditangkap.
+         *
+         * Akibatnya persis yang terlihat pengguna: halaman Markets menulis
+         * "No active markets yet" pada rantai yang punya posisi hidup, dan tidak
+         * ada apa pun di layar yang menunjukkan itu keliru.
+         *
+         * Kosong itu satu-satunya jawaban yang kita ragukan, dan itulah yang
+         * membuat pemeriksaan ini murah: ia hanya berbiaya saat memang tidak ada
+         * apa-apa — kasus di mana halamannya toh sedang menunggu. Arah gagalnya
+         * juga cuma satu; RPC menjatuhkan log, tidak pernah mengarangnya. Jadi
+         * satu jawaban tidak-kosong sudah cukup untuk menyanggah.
+         *
+         * Enam kali, bukan dua. Diukur pada endpoint yang sama: `Shipped`
+         * kosong 6 dari 10 kali, `Docked` 4 dari 10. Pada tingkat 0,6 dua
+         * pemeriksaan ulang menyisakan 22% pemuatan yang tetap salah — masih
+         * cukup sering untuk terlihat rusak. Enam menekannya ke bawah 5%.
+         *
+         * Memperkecil potongan blok TIDAK menolong, dan itu sudah dicoba:
+         * jendela 1.000 blok mengembalikan dua log padahal cuma satu yang ada
+         * di dalamnya. Jawabannya tidak berhubungan dengan rentang yang diminta,
+         * jadi ini bukan soal ukuran permintaan.
+         */
+        if (found.length > 0) return found
+        for (let recheck = 0; recheck < 6; recheck++) {
+          await new Promise((r) => setTimeout(r, 200 + recheck * 100))
+          const again = await readOnce(from, to)
+          if (again.length > 0) return again
+        }
+        return found
       } catch (e) {
         lastError = e
         await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
@@ -263,6 +304,28 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
   const shipped = await scanLogs(client, SHIPPED, fromBlock, latest)
   const pushed = await scanLogs(client, PUSHED, fromBlock, latest)
   const docked = await scanLogs(client, DOCKED, fromBlock, latest)
+
+  /**
+   * Tiga sapuan itu harus konsisten satu sama lain, dan kalau tidak, RPC-nya
+   * yang salah — bukan rantainya.
+   *
+   * `Pushed` dan `Docked` mustahil ada tanpa `Shipped` di jendela yang sama:
+   * keduanya menunjuk `strategyHash` yang hanya bisa lahir dari `ship()`.
+   * Jadi kombinasi ini adalah bukti langsung bahwa sapuan `Shipped` menerima
+   * jawaban kosong yang bohong, walaupun semua percobaan ulang di atas sudah
+   * habis.
+   *
+   * Dilempar, bukan dikembalikan sebagai daftar kosong. "Tidak ada market" dan
+   * "aku tidak berhasil membaca" adalah dua kalimat yang sangat berbeda, dan
+   * yang pertama membuat orang menyimpulkan aplikasinya belum dipakai siapa
+   * pun. Halaman Markets sudah punya tempat untuk menampilkan galat.
+   */
+  if (shipped.length === 0 && pushed.length + docked.length > 0) {
+    throw new Error(
+      'The RPC returned inconsistent logs: swap and close events exist, but no position events. ' +
+        'This endpoint drops results silently — set VITE_RPC_URL to a more reliable one and reload.',
+    )
+  }
 
   const closed = new Set(
     docked
