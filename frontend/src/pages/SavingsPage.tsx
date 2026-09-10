@@ -6,10 +6,12 @@ import {
   closePosition,
   openPosition,
   positionBalancesOrZero,
+  positionBacking,
   savingsEarnings,
   sharedCapital,
   type SavingsEarnings,
   type SharedCapital,
+  type SideBacking,
   savingsOrder,
   splitAmounts,
   walletBalances,
@@ -162,6 +164,75 @@ function SharedCapitalNote({ shared }: { shared: SharedCapital | null }) {
   )
 }
 
+/**
+ * Terdaftar versus yang benar-benar menyandarinya.
+ *
+ * Angka kiri adalah yang dicatat Aqua saat posisi dibuka; ia tidak bergerak
+ * ketika dompetnya dibelanjakan. Angka kanan yang bergerak, dan itulah yang
+ * dibaca `SolvencyGuard` pada setiap swap.
+ *
+ * Menampilkan keduanya berdampingan adalah satu-satunya cara jujur menyajikan
+ * posisi Aqua: token tidak pernah pindah, jadi "sedang bekerja" tidak pernah
+ * berarti "sedang dipegang".
+ */
+function Backing({ backing }: { backing: SideBacking[] | null }) {
+  if (!backing || backing.length === 0) return null
+  const thinnest = backing.reduce((a, b) => (a.surchargeBps > b.surchargeBps ? a : b))
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-medium text-spectral/80">Registered vs backed</p>
+        {thinnest.surchargeBps > 0n && (
+          <span className="font-mono text-xs text-warn">
+            +{(Number(thinnest.surchargeBps) / 1e7).toFixed(2)}% surcharge
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {backing.map((side, i) => {
+          const t = TOKENS[i]
+          const full = side.registered === 0n || side.backing >= side.registered
+          const pct =
+            side.registered === 0n
+              ? 100
+              : Number((side.backing * 100n) / side.registered)
+          return (
+            <div key={side.token} className="space-y-1">
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-spectral/70">{t.symbol}</span>
+                <span className="font-mono tabular-nums text-spectral/45">
+                  <span className={full ? 'text-spectral/85' : 'text-warn'}>
+                    {fmt(side.backing, t.decimals)}
+                  </span>
+                  <span className="text-spectral/35"> backing </span>
+                  {fmt(side.registered, t.decimals)}
+                  <span className="text-spectral/35"> registered</span>
+                </span>
+              </div>
+              {/* Batang tipis, bukan grafik. Tugasnya cuma membuat kekurangan
+                  terlihat sebelum angkanya dibaca. */}
+              <div className="h-1 w-full overflow-hidden rounded bg-spectral/10">
+                <div
+                  className={cx('h-full', full ? 'bg-spectral/40' : 'bg-warn')}
+                  style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="max-w-2xl text-xs leading-relaxed text-spectral/45">
+        {thinnest.surchargeBps > 0n
+          ? 'You have spent part of what this position registered. Nothing broke — SolvencyGuard prices the shortfall, so swappers pay more and your remaining balance is not sold cheaply. Top the wallet back up and the surcharge goes away on its own.'
+          : 'Your wallet fully covers what this position registered, so SolvencyGuard adds nothing. Spend from the wallet and this figure moves — the position keeps quoting, just at a worse price.'}
+      </p>
+    </div>
+  )
+}
+
 export function SavingsPage() {
   const { address } = useAccount()
 
@@ -174,6 +245,7 @@ export function SavingsPage() {
   const [loading, setLoading] = useState(true)
   const [earnings, setEarnings] = useState<SavingsEarnings | null>(null)
   const [shared, setShared] = useState<SharedCapital | null>(null)
+  const [backing, setBacking] = useState<SideBacking[] | null>(null)
 
   const configured = DESK_CONFIGURED && Boolean(MOCK_WETH_ADDRESS) && Boolean(MOCK_USDC_ADDRESS)
 
@@ -226,6 +298,18 @@ export function SavingsPage() {
         mine ? await positionBalancesOrZero(address, mine, TOKENS[0].address, TOKENS[1].address) : [0n, 0n],
       )
       setEarnings(mine ? await savingsEarnings(mine) : null)
+
+      // Sandaran dihitung dari jumlah TERDAFTAR yang barusan dibaca, bukan dari
+      // niat pengguna saat membuka. Itu yang dilihat SolvencyGuard.
+      setBacking(
+        mine
+          ? await positionBacking(
+              address,
+              [TOKENS[0].address, TOKENS[1].address],
+              await positionBalancesOrZero(address, mine, TOKENS[0].address, TOKENS[1].address),
+            )
+          : null,
+      )
       setShared(active.length ? await sharedCapital(address, active, TOKENS[0].address, TOKENS[1].address) : null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to read balances.')
@@ -354,6 +438,10 @@ export function SavingsPage() {
                   <Separator />
 
                   <Earnings earnings={earnings} />
+
+                  <Separator />
+
+                  <Backing backing={backing} />
 
                   <SharedCapitalNote shared={shared} />
 
