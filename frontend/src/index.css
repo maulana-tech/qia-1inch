@@ -256,8 +256,24 @@
     @apply mb-1.5 block text-xs font-medium text-zinc-400;
   }
 
+  /* ── Radius ───────────────────────────────────────────────────────────
+   *
+   * Satu skala, tiga tingkat, dan tidak ada `rounded-none` di kontrol mana pun.
+   *
+   * Sebelumnya `.btn` dan `.input` bersudut tajam sementara `.card` yang
+   * membungkusnya `rounded-2xl`. Di layar hasilnya bukan "tegas" melainkan
+   * belum selesai: tombol Send persegi menempel di dalam kartu yang membulat,
+   * dan matanya membaca itu sebagai dua komponen dari dua desain berbeda.
+   *
+   *   kartu / panel  rounded-2xl   membungkus
+   *   kontrol        rounded-xl    input, select, tombol
+   *   lencana        rounded-full  chip dan status
+   *
+   * Kontrol sengaja lebih kecil dari wadahnya. Radius yang sama besar membuat
+   * kontrol di dekat tepi terlihat menonjol keluar dari kartunya.
+   */
   .input {
-    @apply w-full rounded-none border border-ink-700 bg-ink-900/70 px-3.5 py-2.5 text-sm text-zinc-100
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900/70 px-3.5 py-2.5 text-sm text-zinc-100
            outline-none transition placeholder:text-zinc-600
            focus:border-spectral/60 focus:ring-2 focus:ring-spectral/20;
   }
@@ -266,12 +282,14 @@
   }
 
   .btn {
-    @apply inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-none px-4 py-2.5
+    @apply inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5
            text-sm font-semibold transition active:scale-[0.99]
            disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
   }
   .btn-sm {
-    @apply rounded-none px-3 py-1.5 text-xs;
+    /* Tombol kecil dapat radius lebih kecil supaya lengkungnya terlihat
+       sebanding — `rounded-xl` pada tinggi 28px membuatnya nyaris kapsul. */
+    @apply rounded-lg px-3 py-1.5 text-xs;
   }
   .btn-primary {
     @apply bg-spectral text-mist-950 hover:bg-spectral-soft;
