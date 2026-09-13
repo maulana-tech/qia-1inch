@@ -247,8 +247,9 @@ async function scanLogs<A>(
   fromBlock: bigint,
   toBlock: bigint,
   aquaAddress: string = AQUA_ADDRESS,
+  chunkSize?: number,
 ): Promise<AquaLog<A>[]> {
-  const chunk = BigInt(Math.max(1, LOGS_CHUNK_BLOCKS))
+  const chunk = BigInt(Math.max(1, chunkSize ?? LOGS_CHUNK_BLOCKS))
   const ranges: [bigint, bigint][] = []
   for (let start = fromBlock; start <= toBlock; start += chunk) {
     const end = start + chunk - 1n
@@ -362,14 +363,16 @@ export async function fetchActiveStrategies(maker?: string, aquaAddress: string 
         ? latest - BigInt(MARKETS_LOOKBACK_BLOCKS)
         : 0n
       : isExtraRegistry
-        ? latest > 45000n ? latest - 45000n : 0n
+        ? latest > 5000n ? latest - 5000n : 0n
         : BigInt(POOL_DEPLOY_BLOCK)
 
   const wanted = maker?.toLowerCase()
 
-  const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest, aquaAddress)
-  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest, aquaAddress)
-  const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest, aquaAddress)
+  const chunk = isExtraRegistry ? 1500 : undefined
+
+  const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest, aquaAddress, chunk)
+  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest, aquaAddress, chunk)
+  const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest, aquaAddress, chunk)
 
   /**
    * Tiga sapuan itu harus konsisten satu sama lain, dan kalau tidak, RPC-nya
