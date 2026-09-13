@@ -10,7 +10,7 @@
  * 1inch hanya memperindah tampilannya; token yang tidak dikenalinya tetap muncul
  * dengan data yang dibaca langsung dari kontraknya.
  */
-import { getPublicClient, readContracts } from '@wagmi/core'
+import { getPublicClient } from '@wagmi/core'
 import type { Config } from '@wagmi/core'
 import { decodeAbiParameters, erc20Abi, type AbiEvent, type Address, type PublicClient } from 'viem'
 import { ABI } from '@1inch/aqua-sdk'
@@ -127,7 +127,13 @@ let tokenListCache: Promise<Record<string, TokenInfo>> | null = null
  */
 export function fetchOneInchTokens(): Promise<Record<string, TokenInfo>> {
   if (tokenListCache) return tokenListCache
-  tokenListCache = fetch(`https://tokens.1inch.io/v1.2/${CHAIN_ID}`)
+  // 1inch tidak punya daftar token untuk testnet — memanggil endpoint-nya
+  // hanya menghasilkan 400 di console. Lewati saja.
+  if (CHAIN_ID >= 80000) {
+    tokenListCache = Promise.resolve({})
+    return tokenListCache
+  }
+  tokenListCache = fetch(`https://tokens.1inch.io/v1.2/${CHAIN_ID}`, { signal: AbortSignal.timeout(5000) })
     .then((res) => (res.ok ? res.json() : {}))
     .then((raw: Record<string, { address: string; symbol: string; name: string; decimals: number; logoURI?: string }>) => {
       const out: Record<string, TokenInfo> = {}
@@ -144,21 +150,19 @@ export function fetchOneInchTokens(): Promise<Record<string, TokenInfo>> {
 
 /** Metadata token yang tidak ada di daftar 1inch, dibaca dari kontraknya. */
 async function readTokenOnChain(address: string): Promise<TokenInfo> {
-  const results = await readContracts(wagmiConfig as Config, {
-    contracts: [
-      { address: address as Address, abi: erc20Abi, functionName: 'symbol', chainId: ACTIVE_CHAIN_ID },
-      { address: address as Address, abi: erc20Abi, functionName: 'name', chainId: ACTIVE_CHAIN_ID },
-      { address: address as Address, abi: erc20Abi, functionName: 'decimals', chainId: ACTIVE_CHAIN_ID },
-    ],
-  })
-  const [symbol, name, decimals] = results
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`
-  return {
-    address,
-    symbol: (symbol.result as string) ?? short,
-    name: (name.result as string) ?? 'Unknown token',
-    decimals: (decimals.result as number) ?? 18,
-    listed: false,
+  const fallback: TokenInfo = { address, symbol: short, name: 'Unknown token', decimals: 18, listed: false }
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  if (!client) return fallback
+  try {
+    const [symbol, name, decimals] = await Promise.all([
+      client.readContract({ address: address as Address, abi: erc20Abi, functionName: 'symbol' }).catch(() => short),
+      client.readContract({ address: address as Address, abi: erc20Abi, functionName: 'name' }).catch(() => 'Unknown token'),
+      client.readContract({ address: address as Address, abi: erc20Abi, functionName: 'decimals' }).catch(() => 18),
+    ])
+    return { address, symbol: symbol as string, name: name as string, decimals: decimals as number, listed: false }
+  } catch {
+    return fallback
   }
 }
 
@@ -541,17 +545,34 @@ export async function fetchMarkets(): Promise<Market[]> {
   for (const t of unknown) resolved.set(t, await readTokenOnChain(t))
   const metaOf = (t: string) => listed[t] ?? resolved.get(t)!
 
-  const balances = await readContracts(wagmiConfig as Config, {
-    contracts: wantedReads.map((w) => ({
-      address: AQUA_ADDRESS as Address,
-      abi: aquaBalancesAbi,
-      functionName: 'rawBalances',
-      // App-nya per posisi, bukan router kita: saldo posisi milik app lain
-      // hanya terbaca kalau ditanyakan dengan app-nya sendiri.
-      args: [w.s.maker as Address, w.s.app as Address, w.s.hash, w.token as Address],
-      chainId: ACTIVE_CHAIN_ID,
-    })),
-  })
+  /**
+   * Baca saldo per-token, bukan multicall.
+   *
+   * Base Sepolia tidak punya Multicall3 di alamat standar, jadi
+   * `readContracts` (wagmi multicall) bisa gagal diam-diam — semua
+   * `status: 'failure'` tanpa error yang terlempar. Dengan baca satu per
+   * satu lewat `readContract`, kegagalan satu token tidak menjatuhkan
+   * sisanya.
+   */
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  const balanceResults: { status: 'success' | 'failure'; result?: readonly [bigint, number]; error?: unknown }[] = []
+  if (client) {
+    for (const w of wantedReads) {
+      try {
+        const result = await client.readContract({
+          address: AQUA_ADDRESS as Address,
+          abi: aquaBalancesAbi,
+          functionName: 'rawBalances',
+          args: [w.s.maker as Address, w.s.app as Address, w.s.hash, w.token as Address],
+        }) as readonly [bigint, number]
+        balanceResults.push({ status: 'success', result })
+      } catch (e) {
+        balanceResults.push({ status: 'failure', error: e })
+      }
+    }
+  } else {
+    for (const _w of wantedReads) balanceResults.push({ status: 'failure', error: 'no client' })
+  }
 
   const perStrategy = new Map<string, MarketLeg[]>()
   const dockedOnChain = new Set<string>()
@@ -570,9 +591,9 @@ export async function fetchMarkets(): Promise<Market[]> {
   const unreadable = new Set<string>()
 
   for (const [i, w] of wantedReads.entries()) {
-    const r = balances[i]
-    if (r.status !== 'success') { unreadable.add(w.s.hash); continue }
-    const [amount, tokensCount] = r.result as readonly [bigint, number]
+    const r = balanceResults[i]
+    if (r.status !== 'success' || !r.result) { unreadable.add(w.s.hash); continue }
+    const [amount, tokensCount] = r.result
     if (tokensCount === DOCKED_MARKER) { dockedOnChain.add(w.s.hash); continue }
     const legs = perStrategy.get(w.s.hash) ?? []
     legs.push({ ...metaOf(w.token), address: w.token, balance: amount })

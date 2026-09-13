@@ -20,7 +20,7 @@
  * Yang hilang: penegakan. Yang didapat: uangnya benar-benar tetap milik dan
  * kendali pengguna, yang memang inti Aqua.
  */
-import { readContract, readContracts, writeContract, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { readContract, getPublicClient, writeContract, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { erc20Abi, type Address } from 'viem'
 import { buildOrder, encodeOrder, type Hex } from '@iqia/swapvm'
 import {
@@ -115,13 +115,13 @@ export async function walletBalances(
   tokenA: string,
   tokenB: string,
 ): Promise<[bigint, bigint]> {
-  const res = await readContracts(wagmiConfig as Config, {
-    contracts: [
-      { address: tokenA as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId: ACTIVE_CHAIN_ID },
-      { address: tokenB as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId: ACTIVE_CHAIN_ID },
-    ],
-  })
-  return [(res[0].result as bigint) ?? 0n, (res[1].result as bigint) ?? 0n]
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  if (!client) return [0n, 0n]
+  const [a, b] = await Promise.all([
+    client.readContract({ address: tokenA as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account] }).catch(() => 0n),
+    client.readContract({ address: tokenB as Address, abi: erc20Abi, functionName: 'balanceOf', args: [account] }).catch(() => 0n),
+  ])
+  return [a as bigint, b as bigint]
 }
 
 /** Berapa yang akan disisihkan untuk aturan ini. */
@@ -420,35 +420,23 @@ export async function positionBacking(
   registered: readonly bigint[],
   maxSurchargeBps: bigint = DESK_SURCHARGE_BPS,
 ): Promise<SideBacking[]> {
-  const res = await readContracts(wagmiConfig as Config, {
-    contracts: tokens.flatMap((t) => [
-      {
-        address: t as Address,
-        abi: erc20Abi,
-        functionName: 'balanceOf' as const,
-        args: [maker],
-        chainId: ACTIVE_CHAIN_ID,
-      },
-      {
-        address: t as Address,
-        abi: erc20Abi,
-        functionName: 'allowance' as const,
-        args: [maker, AQUA_ADDRESS as Address],
-        chainId: ACTIVE_CHAIN_ID,
-      },
-    ]),
-  })
+  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  const pairs: { balance: bigint; allowance: bigint }[] = []
+  if (client) {
+    for (const t of tokens) {
+      const [balance, allowance] = await Promise.all([
+        client.readContract({ address: t as Address, abi: erc20Abi, functionName: 'balanceOf', args: [maker] }).catch(() => null),
+        client.readContract({ address: t as Address, abi: erc20Abi, functionName: 'allowance', args: [maker, AQUA_ADDRESS as Address] }).catch(() => null),
+      ])
+      if (balance === null || allowance === null) throw new Error(`Could not read the backing for ${t.slice(0, 10)}`)
+      pairs.push({ balance: balance as bigint, allowance: allowance as bigint })
+    }
+  } else {
+    throw new Error('No RPC client available')
+  }
 
   return tokens.map((token, i) => {
-    const balance = res[i * 2]
-    const allowance = res[i * 2 + 1]
-    // Pembacaan gagal TIDAK boleh jadi nol: nol berarti "tidak ada sandaran",
-    // dan itu peringatan paling keras yang bisa ditampilkan halaman ini.
-    if (balance.status !== 'success' || allowance.status !== 'success') {
-      throw new Error(`Could not read the backing for ${token.slice(0, 10)}`)
-    }
-    const b = balance.result as bigint
-    const a = allowance.result as bigint
+    const { balance: b, allowance: a } = pairs[i]
     const backing = b < a ? b : a
     const reg = registered[i] ?? 0n
     const surchargeBps =
