@@ -128,7 +128,7 @@ function SidebarContent({
     <div className="flex h-full flex-col p-3">
       <div className={cx('flex items-center pb-2 pt-1', rail ? 'justify-center' : 'justify-between px-2')}>
         <NavLink to="/app" onClick={onNavigate} className={cx('flex items-center', rail && 'hidden')}>
-          <Logo markClassName="h-6 w-6" />
+          <Logo height={28} />
         </NavLink>
         {onToggle ? (
           <button

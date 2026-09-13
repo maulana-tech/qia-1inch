@@ -113,7 +113,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             className={`flex items-center ${dark ? 'text-[#ffffff]' : 'text-[#191919]'}`}
             aria-label="Iqia — beranda"
           >
-            <Logo markClassName="h-7 w-7" />
+            <Logo height={36} />
           </a>
           <nav className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em]">
             <a href="/faucet" className={`transition ${dark ? 'text-[#ffffff]/70 hover:text-[#ffffff]' : 'text-[#191919]/70 hover:text-[#191919]'}`}>
@@ -312,7 +312,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="lg:col-span-1">
               <a href="/" className="inline-flex transition hover:opacity-75" aria-label="Iqia — beranda">
-                <Logo markClassName="h-7 w-7" />
+                <Logo height={36} />
               </a>
               <p
                 className="mt-4 max-w-[22rem] text-[13px] leading-relaxed"
