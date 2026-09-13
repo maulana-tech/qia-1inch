@@ -5,7 +5,7 @@
 <h1 align="center">Iqia</h1>
 
 <p align="center">
-  Liquidity that never leaves your wallet.<br />
+  Liquidity that always stays unlocked.<br />
   A consumer app on 1inch Aqua where the pricing strategy is a SwapVM program you can read.
 </p>
 
@@ -19,7 +19,11 @@
 
 ---
 
-Iqia is a DeFi app built on **1inch Aqua** where your liquidity never leaves your wallet. Aqua records an **allowance**, never a deposit, so the same balance earns fees from swaps **and stays spendable at any moment**. The price your money quotes is not a setting — it is a bytecode program, emitted on chain, that anyone can disassemble.
+<p align="center">
+  <img src="docs/screenshot-hero.png" alt="Iqia Hero" width="100%" />
+</p>
+
+Put money in a liquidity pool and it stops being yours to spend. Here it never moves: 1inch Aqua records an **allowance**, never a deposit, so the same balance earns fees from swaps **and stays spendable the whole time**. The price it quotes is not a setting — it is SwapVM bytecode anyone can read, including every other maker's.
 
 > **Delete our frontend and the product still exists.** Every fact about a position is readable with stock viem and no configuration.
 >
@@ -27,220 +31,318 @@ Iqia is a DeFi app built on **1inch Aqua** where your liquidity never leaves you
 > - `disassemble(strategy)` → the exact instructions your money follows
 > - `readContract({ functionName: 'rawBalances', ... })` → real-time backing status
 
-<img width="1710" alt="Markets" src="docs/screenshot-markets.png" />
-
 ---
 
-## What Makes Iqia Special
+## Verifiable on Chain
 
-### Who This Is For
+<p align="center">
+  <img src="docs/screenshot-verifiable.png" alt="Verifiable on Chain" width="100%" />
+</p>
 
-Meet Budi. He has been market-making on-chain for a year — WETH/USDC, one pair, one strategy, a Google Sheet tracking his PnL. It works until someone asks the only question that matters: *how do I know your strategy hasn't changed after the fact?*
+Every claim Iqia makes is independently verifiable on-chain. No oracle, no off-chain computation, no trust required.
 
-He could deploy a vault contract, but then he holds everyone's funds and the strategy lives in storage only his ABI can read. He could use an AMM, but the pool forces him to split capital across pairs. He could publish his strategy document, but nobody diffs a CID.
-
-Budi's problem is not a missing tool. It is that there is no standard where a market maker's strategy is **the public record itself** — readable by any viem client, provably immutable, and delegable to an agent for the numbers while the rules stay untouchable.
-
----
-
-### The Problem
-
-A market maker's position is two things: a set of rules (the strategy bytecode), and a set of numbers that move (the balances). Every existing structure blurs them.
-
-- **AMM pools** — your money leaves your wallet, sits in a contract you don't control, and the strategy is the pool's constant-product formula. No customization.
-- **Vault contracts** — composition lives in contract storage, readable only through that protocol's ABI and frontend; the operator who can rebalance can usually also rewrite the mandate.
-- **Off-chain market makers** — the strategy document and the on-chain execution drift apart, and nobody verifies they match.
-- **Bilateral OTC** — no public record, no way to verify pricing, no composability.
-
-And none of them let the market maker **keep custody** while quoting. It is always "deposit first, then we'll price for you."
-
-**How might we let a maker quote from their own wallet, with a strategy that is readable bytecode, where the same capital backs multiple pairs simultaneously?**
-
----
-
-### The Solution
-
-Iqia answers with five primitives from 1inch Aqua and two custom SwapVM opcodes.
-
-**1. Allowance-based positions** — `Aqua.ship()` transfers nothing. It writes an allowance against the maker's own wallet. Your WETH balance after opening a position is identical to before, and you can spend it the same second. No deposit, no custody, no lock-up.
-
-**2. Shared capital across markets** — `ship()` does not move tokens **and does not check balances**, so the same stack quotes in every market at once. Measured on-chain: 19.93 WETH backing 3 markets simultaneously, 3.00x capital efficiency. A pool would force you to split it three ways.
-
-**3. Readable bytecode strategies** — Aqua emits the whole order in its `Shipped` event. Any maker's program can be disassembled without permission. Open `/market/<hash>` and read it:
-
-```
-000  23  SOLVENCY_GUARD   prices against the maker's real wallet backing
-006  21  FLAT_FEE_IN      takes a flat fee from the input, before the curve
-012  17  XYC_SWAP         constant-product curve, x·y=k
-014  20  SALT             makes the strategy hash unique — no behaviour
-```
-
-**4. Solvency Guard (custom opcode 23)** — reads the maker's **real** wallet backing — `min(balanceOf, allowance)` — on every swap, and raises a surcharge proportional to any shortfall. This is what makes shared capital safe: when one market spends the shared backing, every other market reprices itself, with no keeper, no oracle, and no extra transaction.
-
-**5. Exclusive Fill (custom opcode 22)** — only one named address may fill the order. Full 20-byte address comparison (unlike SwapVM's `PrivateOrder` which compares only the last 10 bytes, where "Birthday attack 80-bit collisions are feasible"). For an exclusive flow deal, "almost certainly them" is not a guarantee you can negotiate against.
-
----
-
-## Features
-
-- **Allowance-based liquidity** — ship() transfers nothing; your wallet balance is unchanged; you keep custody and can spend anytime
-- **Shared capital** — one WETH balance backs WETH/USDC, WETH/DAI, and WETH/WBTC simultaneously — 3.00x capital efficiency measured on-chain
-- **Readable bytecode strategies** — every position's program is emitted in the Shipped event and disassembled in-app; no ABI needed
-- **4 strategy types** — Relaxed (full range), Concentrated (price band), Anti-arbitrage (decay), Private desk (exclusive fill)
-- **Solvency Guard** — real-time backing check on every swap, automatic repricing on shortfall, no oracle needed
-- **Multi-Aqua registry** — reads positions from our testnet Aqua AND the official 1inch Aqua on Base mainnet simultaneously
-- **Markets page** — every position on both registries, disassembled with live balances
-- **Savings** — one slider, one button; the app opens a position and shows exactly what it does
-- **Open position** — 4-step wizard for advanced strategies with custom parameters
-- **Swap** — on-chain quotes with real slippage bounds, no off-chain dependency
-- **My desk** — capital efficiency dashboard across all your markets
-- **Pay / Receive / Payment links** — send tokens to any address with EIP-681 compatible links
-- **Portfolio** — all your positions in one view
-- **Faucet** — mint test tokens directly from the app
-- **Dark / Light mode** — full theme support
-- **Post-swap actions** — after a swap, quick links to open positions, savings, or swap again
-
----
-
-## Live on Base Sepolia
-
-| Contract | Address | Notes |
+| Fact | How to verify | What you'll find |
 |---|---|---|
-| Aqua (registry) | [`0x6d4d017d…cD9Ea`](https://sepolia.basescan.org/address/0x6d4d017dE8d0A36dce7856Ee989624C6A18cD9Ea) | Deployed, 2 Shipped events |
-| IqiaSwapVMRouter | [`0x970C3114…12185`](https://sepolia.basescan.org/address/0x970C3114C5Dcf853692bc8D3e0598d1AC9D12185) | SwapVM + 2 custom opcodes |
-| IqiaAquaTaker | [`0xEAfd45D5…f3A9`](https://sepolia.basescan.org/address/0xEAfd45D5E7ECCF6014D91D9e3da39134C347f3A9) | Pool ↔ router adapter |
-| MockWETH | [`0xD04A92C8…33E6`](https://sepolia.basescan.org/address/0xD04A92C83AFe71f4f69F9FAD0A33229BFBdE33E6) | 18 decimals, faucet |
-| MockUSDC | [`0x44b99f76…876D`](https://sepolia.basescan.org/address/0x44b99f76f12e0Ece22f6bD76DcB305Afcf25876D) | 7 decimals, faucet |
+| **Aqua Registry** — official 1inch | [Basescan](https://basescan.org/address/0x1111113ccf1426a8e30e2bff5e005d929bf6a90a) | The same contract 1inch deploys on 16 chains, byte-identical to Base mainnet |
+| **Our SwapVM Router** — opcode 22 · 23 | [Basescan](https://sepolia.basescan.org/address/0x970C3114C5Dcf853692bc8D3e0598d1AC9D12185) | Stock SwapVM plus ExclusiveFill and SolvencyGuard. A redeployment, as the rules allow |
+| **Tokens Moved** — 250 USDC → WETH | `Pulled` event on Aqua | A real swap through our position. `ship()` moves nothing; this is what moves tokens |
+| **One Balance** — 3 markets | `rawBalances()` on Aqua | The same WETH quotes in WETH/USDC, WETH/DAI and WETH/WBTC at once. A pool would split it |
 
-**Also reads from:** [Official 1inch Aqua on Base mainnet](https://basescan.org/address/0x1111113ccf1426a8e30e2bff5e005d929bf6a90a) — real market maker positions from the 1inch ecosystem.
-
----
-
-## Two Opcodes We Added to SwapVM
-
-Redeploying a modified SwapVM is explicitly allowed by the 1inch Aqua track rules. We added two instructions and kept everything else stock.
-
-### `SOLVENCY_GUARD` (23)
-
-Reads the maker's **real** wallet backing — `min(balanceOf, allowance)` — on every swap, and raises a surcharge in proportion to any shortfall. This is what makes shared capital safe: when one market spends the shared backing, every other market reprices itself, with no keeper, no oracle, and no extra transaction.
-
-Its placement is load-bearing and the compiler cannot enforce it: the guard must run **before** any instruction that shapes balances. Measured — guard after `concentrate` gives `4.742`, guard before gives `4.913`, identical to no guard at all. Silent failure, no revert.
-
-> `test_GuardHarusSebelumInstruksiPembentukSaldo` in `contracts/test/Strategies.t.sol`
-
-### `EXCLUSIVE_FILL` (22)
-
-Only one named address may fill the order. SwapVM ships its own `PrivateOrder`, and we deliberately do not use it: it compares only the **last 10 bytes** of the address, and its own documentation says *"Birthday attack 80-bit collisions are feasible"*. For an exclusive flow deal, "almost certainly them" is not a guarantee you can negotiate against. Ours compares all 20 bytes.
-
-> `test_Gate_RejectsHighBitsCollision` builds an address whose low 80 bits are identical to the named taker. `PrivateOrder` accepts it. We reject it.
+| | |
+|---|---|
+| **0** tokens held by any contract | **2** custom SwapVM opcodes |
+| **34** Solidity tests | **x · y = k** priced inside the VM |
 
 ---
 
-## Strategies
+## The Problem
 
-| ID | Name | Opcodes | Description |
-|---|---|---|---|
-| `santai` | Relaxed | solvencyGuard → flatFeeIn → xycSwap | Quotes whole price range, small fee. Lowest earnings per capital. |
-| `terkonsentrasi` | Concentrated | solvencyGuard → xycConcentrate → flatFeeIn → xycSwap | Liquidity in one price band. Higher earnings, stops earning outside band. |
-| `anti-arbitrase` | Anti-arbitrage | solvencyGuard → decay → flatFeeIn → xycSwap | Quote catches up gradually after price moves. Anti-MEV. |
-| `meja-privat` | Private desk | exclusiveFill → solvencyGuard → flatFeeIn → xycSwap | Only named address can fill. Tighter quotes for known flow providers. |
+<p align="center">
+  <img src="docs/screenshot-comparison.png" alt="Comparison" width="100%" />
+</p>
+
+### 01 · The Usual Price — Deposit First, Quote Later
+
+**Quoting normally costs you custody.**
+
+To make a market on-chain you hand your tokens to a pool contract first. The capital is locked there, it cannot back anything else, and taking it back is its own transaction. That is the toll every AMM charges before you have earned a single fee.
+
+```mermaid
+graph LR
+    W["wallet"] -->|deposit| P["pool 🔒"]
+    P -->|locked| P
+    style W fill:#1a1a2e,stroke:#444,color:#fff
+    style P fill:#1a1a2e,stroke:#444,color:#fff
+```
+
+Your tokens sit idle in a contract you don't control. The strategy is the pool's constant-product formula — no customization, no flexibility, no ownership.
+
+### 02 · 1inch Aqua — Allowance, Not Deposit
+
+**The tokens never move in.**
+
+Aqua records an **allowance** instead of taking a deposit. Opening a position transfers nothing — compare the wallet balance before and after, it is identical. Tokens move once, at the moment a swap settles, straight from the maker to the taker. The same capital can back several strategies at the same time.
+
+```mermaid
+graph LR
+    W["wallet 💰"] -.->|"allowance (dashed)"| A["aqua"]
+    A -.->|"holds nothing"| A
+    style W fill:#1a1a2e,stroke:#00d4aa,color:#fff
+    style A fill:#1a1a2e,stroke:#00d4aa,color:#fff,stroke-dasharray: 5 5
+```
+
+The dashed line is the key insight: Aqua never touches your tokens. It records that you *allow* a certain amount to be quoted, but the actual balance stays in your wallet, spendable at any moment.
+
+---
+
+## What It Actually Does
+
+**Liquidity you can quote without ever handing it over.**
+
+### 1inch Aqua — The tokens never leave the maker's wallet
+
+Aqua records an allowance, not a deposit. Opening a position moves nothing — check the wallet balance before and after, it is identical. Tokens move only at the moment a swap settles, and the same capital can back several strategies at once.
+
+### SwapVM — Pricing runs as bytecode
+
+Strategies are programs, not hand-written contracts. Iqia ships its own router with two instructions of its own:
+
+| Opcode | Name | What it does |
+|---|---|---|
+| **22** | `EXCLUSIVE_FILL` | Only the named taker may fill. Makers quote tighter when they know who is on the other side. Full 20-byte address comparison — not the 10-byte "almost certainly them" of SwapVM's `PrivateOrder`. |
+| **23** | `SOLVENCY_GUARD` | Reads the maker's real balance and moves the price as it thins — degrading instead of reverting. No oracle, no keeper, no extra transaction. |
+
+---
+
+## The Strategy Is a Program
+
+<p align="center">
+  <img src="docs/screenshot-swapvm.png" alt="SwapVM Strategy" width="100%" />
+</p>
+
+Pricing rules run as bytecode inside a virtual machine, not as a hand-written contract. Iqia ships its own router with two instructions of its own: one restricts who may fill an order, the other moves the price as the maker's real backing thins — degrading instead of reverting.
+
+### SwapVM Instruction Format
+
+Every strategy is a sequence of instructions. Each instruction is: `[opcode 1 byte][length 1 byte][arguments]` — max 255 bytes per instruction.
+
+```
+program: [22] [23] [21] [17] [20]
+          │    │    │    │    │
+          │    │    │    │    └── SALT: makes the strategy hash unique
+          │    │    │    └── XYC_SWAP: constant-product curve x·y=k
+          │    │    └── FLAT_FEE_IN: flat fee taken from input side
+          │    └── SOLVENCY_GUARD: reads real wallet backing
+          └── EXCLUSIVE_FILL: gate by address (full 20 bytes)
+```
+
+```mermaid
+graph TD
+    A["SOLVENCY_GUARD (23)"] -->|"reads real balance"| B["EXCLUSIVE_FILL (22)"]
+    B -->|"only named taker"| C["FLAT_FEE_IN (21)"]
+    C -->|"flat fee from input"| D["XYC_SWAP (17)"]
+    D -->|"constant product x·y=k"| E["SALT (20)"]
+    E -->|"unique hash"| F["Output"]
+
+    style A fill:#1a1a2e,stroke:#ff6b6b,color:#fff
+    style B fill:#1a1a2e,stroke:#ff6b6b,color:#fff
+    style C fill:#1a1a2e,stroke:#444,color:#fff
+    style D fill:#1a1a2e,stroke:#444,color:#fff
+    style E fill:#1a1a2e,stroke:#444,color:#fff
+    style F fill:#1a1a2e,stroke:#00d4aa,color:#fff
+```
 
 **Key invariants:**
-1. `flatFeeIn` must be AFTER `xycConcentrate`
-2. `solvencyGuard` must be BEFORE any balance-shaping instruction
+1. `flatFeeIn` must be **AFTER** `xycConcentrate`
+2. `solvencyGuard` must be **BEFORE** any balance-shaping instruction
 3. Protocol fee precedes maker fee
 4. No external yield — earnings come only from swap fees
 
 ---
 
-## The App
+## Four Programs, One Wizard
 
-| Page | What it answers |
+<p align="center">
+  <img src="docs/screenshot-open-position.png" alt="Open Position" width="100%" />
+</p>
+
+### Savings — One slider, one button
+
+The simplest entry point. You decide how much of your balance goes to work, and the app opens a position automatically. If you only hold one token, it swaps half first and then opens — two signatures, one decision.
+
+### Open Position — 4-step wizard for advanced strategies
+
+| Step | What you decide |
 |---|---|
-| **Markets** | *What positions exist on this registry?* Every position — ours and other teams' — with live balances. |
-| **Open position** | *How do I want it to behave?* Four strategies, the same machine shown as controls. |
-| **Swap** | On-chain quotes, real slippage bounds. |
-| **Savings** | *Is my money working, and is it safe?* One slider. The machine is shown as reassurance, in plain language. |
-| **My desk** | Capital efficiency across your markets. |
-| **Position detail** | *Can I verify this?* The program, disassembled. The same machine as evidence. |
-| **Portfolio** | All your positions in one view. |
-| **Pay · Receive · Payment link** | Send and receive tokens with payment links. |
-| **Faucet** | Mint test tokens. |
+| **1. Capital** | How much of your balance goes to work? Tokens move nowhere — Aqua only records the allocation. |
+| **2. Strategy** | Which program? Relaxed, Concentrated, Anti-arbitrage, or Private desk. |
+| **3. Settings** | Strategy-specific parameters — price bands, decay rates, exclusive fill address. |
+| **4. Ship** | Review the bytecode program, then ship it. The last step shows you the exact program as it is. |
 
-### One button, even with one token
+### Strategy Comparison
 
-A position needs both sides — `XYCSwap` rejects a zero balance, and a one-sided position looks alive while serving nothing. So if you only hold USDC, Savings swaps half first and then opens. Two signatures, one decision.
-
-It cannot be one transaction, and that is not a limitation we can engineer away: `Aqua.ship()` uses `msg.sender` as the maker, so a helper contract shipping on your behalf would become the maker of its own balance. The steps are visible because the app refuses custody.
+| ID | Name | Opcodes | Behavior |
+|---|---|---|---|
+| `santai` | Relaxed | solvencyGuard → flatFeeIn → xycSwap | Quotes whole price range. Lowest earnings per capital. |
+| `terkonsentrasi` | Concentrated | solvencyGuard → xycConcentrate → flatFeeIn → xycSwap | Liquidity in one price band. Higher earnings, stops earning outside band. |
+| `anti-arbitrase` | Anti-arbitrage | solvencyGuard → decay → flatFeeIn → xycSwap | Quote catches up gradually after price moves. Anti-MEV. |
+| `meja-privat` | Private desk | exclusiveFill → solvencyGuard → flatFeeIn → xycSwap | Only named address can fill. Tighter quotes for known flow providers. |
 
 ---
 
-## Architecture
+## Swap — On-Chain Quotes
 
-### System Flow
+<p align="center">
+  <img src="docs/screenshot-swap.png" alt="Swap" width="100%" />
+</p>
 
-```
-User Wallet (tokens stay here)
-    |
-    | ship() — records allowance only, no token transfer
-    v
-Aqua Registry (virtual balance)
-    |
-    | pull() / push() — actual token movement during swap
-    v
-IqiaSwapVMRouter (= Aqua app)
-    |
-    | Executes bytecode strategy program
-    |
-    +-- SolvencyGuard (opcode 23) — reads real wallet backing
-    +-- ExclusiveFill (opcode 22) — gate by address
-    +-- XYCSwap (opcode 17) — constant product curve
-    +-- flatFeeIn (opcode 21) — maker fee
-    +-- aquaProtocolFee (opcode 28) — protocol revenue
-    +-- xycConcentrate (opcode 18) — concentrated liquidity
-    +-- decay (opcode 19) — anti-MEV
-    +-- salt (opcode 20) — unique hash
+Trade straight against a market maker's wallet via 1inch Aqua. The price is computed by a bytecode program inside SwapVM.
+
+### How a Swap Settles
+
+```mermaid
+sequenceDiagram
+    participant T as Taker (you)
+    participant R as IqiaSwapVMRouter
+    participant S as SwapVM
+    participant A as Aqua Registry
+    participant M as Maker's Wallet
+
+    T->>R: swap(amountIn, minAmountOut)
+    R->>S: execute bytecode program
+    S->>S: SOLVENCY_GUARD: read maker's real backing
+    S->>S: FLAT_FEE_IN: take maker fee from input
+    S->>S: XYC_SWAP: compute output via x·y=k
+    S->>A: pull(tokenIn, amountIn) — taker pays
+    A->>M: tokens move: taker → maker
+    S->>A: push(tokenOut, amountOut) — maker pays
+    A->>T: tokens move: maker → taker
 ```
 
-### Resolution Pipeline (Markets)
+The key insight: `pull()` and `push()` happen in the same transaction. The maker's wallet is debited directly — no intermediate pool contract holds the funds.
 
-```
-fetchMarkets()
-    |
-    +-- Primary Aqua (Base Sepolia)
-    |       scanLogs(Shipped) → scanLogs(Pushed) → scanLogs(Docked)
-    |       filter closed positions (tokensCount == 0xff)
-    |
-    +-- Extra Aqua (Base mainnet, official 1inch)
-    |       same scan, throttled for public RPC
-    |
-    +-- Read rawBalances() per token per position
-    +-- Read token metadata (symbol, name, decimals)
-    +-- Sort: our positions first, then by liquidity
-    v
-Markets[] — every live position with real balances
-```
+### Swap Features
+
+- **Real slippage bounds** — minimum received is computed by the VM, not approximated
+- **Maker fee visible** — shown as 0.25%, already baked into the quote
+- **No off-chain dependency** — every quote is a `eth_call`, not an API request
+- **Candlestick chart** — real-time price history from on-chain events
 
 ---
 
-## Tech Stack
+## System Architecture
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite 5, TypeScript 5.7, Tailwind CSS 3.4 |
-| Web3 | viem 2.55, wagmi 2.19, @wagmi/core 3.6 |
-| 1inch SDK | @1inch/aqua-sdk ^0.3.1 |
-| State | @tanstack/react-query ^5.101 |
-| Charts | lightweight-charts 5.2 |
-| 3D | three 0.169, @react-three/fiber, @react-three/drei |
-| Protocol SDK | @iqia/swapvm (workspace, zero runtime dependencies) |
-| Smart Contracts | Solidity 0.8.30, Foundry, OpenZeppelin 5.4 |
-| Blockchain | Base Sepolia (chain 84532) + Base mainnet (chain 8453) read |
-| Monorepo | pnpm 10.11 workspaces |
+### How Positions Work
+
+```mermaid
+graph TB
+    subgraph "Maker's Wallet"
+        WETH["WETH 💰"]
+        USDC["USDC 💰"]
+    end
+
+    subgraph "1inch Aqua Registry"
+        A["Aqua Contract"]
+        P1["Position 1: WETH/USDC"]
+        P2["Position 2: WETH/DAI"]
+        P3["Position 3: WETH/WBTC"]
+    end
+
+    subgraph "IqiaSwapVMRouter"
+        R["Router"]
+        VM["SwapVM"]
+        OG["SolvencyGuard (23)"]
+        EF["ExclusiveFill (22)"]
+    end
+
+    WETH -.->|"allowance"| A
+    USDC -.->|"allowance"| A
+    A --> P1
+    A --> P2
+    A --> P3
+    P1 --> R
+    P2 --> R
+    P3 --> R
+    R --> VM
+    VM --> OG
+    VM --> EF
+
+    style WETH fill:#1a1a2e,stroke:#00d4aa,color:#fff
+    style USDC fill:#1a1a2e,stroke:#00d4aa,color:#fff
+    style A fill:#1a1a2e,stroke:#444,color:#fff
+    style R fill:#1a1a2e,stroke:#ff6b6b,color:#fff
+```
+
+**Critical insight:** The same WETH balance backs 3 markets simultaneously. A pool would force you to split it 3 ways. Aqua lets you keep it all in your wallet and quote from all 3 at once.
+
+### Resolution Pipeline
+
+```mermaid
+flowchart TD
+    A["fetchMarkets()"] --> B{"Scan primary Aqua\n(Base Sepolia)"}
+    A --> C{"Scan extra Aqua\n(Base mainnet, official 1inch)"}
+    B --> D["scanLogs(Shipped)"]
+    D --> E["scanLogs(Pushed)"]
+    E --> F["scanLogs(Docked)"]
+    C --> G["Same scan, throttled"]
+    F --> H["Filter closed positions\n(tokensCount == 0xff)"]
+    G --> H
+    H --> I["Read rawBalances() per token per position"]
+    I --> J["Read token metadata\n(symbol, name, decimals)"]
+    J --> K["Sort: our positions first\nthen by liquidity"]
+    K --> L["Markets[] — every live position\nwith real balances"]
+
+    style A fill:#1a1a2e,stroke:#00d4aa,color:#fff
+    style L fill:#1a1a2e,stroke:#00d4aa,color:#fff
+```
+
+### Position Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: ship()
+    note right of Created: Balance unchanged\nAllowance recorded\nSame capital backs all markets
+
+    Created --> Active: Tokens available
+    Active --> Swapping: Taker calls swap()
+    Swapping --> Active: Swap settled\nTokens move maker→taker
+    Active --> Closed: close()
+    note right of Closed: All-or-nothing\nAllowance revoked
+
+    Closed --> [*]
+```
 
 ---
 
 ## Smart Contracts
+
+### Contract Map
+
+```mermaid
+graph TB
+    subgraph "Deployed on Base Sepolia"
+        AQUA["Aqua\n0x6d4d017d…cD9Ea"]
+        ROUTER["IqiaSwapVMRouter\n0x970C3114…12185"]
+        TAKER["IqiaAquaTaker\n0xEAfd45D5…f3A9"]
+        WETH["MockWETH\n0xD04A92C8…33E6"]
+        USDC["MockUSDC\n0x44b99f76…876D"]
+    end
+
+    subgraph "Also reads from"
+        OFFICIAL["Official 1inch Aqua\n(Base mainnet)"]
+    end
+
+    ROUTER -->|"extends"| SWAPVM["Simulator + SwapVM"]
+    ROUTER -->|"extends"| OPCODES["IqiaOpcodes"]
+    OPCODES -->|"adds"| SF["SolvencyGuard (23)"]
+    OPCODES -->|"adds"| EF["ExclusiveFill (22)"]
+    TAKER -->|"adapter"| ROUTER
+    AQUA -->|"official same contract"| OFFICIAL
+
+    style ROUTER fill:#1a1a2e,stroke:#ff6b6b,color:#fff
+    style TAKER fill:#1a1a2e,stroke:#ff6b6b,color:#fff
+    style AQUA fill:#1a1a2e,stroke:#444,color:#fff
+```
 
 ### `IqiaSwapVMRouter.sol`
 
@@ -254,58 +356,44 @@ Extends `AquaOpcodes`, `ExclusiveFill`, `SolvencyGuard`. Adds opcodes at slots 2
 
 Full 20-byte address comparison. `ctx.query.taker` is set by SwapVM from `msg.sender`, cannot be spoofed. Args: 20-byte taker address.
 
+> `test_Gate_RejectsHighBitsCollision` builds an address whose low 80 bits are identical to the named taker. SwapVM's `PrivateOrder` accepts it. We reject it.
+
 ### `SolvencyGuard.sol` (opcode 23)
 
 Reads `min(balanceOf, allowance)` for tokenOut. If backing < virtual balance, calculates surcharge: `maxSurchargeBps * (virtual - backing) / virtual`. Must be placed BEFORE any balance-shaping instruction.
+
+> Measured — guard after `concentrate` gives `4.742`, guard before gives `4.913`, identical to no guard at all. Silent failure, no revert.
 
 ### `IqiaAquaTaker.sol`
 
 Adapter that lets a liquidity pool act as SwapVM taker without modifying pool contracts. Flow: pool → pulls tokenIn → calls router.swap() → SwapVM callback → push to Aqua → Aqua pulls tokenOut from maker's wallet → forwards to pool.
 
-### `MockERC20.sol`
+---
 
-Permissionless-mint ERC20 for testnet faucet. `mint(to, value)` and `faucet()` — 1,000 whole units per claim, unlimited.
+## SwapVM Opcodes Reference
+
+| Opcode | Name | Description |
+|---|---|---|
+| 10 | `JUMP` | Unconditional jump |
+| 13 | `DEADLINE` | Time limit (Unix seconds) |
+| 17 | `XYC_SWAP` | Constant-product curve x·y=k |
+| 18 | `XYC_CONCENTRATE` | Concentrated liquidity in a price band |
+| 19 | `DECAY` | Virtual balance decays over time, anti-MEV |
+| 20 | `SALT` | Makes strategyHash unique (no behavioural change) |
+| 21 | `FLAT_FEE_IN` | Flat fee taken from input side |
+| 22 | `EXCLUSIVE_FILL` | **(Iqia)** Only a named address may fill — full 20-byte comparison |
+| 23 | `SOLVENCY_GUARD` | **(Iqia)** Price adjusts based on real wallet backing |
+| 28 | `AQUA_PROTOCOL_FEE_IN` | Protocol fee sent to treasury in the same swap |
+
+**Instruction format:** `[opcode 1 byte][length 1 byte][arguments]` — max 255 bytes per instruction. **BPS basis:** 1e9 (not 10,000).
 
 ---
 
-## Setup
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 18+
-- [pnpm](https://pnpm.io/) 10+
-- [Foundry](https://book.getfoundry.sh/) (for contracts)
-
-### Smart Contract Setup
+## Run It
 
 ```bash
-# Install Foundry
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-
-# Clone the repository
-git clone https://github.com/maulana-tech/qia-1inch.git
-cd qia-1inch/contracts
-
-# Build — no dependencies, no network access needed
-forge build
-
-# Run tests
-forge test          # 51 tests across 12 suites
-```
-
-### Frontend Setup
-
-```bash
-cd qia-1inch
-
-# Install dependencies
 pnpm install
-
-# Configure environment
 cp frontend/.env.84532 frontend/.env.local   # Base Sepolia deployment
-
-# Start development server
 pnpm --filter frontend dev
 ```
 
@@ -313,21 +401,11 @@ Open [http://localhost:5173](http://localhost:5173). Connect a wallet on Base Se
 
 Or skip the setup entirely: **[qia-1inch.vercel.app](https://qia-1inch.vercel.app)** runs against the live Base Sepolia deployment. You need a wallet on Base Sepolia with a little test ETH for gas; every token you trade with is mintable from the faucet.
 
-### Protocol SDK
-
-```bash
-# Build the SwapVM encoder
-pnpm --filter @iqia/swapvm build
-
-# Run golden vector tests (byte-for-byte against Solidity)
-pnpm --filter @iqia/swapvm test     # 23 tests
-```
-
 ### Checks
 
 ```bash
 cd contracts && forge test          # 51 tests
-pnpm --filter @iqia/swapvm test     # 23 golden vectors
+pnpm --filter @iqia/swapvm test     # 23 golden vectors, byte-for-byte against Solidity
 pnpm --filter frontend lint         # clean
 ```
 
@@ -356,39 +434,6 @@ Use the Foundry keystore, not a raw key. A key in an environment variable leaks 
 
 ---
 
-## SwapVM Opcodes
-
-| Opcode | Name | Description |
-|---|---|---|
-| 10 | `JUMP` | Unconditional jump |
-| 13 | `DEADLINE` | Time limit (Unix seconds) |
-| 17 | `XYC_SWAP` | Constant-product curve x·y=k |
-| 18 | `XYC_CONCENTRATE` | Concentrated liquidity in a price band |
-| 19 | `DECAY` | Virtual balance decays over time, anti-MEV |
-| 20 | `SALT` | Makes strategyHash unique (no behavioural change) |
-| 21 | `FLAT_FEE_IN` | Flat fee taken from input side |
-| 22 | `EXCLUSIVE_FILL` | **(Iqia)** Only a named address may fill — full 20-byte comparison |
-| 23 | `SOLVENCY_GUARD` | **(Iqia)** Price adjusts based on real wallet backing |
-| 28 | `AQUA_PROTOCOL_FEE_IN` | Protocol fee sent to treasury in the same swap |
-
-**Instruction format:** `[opcode 1 byte][length 1 byte][arguments]` — max 255 bytes per instruction.
-
-**BPS basis:** 1e9 (not 10,000).
-
----
-
-## Known Limits
-
-Stated plainly, because a submission that hides them is worth less than one that does not.
-
-- **The protocol fee is best-effort.** `_aquaProtocolFeeAmountInXD` pulls from the maker's *pre-existing* Aqua balance; if it cannot cover it, `ProtocolFeeSkipped` fires and the swap proceeds free. A one-sided position earns the treasury nothing on the common direction.
-- **No APY anywhere, deliberately.** Earnings are reconstructed from `Pulled` and `Pushed` events. A forecast dressed as a number is worse than no number.
-- **The slot guard costs gas on every swap.** `_opcodes()` runs inside `quote()` and `swap()`, so `_requireFreeSlot` re-answers a question fixed at deploy time. Left alone on purpose — the router is live with positions on it.
-- **Partial withdrawal is not implemented.** Closing is all or nothing.
-- **Base mainnet public RPC rate limits aggressively.** Extra registry scans are throttled (1 chunk at a time, 800ms delay) to stay under 429 thresholds.
-
----
-
 ## Repo
 
 ```
@@ -408,9 +453,31 @@ The encoder is not a convenience wrapper. Every program the app ships is built i
 
 ---
 
-## Demo Video
+## Tech Stack
 
-See [`docs/demo.mp4`](docs/demo.mp4) for a walkthrough of the app — opening a position, swapping, checking markets, and using the savings flow.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite 5, TypeScript 5.7, Tailwind CSS 3.4 |
+| Web3 | viem 2.55, wagmi 2.19, @wagmi/core 3.6 |
+| 1inch SDK | @1inch/aqua-sdk ^0.3.1 |
+| State | @tanstack/react-query ^5.101 |
+| Charts | lightweight-charts 5.2 |
+| Protocol SDK | @iqia/swapvm (workspace, zero runtime dependencies) |
+| Smart Contracts | Solidity 0.8.30, Foundry, OpenZeppelin 5.4 |
+| Blockchain | Base Sepolia (chain 84532) + Base mainnet (chain 8453) read |
+| Monorepo | pnpm 10.11 workspaces |
+
+---
+
+## Known Limits
+
+Stated plainly, because a submission that hides them is worth less than one that does not.
+
+- **The protocol fee is best-effort.** `_aquaProtocolFeeAmountInXD` pulls from the maker's *pre-existing* Aqua balance; if it cannot cover it, `ProtocolFeeSkipped` fires and the swap proceeds free. A one-sided position earns the treasury nothing on the common direction.
+- **No APY anywhere, deliberately.** Earnings are reconstructed from `Pulled` and `Pushed` events. A forecast dressed as a number is worse than no number.
+- **The slot guard costs gas on every swap.** `_opcodes()` runs inside `quote()` and `swap()`, so `_requireFreeSlot` re-answers a question fixed at deploy time. Left alone on purpose — the router is live with positions on it.
+- **Partial withdrawal is not implemented.** Closing is all or nothing.
+- **Base mainnet public RPC rate limits aggressively.** Extra registry scans are throttled (1 chunk at a time, 800ms delay) to stay under 429 thresholds.
 
 ---
 
