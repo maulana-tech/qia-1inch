@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import { formatUnits } from 'viem'
 
 import { usePriceQuote } from '../hooks/usePriceQuote'
@@ -9,11 +9,13 @@ import * as desk from '../lib/desk'
 import { DESK_PAIR } from '../lib/strategies'
 import { cx } from '../lib/cx'
 import {
+  CHAIN_NAME,
   DESK_CONFIGURED,
   PROTOCOL_FEE_BPS,
   SAVINGS_FEE_BPS,
   explorerTxUrl,
 } from '../lib/config'
+import { ACTIVE_CHAIN_ID } from '../lib/wagmi'
 import {
   Button,
   Card,
@@ -65,7 +67,9 @@ function show(value: bigint | null, decimals: number, digits = 6): string {
  * memang jauh dari pasar.
  */
 export function Swap({ embedded }: { embedded?: boolean } = {}) {
-  const { address } = useAccount()
+  const { address, chainId } = useAccount()
+  const { switchChain } = useSwitchChain()
+  const onTargetChain = chainId === ACTIVE_CHAIN_ID
 
   const [flipped, setFlipped] = useState(false)
   const [amount, setAmount] = useState('')
@@ -118,6 +122,21 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
         <div className="p-6 text-sm text-zinc-500">
           The desk is not configured. Set <code>VITE_AQUA</code> and{' '}
           <code>VITE_SWAP_VM_ROUTER</code> in <code>frontend/.env.local</code>.
+        </div>
+      </Card>
+    )
+  }
+
+  if (address && !onTargetChain) {
+    return (
+      <Card>
+        <div className="space-y-3 p-6">
+          <p className="text-sm text-yellow-300">
+            Your wallet is on chain {chainId}. Switch to {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID}) to trade.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}>
+            Switch to {CHAIN_NAME}
+          </Button>
         </div>
       </Card>
     )

@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Ethereum-Sepolia-1b1b1b" alt="Ethereum Sepolia" />
+  <img src="https://img.shields.io/badge/Base-Sepolia-1b1b1b" alt="Base Sepolia" />
   <img src="https://img.shields.io/badge/1inch-Official%20Aqua%20registry-1b1b1b" alt="Official Aqua" />
   <img src="https://img.shields.io/badge/tests-51%20Foundry%20%C2%B7%2023%20encoder-1b1b1b" alt="tests" />
 </p>
@@ -30,21 +30,13 @@ registry.
 
 ---
 
-## Live on Ethereum Sepolia
-
-Everything below is on the **official 1inch Aqua registry** — the same contract
-address 1inch deploys on 16 chains, byte-identical to the Base mainnet
-deployment (`keccak 0x720bc02d…`).
+## Live on Base Sepolia
 
 | | |
 |---|---|
-| Aqua registry | [`0x1111113CCf…6a90a`](https://sepolia.etherscan.io/address/0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a) — official 1inch |
-| Our SwapVM router | [`0x072F9Fd7…52F74`](https://sepolia.etherscan.io/address/0x072F9Fd7Aa8F8EA6664fD77F7e264CDeC4052F74) — SwapVM + 2 custom opcodes |
-| Maker | [`0x3a8d93D5…eC84B`](https://sepolia.etherscan.io/address/0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B) |
-| Example swap | [`0x9fe91859…4d91`](https://sepolia.etherscan.io/tx/0x9fe91859a32705c4e0984f5e9e2f532207ee982ffd632d49807fc9973cda4d91) — 250 USDC → 0.0658 WETH |
-
-Three markets are open right now — WETH/USDC, WETH/DAI, WETH/WBTC — all backed
-by **the same 19.93 WETH**. Capital efficiency **3.00×**, measured on chain.
+| Aqua | [`0x6d4d017d…cD9Ea`](https://sepolia.basescan.org/address/0x6d4d017dE8d0A36dce7856Ee989624C6A18cD9Ea) — deployed |
+| Our SwapVM router | [`0x970C3114…12185`](https://sepolia.basescan.org/address/0x970C3114C5Dcf853692bc8D3e0598d1AC9D12185) — SwapVM + 2 custom opcodes |
+| Maker | [`0x3a8d93D5…eC84B`](https://sepolia.basescan.org/address/0x3a8d93D5F52a26689b075A49E67F4f8924BeC84B) |
 
 ---
 
@@ -150,11 +142,11 @@ because the app refuses custody.
 
 ```bash
 pnpm install
-cp frontend/.env.sepolia.example frontend/.env.local   # already points at the official registry
+cp frontend/.env.84532 frontend/.env.local   # Base Sepolia deployment
 pnpm --filter frontend dev
 ```
 
-Open <http://localhost:5173>. Connect a wallet on Sepolia, mint test tokens on
+Open <http://localhost:5173>. Connect a wallet on Base Sepolia, mint test tokens on
 **Faucet**, then **Savings → Start**.
 
 Every user action is in the browser — ship, close, swap, send, wrap. The shell
