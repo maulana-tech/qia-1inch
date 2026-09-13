@@ -1,12 +1,12 @@
+import { useIsDark } from '../hooks/useTheme'
+import darkLogo from '../assets/dark-logo.png'
+import lightLogo from '../assets/light-logo.png'
+
 /**
- * Tanda Iqia.
+ * Zknull logo — mark + wordmark.
  *
- * Ditulis sebagai SVG, bukan gambar. Yang lama PNG 600 KB dengan warna tertanam,
- * jadi harus diunduh dan tetap salah di salah satu tema. Yang ini mewarisi
- * `currentColor`, tajam di ukuran berapa pun, dan nol byte jaringan.
- *
- * Bentuknya dua tetes yang saling tumpang tindih: modal yang sama menopang lebih
- * dari satu posisi — properti Aqua yang membuat aplikasi ini mungkin.
+ * Mark: original droplet SVG (inherits currentColor).
+ * Wordmark: "zknull" text PNG, dark/light aware.
  */
 export function LogoMark({ className = 'h-6 w-6' }: { className?: string }) {
   return (
@@ -28,12 +28,17 @@ export function LogoMark({ className = 'h-6 w-6' }: { className?: string }) {
   )
 }
 
-/** Tanda plus nama, untuk header dan footer. */
+/** Mark + wordmark. */
 export function Logo({ className = '', markClassName = 'h-6 w-6' }: { className?: string; markClassName?: string }) {
+  const dark = useIsDark()
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark className={markClassName} />
-      <span className="font-display text-[17px] font-medium lowercase tracking-[-0.01em]">iqia</span>
+      <img
+        src={dark ? darkLogo : lightLogo}
+        alt="zknull"
+        style={{ height: '1.1em', width: 'auto' }}
+      />
     </span>
   )
 }

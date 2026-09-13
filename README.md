@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/src/assets/iqia-logo.png" alt="Iqia" width="120" />
+  <img src="frontend/src/assets/logo.png" alt="Zknull" width="120" />
 </p>
 
 <h1 align="center">Iqia</h1>
