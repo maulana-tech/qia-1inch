@@ -342,7 +342,10 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
   if (!AQUA_CONFIGURED) return []
 
   const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
-  if (!client) return []
+  if (!client) {
+    console.warn('[iqia] getPublicClient returned null for chain', ACTIVE_CHAIN_ID)
+    return []
+  }
 
   const latest = await client.getBlockNumber()
   const fromBlock =
@@ -357,6 +360,8 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
   const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest)
   const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest)
   const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest)
+
+  console.log('[iqia] events:', { shipped: shipped.length, pushed: pushed.length, docked: docked.length, fromBlock: fromBlock.toString(), toBlock: latest.toString() })
 
   /**
    * Tiga sapuan itu harus konsisten satu sama lain, dan kalau tidak, RPC-nya
@@ -513,9 +518,13 @@ export async function fetchPositionTrades(strategyHash: string): Promise<Positio
 }
 
 export async function fetchMarkets(): Promise<Market[]> {
-  if (!AQUA_CONFIGURED) return []
+  if (!AQUA_CONFIGURED) {
+    console.warn('[iqia] AQUA_CONFIGURED=false — no markets. AQUA_ADDRESS:', AQUA_ADDRESS)
+    return []
+  }
 
   const strategies = await fetchActiveStrategies()
+  console.log('[iqia] strategies from events:', strategies.length)
   const listed = await fetchOneInchTokens()
 
   /**
@@ -544,6 +553,7 @@ export async function fetchMarkets(): Promise<Market[]> {
   const resolved = new Map<string, TokenInfo>()
   for (const t of unknown) resolved.set(t, await readTokenOnChain(t))
   const metaOf = (t: string) => listed[t] ?? resolved.get(t)!
+  console.log('[iqia] wantedReads:', wantedReads.length, 'unknown tokens:', unknown.length)
 
   /**
    * Baca saldo per-token, bukan multicall.
@@ -573,6 +583,7 @@ export async function fetchMarkets(): Promise<Market[]> {
   } else {
     for (const _w of wantedReads) balanceResults.push({ status: 'failure', error: 'no client' })
   }
+  console.log('[iqia] balance reads:', balanceResults.filter(r => r.status === 'success').length, 'ok,', balanceResults.filter(r => r.status === 'failure').length, 'failed')
 
   const perStrategy = new Map<string, MarketLeg[]>()
   const dockedOnChain = new Set<string>()
@@ -627,5 +638,6 @@ export async function fetchMarkets(): Promise<Market[]> {
     (a, b) => bisaDiisi(b) - bisaDiisi(a) || punyaLikuiditas(b) - punyaLikuiditas(a),
   )
 
+  console.log('[iqia] final markets:', markets.length, '(dockedOnChain:', dockedOnChain.size, 'unreadable:', unreadable.size, ')')
   return markets
 }
