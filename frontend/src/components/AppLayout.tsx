@@ -63,20 +63,12 @@ interface NavItem {
  */
 const SECTIONS: { heading: string; items: NavItem[] }[] = [
   {
-    heading: 'markets',
+    heading: 'trading',
     items: [
       { to: '/app', label: 'Markets', icon: LayersIcon, end: true },
-      { to: '/swap', label: 'Swap', icon: ArrowUpRightIcon },
-    ],
-  },
-  {
-    // Savings dan Open position bersebelahan dan berurutan: yang pertama
-    // memilihkan strateginya, yang kedua menyerahkan pilihannya. My desk
-    // menutup grup ini karena ia yang menunjukkan hasil gabungan keduanya.
-    heading: 'earn',
-    items: [
-      { to: '/savings', label: 'Savings', icon: PiggyBankIcon },
       { to: '/strategy', label: 'Open position', icon: SlidersHorizontalIcon },
+      { to: '/swap', label: 'Swap', icon: ArrowUpRightIcon },
+      { to: '/savings', label: 'Savings', icon: PiggyBankIcon },
       { to: '/desk', label: 'My desk', icon: LayoutGridIcon },
     ],
   },
@@ -98,7 +90,7 @@ const ITEM =
 function SectionLabel({ rail, children }: { rail: boolean; children: string }) {
   if (rail) return <div className="pt-4" />
   return (
-    <p className="px-3 pb-1.5 pt-5 font-mono text-[10px] uppercase tracking-[0.18em] text-spectral/38">
+    <p className="px-3 pb-1.5 pt-5 font-mono text-[10px] uppercase tracking-[0.18em] text-spectral/50">
       {children}
     </p>
   )

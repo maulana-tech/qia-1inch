@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { formatUnits } from 'viem'
 
@@ -131,7 +132,7 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
     return (
       <Card>
         <div className="space-y-3 p-6">
-          <p className="text-sm text-yellow-300">
+          <p className="text-sm text-warn">
             Your wallet is on chain {chainId}. Switch to {CHAIN_NAME} (chain {ACTIVE_CHAIN_ID}) to trade.
           </p>
           <Button size="sm" variant="outline" onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}>
@@ -353,17 +354,45 @@ export function Swap({ embedded }: { embedded?: boolean } = {}) {
               </Button>
 
               {txHash && (
-                <p className="text-center text-xs text-patina-300">
-                  Sent ·{' '}
-                  <a
-                    href={explorerTxUrl(txHash)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    view transaction
-                  </a>
-                </p>
+                <div className="space-y-3 rounded-xl border border-patina-500/20 bg-patina-500/5 p-4">
+                  <p className="text-center text-sm font-medium text-patina-300">
+                    Swap completed
+                  </p>
+                  <p className="text-center text-xs text-zinc-500">
+                    <a
+                      href={explorerTxUrl(txHash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-spectral-soft underline underline-offset-2 transition hover:text-spectral"
+                    >
+                      View transaction ↗
+                    </a>
+                  </p>
+                  <div className="flex flex-col gap-2 pt-1">
+                    <p className="text-center text-[11px] uppercase tracking-wider text-zinc-500">What's next?</p>
+                    <div className="flex gap-2">
+                      <Link
+                        to="/strategy"
+                        className="flex-1 rounded-lg border border-spectral/15 bg-spectral/5 px-3 py-2.5 text-center text-xs font-medium text-spectral/80 transition hover:border-spectral/30 hover:bg-spectral/10 hover:text-spectral"
+                      >
+                        Open position
+                      </Link>
+                      <Link
+                        to="/savings"
+                        className="flex-1 rounded-lg border border-spectral/15 bg-spectral/5 px-3 py-2.5 text-center text-xs font-medium text-spectral/80 transition hover:border-spectral/30 hover:bg-spectral/10 hover:text-spectral"
+                      >
+                        Savings
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => { setTxHash(null); setAmount('') }}
+                        className="flex-1 rounded-lg border border-spectral/15 bg-spectral/5 px-3 py-2.5 text-center text-xs font-medium text-spectral/80 transition hover:border-spectral/30 hover:bg-spectral/10 hover:text-spectral"
+                      >
+                        Swap again
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
               {(error ?? q.error) && (
                 <p className="text-center text-xs text-warn">{error ?? q.error}</p>
