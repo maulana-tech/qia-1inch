@@ -12,7 +12,7 @@
  */
 import { getPublicClient } from '@wagmi/core'
 import type { Config } from '@wagmi/core'
-import { decodeAbiParameters, erc20Abi, type AbiEvent, type Address, type PublicClient } from 'viem'
+import { decodeAbiParameters, erc20Abi, type AbiEvent, type Address, type PublicClient, createPublicClient, http } from 'viem'
 import { ABI } from '@1inch/aqua-sdk'
 
 import { wagmiConfig, ACTIVE_CHAIN_ID } from './wagmi'
@@ -20,6 +20,7 @@ import {
   AQUA_ADDRESS,
   AQUA_CONFIGURED,
   CHAIN_ID,
+  EXTRA_AQUA_REGISTRIES,
   LOGS_CHUNK_BLOCKS,
   MARKETS_LOOKBACK_BLOCKS,
   OFFICIAL_SWAP_VM_ROUTER,
@@ -113,6 +114,8 @@ export interface Market {
   legs: MarketLeg[]
   /** Label pasangan, misalnya "WETH / USDC". */
   pair: string
+  /** Alamat kontrak Aqua registry yang memuat posisi ini. */
+  registryAddress: string
 }
 
 // --- daftar token 1inch ---------------------------------------------------
@@ -190,6 +193,8 @@ export interface ActiveStrategy {
   app: string
   /** Asal posisi: meja kita, router resmi 1inch, atau app tim lain. */
   source: AppSource
+  /** Alamat kontrak Aqua registry yang memuat posisi ini. */
+  registryAddress: string
 }
 
 /**
@@ -241,6 +246,7 @@ async function scanLogs<A>(
   event: unknown,
   fromBlock: bigint,
   toBlock: bigint,
+  aquaAddress: string = AQUA_ADDRESS,
 ): Promise<AquaLog<A>[]> {
   const chunk = BigInt(Math.max(1, LOGS_CHUNK_BLOCKS))
   const ranges: [bigint, bigint][] = []
@@ -259,7 +265,7 @@ async function scanLogs<A>(
    */
   const readOnce = (from: bigint, to: bigint) =>
     client.getLogs({
-      address: AQUA_ADDRESS as Address,
+      address: aquaAddress as Address,
       event: event as AbiEvent,
       fromBlock: from,
       toBlock: to,
@@ -338,30 +344,32 @@ async function scanLogs<A>(
  * `ship` menuntut `0`, jadi satu hash cuma sah sekali seumur hidup dan salt
  * harus baru tiap kali membuka posisi.
  */
-export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrategy[]> {
-  if (!AQUA_CONFIGURED) return []
-
-  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
-  if (!client) {
-    console.warn('[iqia] getPublicClient returned null for chain', ACTIVE_CHAIN_ID)
-    return []
-  }
+export async function fetchActiveStrategies(maker?: string, aquaAddress: string = AQUA_ADDRESS, clientOverride?: PublicClient): Promise<ActiveStrategy[]> {
+  const client = clientOverride ?? getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  if (!client) return []
 
   const latest = await client.getBlockNumber()
+  /**
+   * For extra registries on a different chain, `POOL_DEPLOY_BLOCK` (which is a
+   * Base Sepolia block) doesn't apply. When lookback is 0 and there's no
+   * override, we use a sensible default of 45000 blocks (~1 day on Base mainnet)
+   * to avoid scanning from an invalid block number.
+   */
+  const isExtraRegistry = aquaAddress.toLowerCase() !== AQUA_ADDRESS.toLowerCase()
   const fromBlock =
     MARKETS_LOOKBACK_BLOCKS > 0
       ? latest > BigInt(MARKETS_LOOKBACK_BLOCKS)
         ? latest - BigInt(MARKETS_LOOKBACK_BLOCKS)
         : 0n
-      : BigInt(POOL_DEPLOY_BLOCK)
+      : isExtraRegistry
+        ? latest > 45000n ? latest - 45000n : 0n
+        : BigInt(POOL_DEPLOY_BLOCK)
 
   const wanted = maker?.toLowerCase()
 
-  const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest)
-  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest)
-  const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest)
-
-  console.log('[iqia] events:', { shipped: shipped.length, pushed: pushed.length, docked: docked.length, fromBlock: fromBlock.toString(), toBlock: latest.toString() })
+  const shipped = await scanLogs<ShippedArgs>(client, SHIPPED, fromBlock, latest, aquaAddress)
+  const pushed = await scanLogs<TransferArgs>(client, PUSHED, fromBlock, latest, aquaAddress)
+  const docked = await scanLogs<DockedArgs>(client, DOCKED, fromBlock, latest, aquaAddress)
 
   /**
    * Tiga sapuan itu harus konsisten satu sama lain, dan kalau tidak, RPC-nya
@@ -404,6 +412,7 @@ export async function fetchActiveStrategies(maker?: string): Promise<ActiveStrat
       app: appAddr,
       source: appSource(appAddr),
       strategy: log.args.strategy as `0x${string}`,
+      registryAddress: aquaAddress.toLowerCase(),
     })
   }
   for (const log of pushed) {
@@ -517,35 +526,76 @@ export async function fetchPositionTrades(strategyHash: string): Promise<Positio
   return trades
 }
 
+/**
+ * Resolve a wagmi chain definition by chainId at runtime.
+ *
+ * wagmi ships chain objects for well-known networks. We look them up by
+ * numeric id so we can create standalone viem clients for extra registries
+ * that live on different chains (e.g. Base mainnet Aqua).
+ */
+async function getWagmiChain(chainId: number) {
+  const chains = await import('wagmi/chains')
+  const all = Object.values(chains) as { id: number; name: string; nativeCurrency: { name: string; symbol: string; decimals: number }; rpcUrls: Record<string, { http: readonly string[] | string[] }> }[]
+  const found = all.find((c) => c.id === chainId)
+  if (!found) throw new Error(`Chain ${chainId} not found in wagmi/chains`)
+  return found
+}
+
+/**
+ * Map registry addresses to their chain IDs.
+ *
+ * Primary registry is on ACTIVE_CHAIN_ID. Extra registries carry their own
+ * chainId. This is used to route rawBalances reads to the correct client.
+ */
+function getChainForRegistry(registryAddress: string): number {
+  const addr = registryAddress.toLowerCase()
+  if (addr === AQUA_ADDRESS.toLowerCase()) return ACTIVE_CHAIN_ID
+  const extra = EXTRA_AQUA_REGISTRIES.find((r) => r.address.toLowerCase() === addr)
+  return extra?.chainId ?? ACTIVE_CHAIN_ID
+}
+
 export async function fetchMarkets(): Promise<Market[]> {
-  if (!AQUA_CONFIGURED) {
-    console.warn('[iqia] AQUA_CONFIGURED=false — no markets. AQUA_ADDRESS:', AQUA_ADDRESS)
-    return []
+  if (!AQUA_CONFIGURED) return []
+
+  /**
+   * Collect strategies from the primary registry AND all extra registries.
+   *
+   * Extra registries may live on different chains, so we create a standalone
+   * viem client per unique chainId. The official 1inch Aqua on Base mainnet is
+   * the most common case — it has real market maker positions that we want to
+   * display alongside our own.
+   */
+  const strategies = await fetchActiveStrategies()
+
+  const extraClients = new Map<number, PublicClient>()
+  const extraByChain = EXTRA_AQUA_REGISTRIES.reduce((m, r) => {
+    if (!m.has(r.chainId)) m.set(r.chainId, [])
+    m.get(r.chainId)!.push(r)
+    return m
+  }, new Map<number, typeof EXTRA_AQUA_REGISTRIES[0][]>())
+
+  for (const [chainId, regs] of extraByChain) {
+    const rpc = regs[0]?.rpcUrl
+    let client = extraClients.get(chainId)
+    if (!client) {
+      const chain = await getWagmiChain(chainId)
+      client = createPublicClient({ chain: chain as any, transport: http(rpc) }) as PublicClient
+      extraClients.set(chainId, client)
+    }
+    for (const reg of regs) {
+      try {
+        const extra = await fetchActiveStrategies(undefined, reg.address, client)
+        strategies.push(...extra)
+      } catch (e) {
+        console.warn(`[iqia] failed to scan extra registry ${reg.label} (${reg.address}):`, e)
+      }
+    }
   }
 
-  const strategies = await fetchActiveStrategies()
-  console.log('[iqia] strategies from events:', strategies.length)
   const listed = await fetchOneInchTokens()
 
-  /**
-   * Penanda posisi tertutup di `rawBalances.tokensCount`.
-   *
-   * `dock()` menulis 0xff ke sana. Ini KEADAAN SEBENARNYA di rantai, tidak
-   * seperti daftar dari event yang cuma sebaik jendela sapuan kita. Sebuah
-   * posisi di Base sempat tampil sebagai market hidup padahal sudah ditutup,
-   * karena event `Docked`-nya di luar jangkauan. Angka ini yang memutuskan.
-   */
   const DOCKED_MARKER = 255
 
-  /**
-   * Saldo seluruh posisi dibaca dalam SATU multicall.
-   *
-   * Versi sebelumnya menunggu satu panggilan per token, berurutan. Dengan satu
-   * posisi itu tidak terasa; dengan 37 posisi milik 11 maker di registry resmi
-   * itu 74 perjalanan bolak-balik dan belasan detik layar kosong. Metadata token
-   * juga di-dedup lebih dulu — pasangan yang sama muncul di banyak posisi, dan
-   * tanpa dedup token yang sama dibaca berulang kali.
-   */
   const wantedReads: { s: ActiveStrategy; token: string }[] = []
   for (const st of strategies) for (const token of st.tokens) wantedReads.push({ s: st, token })
 
@@ -553,7 +603,6 @@ export async function fetchMarkets(): Promise<Market[]> {
   const resolved = new Map<string, TokenInfo>()
   for (const t of unknown) resolved.set(t, await readTokenOnChain(t))
   const metaOf = (t: string) => listed[t] ?? resolved.get(t)!
-  console.log('[iqia] wantedReads:', wantedReads.length, 'unknown tokens:', unknown.length)
 
   /**
    * Baca saldo per-token, bukan multicall.
@@ -563,42 +612,41 @@ export async function fetchMarkets(): Promise<Market[]> {
    * `status: 'failure'` tanpa error yang terlempar. Dengan baca satu per
    * satu lewat `readContract`, kegagalan satu token tidak menjatuhkan
    * sisanya.
+   *
+   * Balance reads target the Aqua registry that holds each strategy — primary
+   * on the active chain, extra registries via their own clients.
    */
-  const client = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
+  const primaryClient = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
   const balanceResults: { status: 'success' | 'failure'; result?: readonly [bigint, number]; error?: unknown }[] = []
-  if (client) {
-    for (const w of wantedReads) {
-      try {
-        const result = await client.readContract({
-          address: AQUA_ADDRESS as Address,
-          abi: aquaBalancesAbi,
-          functionName: 'rawBalances',
-          args: [w.s.maker as Address, w.s.app as Address, w.s.hash, w.token as Address],
-        }) as readonly [bigint, number]
-        balanceResults.push({ status: 'success', result })
-      } catch (e) {
-        balanceResults.push({ status: 'failure', error: e })
-      }
+
+  for (const w of wantedReads) {
+    // Determine which client + Aqua address to use for this strategy
+    const stratChainId = getChainForRegistry(w.s.registryAddress)
+    let client: PublicClient | undefined
+    if (stratChainId === ACTIVE_CHAIN_ID) {
+      client = primaryClient
+    } else {
+      client = extraClients.get(stratChainId)
     }
-  } else {
-    for (const _w of wantedReads) balanceResults.push({ status: 'failure', error: 'no client' })
+    if (!client) {
+      balanceResults.push({ status: 'failure', error: 'no client' })
+      continue
+    }
+    try {
+      const result = await client.readContract({
+        address: w.s.registryAddress as Address,
+        abi: aquaBalancesAbi,
+        functionName: 'rawBalances',
+        args: [w.s.maker as Address, w.s.app as Address, w.s.hash, w.token as Address],
+      }) as readonly [bigint, number]
+      balanceResults.push({ status: 'success', result })
+    } catch (e) {
+      balanceResults.push({ status: 'failure', error: e })
+    }
   }
-  console.log('[iqia] balance reads:', balanceResults.filter(r => r.status === 'success').length, 'ok,', balanceResults.filter(r => r.status === 'failure').length, 'failed')
 
   const perStrategy = new Map<string, MarketLeg[]>()
   const dockedOnChain = new Set<string>()
-  /**
-   * Posisi yang gagal dibaca DILEWATI, tidak ditampilkan dengan saldo nol.
-   *
-   * Dulu satu pembacaan gagal melempar dan menjatuhkan seluruh halaman. Itu
-   * benar saat semua posisi milik kita sendiri. Sekarang daftarnya memuat posisi
-   * tim lain dengan token yang tidak kita kenal, dan satu token aneh tidak boleh
-   * mengosongkan papan untuk semua orang.
-   *
-   * Yang TIDAK berubah: gagal baca tidak pernah menjadi nol. Nol sungguhan dan
-   * nol karena panggilan gagal terlihat sama persis di layar, dan yang kedua
-   * membuat orang menyimpulkan likuiditasnya habis padahal tidak.
-   */
   const unreadable = new Set<string>()
 
   for (const [i, w] of wantedReads.entries()) {
@@ -612,32 +660,19 @@ export async function fetchMarkets(): Promise<Market[]> {
   }
 
   const markets: Market[] = []
-  for (const { hash: strategyHash, maker, app, source } of strategies) {
+  for (const { hash: strategyHash, maker, app, source, registryAddress } of strategies) {
     if (dockedOnChain.has(strategyHash) || unreadable.has(strategyHash)) continue
     const legs = perStrategy.get(strategyHash)
     if (!legs || legs.length === 0) continue
     legs.sort((a, b) => a.symbol.localeCompare(b.symbol))
-    markets.push({ strategyHash, maker, app, source, legs, pair: legs.map((l) => l.symbol).join(' / ') })
+    markets.push({ strategyHash, maker, app, source, legs, pair: legs.map((l) => l.symbol).join(' / '), registryAddress })
   }
 
-  /**
-   * Yang bisa DIPAKAI naik ke atas, baru yang punya likuiditas.
-   *
-   * Urutannya penting sejak papan ini memuat posisi tim lain: dari 37 baris,
-   * hanya yang di router kita yang benar-benar bisa diisi dari aplikasi ini.
-   * Tanpa aturan pertama, satu-satunya baris yang bisa ditukar terkubur di
-   * tengah selusin posisi yang cuma bisa dibaca.
-   *
-   * Posisi yang terdaftar tapi sudah terkuras tetap ditampilkan — itu keadaan
-   * nyata di rantai, bukan galat — tapi tidak berguna buat orang yang datang
-   * untuk menukar, jadi ia turun.
-   */
   const bisaDiisi = (m: Market) => Number(m.source === 'ours')
   const punyaLikuiditas = (m: Market) => Number(m.legs.some((l) => l.balance > 0n))
   markets.sort(
     (a, b) => bisaDiisi(b) - bisaDiisi(a) || punyaLikuiditas(b) - punyaLikuiditas(a),
   )
 
-  console.log('[iqia] final markets:', markets.length, '(dockedOnChain:', dockedOnChain.size, 'unreadable:', unreadable.size, ')')
   return markets
 }

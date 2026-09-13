@@ -258,6 +258,44 @@ export const LOGS_CHUNK_BLOCKS = Number(env('VITE_LOGS_CHUNK_BLOCKS', '9500'))
  */
 export const RPC_URL = env('VITE_RPC_URL', '')
 
+/**
+ * Additional Aqua registries to scan for markets.
+ *
+ * Comma-separated list of `chainId:address` pairs. The app fetches events from
+ * each registry using an RPC for that chain, then merges all discovered markets
+ * into the same list. This lets a Base Sepolia app also show live markets from
+ * the official 1inch Aqua on Base mainnet.
+ *
+ * Example: `VITE_EXTRA_AQUA_REGISTRIES=8453:0x1111113ccf1426a8e30e2bff5e005d929bf6a90a`
+ *
+ * For chains that need a custom RPC, append a third segment:
+ * `8453:0x1111113...90a:https://mainnet.base.org`
+ */
+export interface AquaRegistry {
+  chainId: number
+  address: string
+  rpcUrl?: string
+  label: string
+}
+
+export const EXTRA_AQUA_REGISTRIES: AquaRegistry[] = (() => {
+  const raw = env('VITE_EXTRA_AQUA_REGISTRIES', '')
+  if (!raw) return []
+  const result: AquaRegistry[] = []
+  for (const entry of raw.split(',')) {
+    const parts = entry.trim().split(':')
+    const chainId = Number(parts[0])
+    const address = parts[1]?.toLowerCase() ?? ''
+    const rpcUrl = parts[2] || undefined
+    if (!chainId || !isValidAddress(address)) {
+      console.warn(`[iqia] skipping invalid VITE_EXTRA_AQUA_REGISTRIES entry: ${entry}`)
+      continue
+    }
+    result.push({ chainId, address, rpcUrl, label: `registry#${result.length + 1} (${chainId})` })
+  }
+  return result
+})()
+
 /** Kalau true, aplikasi memakai MockIqiaSdk offline alih-alih klien live. */
 export const USE_MOCK = flag('VITE_USE_MOCK')
 
