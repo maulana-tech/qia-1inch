@@ -283,10 +283,13 @@ export const EXTRA_AQUA_REGISTRIES: AquaRegistry[] = (() => {
   if (!raw) return []
   const result: AquaRegistry[] = []
   for (const entry of raw.split(',')) {
-    const parts = entry.trim().split(':')
-    const chainId = Number(parts[0])
-    const address = parts[1]?.toLowerCase() ?? ''
-    const rpcUrl = parts[2] || undefined
+    const trimmed = entry.trim()
+    // Split only on the first two colons: chainId:address:rpcUrl(rest)
+    const colon1 = trimmed.indexOf(':')
+    const colon2 = trimmed.indexOf(':', colon1 + 1)
+    const chainId = Number(trimmed.slice(0, colon1))
+    const address = (colon2 > 0 ? trimmed.slice(colon1 + 1, colon2) : trimmed.slice(colon1 + 1)).toLowerCase()
+    const rpcUrl = colon2 > 0 ? trimmed.slice(colon2 + 1) : undefined
     if (!chainId || !isValidAddress(address)) {
       console.warn(`[iqia] skipping invalid VITE_EXTRA_AQUA_REGISTRIES entry: ${entry}`)
       continue
