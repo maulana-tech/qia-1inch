@@ -328,10 +328,16 @@ async function scanLogs<A>(
   // dugaan: tiga sapuan event yang berjalan serentak, masing-masing empat
   // paralel, berarti dua belas permintaan sekali tembak — dan itu langsung
   // ditolak. Sapuannya juga dijalankan berurutan di pemanggil, bukan Promise.all.
-  for (let i = 0; i < ranges.length; i += 2) {
-    const batch = await Promise.all(ranges.slice(i, i + 2).map(fetchRange))
+  //
+  // Extra registries on public RPCs (e.g. Base mainnet) need even gentler
+  // handling: one at a time with generous delays to avoid 429.
+  const isExtra = aquaAddress.toLowerCase() !== AQUA_ADDRESS.toLowerCase()
+  const batchSize = isExtra ? 1 : 2
+  const batchDelay = isExtra ? 800 : 120
+  for (let i = 0; i < ranges.length; i += batchSize) {
+    const batch = await Promise.all(ranges.slice(i, i + batchSize).map(fetchRange))
     for (const logs of batch) out.push(...logs)
-    if (i + 2 < ranges.length) await new Promise((r) => setTimeout(r, 120))
+    if (i + batchSize < ranges.length) await new Promise((r) => setTimeout(r, batchDelay))
   }
   return out
 }
@@ -592,6 +598,8 @@ export async function fetchMarkets(): Promise<Market[]> {
       } catch (e) {
         console.warn(`[iqia] failed to scan extra registry ${reg.label} (${reg.address}):`, e)
       }
+      // Throttle between extra registries to avoid 429
+      await new Promise((r) => setTimeout(r, 500))
     }
   }
 
@@ -622,9 +630,13 @@ export async function fetchMarkets(): Promise<Market[]> {
   const primaryClient = getPublicClient(wagmiConfig as Config, { chainId: ACTIVE_CHAIN_ID })
   const balanceResults: { status: 'success' | 'failure'; result?: readonly [bigint, number]; error?: unknown }[] = []
 
+  let prevIsExtra = false
   for (const w of wantedReads) {
-    // Determine which client + Aqua address to use for this strategy
     const stratChainId = getChainForRegistry(w.s.registryAddress)
+    const isExtra = stratChainId !== ACTIVE_CHAIN_ID
+    if (isExtra && prevIsExtra) await new Promise((r) => setTimeout(r, 350))
+    prevIsExtra = isExtra
+
     let client: PublicClient | undefined
     if (stratChainId === ACTIVE_CHAIN_ID) {
       client = primaryClient
